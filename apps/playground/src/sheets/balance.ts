@@ -50,6 +50,13 @@ const house19 = {
   _now: NOW,
 };
 
+/** #140's house: two arrays, the first one's inverter offline, and the grid. */
+const TWO_ARRAYS = [
+  { type: 'solar', power: 'sensor.bl_e1' },
+  { type: 'solar', power: 'sensor.bl_e2' },
+  { type: 'grid', power: 'sensor.bl_e_grid' },
+];
+
 /** A day's energy and money in four buckets (night, morning, afternoon, evening). */
 const DAY = Date.parse('2026-09-16T22:00:00Z');
 const buckets = (values: readonly number[]): { start: number; change: number }[] =>
@@ -100,6 +107,10 @@ export const sheet: SheetSpec = {
     ['sensor.bl_basement', '500', power('Basement battery')],
     ['sensor.bl_generator', '1.2', power('Generator', 'kW')],
     ['sensor.bl_car', '-3.7', power('Car', 'kW')],
+    /* #140: two arrays, the first one's inverter offline */
+    ['sensor.bl_e1', 'unavailable', power('MPPT power E1')],
+    ['sensor.bl_e2', '942', power('MPPT power E2')],
+    ['sensor.bl_e_grid', '300', power('Grid power')],
 
     /* the grid unreadable */
     ['sensor.bl_down_solar', '1.8', power('Solar power', 'kW')],
@@ -200,6 +211,14 @@ export const sheet: SheetSpec = {
           ],
           _now: NOW,
         },
+      ],
+    },
+    // #140: every array counts, the one offline as nothing — the house is still worked out
+    {
+      title: 'Two arrays · the first offline',
+      cards: [
+        { type: 'custom:fluvy-energy-flow-card', sources: TWO_ARRAYS, _now: NOW },
+        { type: 'custom:fluvy-energy-balance-card', sources: TWO_ARRAYS, _now: NOW },
       ],
     },
     {

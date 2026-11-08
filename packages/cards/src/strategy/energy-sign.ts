@@ -18,7 +18,10 @@ export function exportPositive(
   grid: readonly HourMean[],
   solar: readonly HourMean[] | undefined,
 ): boolean {
-  const production = new Map((solar ?? []).map((hour) => [hour.start, Math.abs(hour.mean ?? 0)]));
+  // every array's hours: what the sun made in an hour is all of them together
+  const production = new Map<number, number>();
+  for (const hour of solar ?? [])
+    production.set(hour.start, (production.get(hour.start) ?? 0) + Math.abs(hour.mean ?? 0));
   const peak = Math.max(0, ...production.values());
   const dark = grid.filter(
     (hour): hour is HourMean & { mean: number } =>
@@ -28,11 +31,14 @@ export function exportPositive(
   return dark.filter((hour) => hour.mean < 0).length > dark.length / 2;
 }
 
-/** `exportPositive` on the last 24 hours of the recorder's hourly statistics; false when they cannot be read. */
+/**
+ * `exportPositive` on the last 24 hours of the recorder's hourly statistics, the sun every array's; false when they
+ * cannot be read.
+ */
 export async function gridExportPositive(
   hass: HomeAssistant,
   grid: string,
-  solar: string | undefined,
+  solar: readonly string[],
 ): Promise<boolean> {
   const end = new Date();
   const start = new Date(end.getTime() - 24 * 3600 * 1000);
@@ -41,13 +47,13 @@ export async function gridExportPositive(
       type: 'recorder/statistics_during_period',
       start_time: start.toISOString(),
       end_time: end.toISOString(),
-      statistic_ids: solar ? [grid, solar] : [grid],
+      statistic_ids: [grid, ...solar],
       period: 'hour',
       types: ['mean'],
     });
     const hours = stats?.[grid];
     return Array.isArray(hours)
-      ? exportPositive(hours, solar ? (stats[solar] ?? []) : undefined)
+      ? exportPositive(hours, solar.length ? solar.flatMap((id) => stats[id] ?? []) : undefined)
       : false;
   } catch {
     return false;

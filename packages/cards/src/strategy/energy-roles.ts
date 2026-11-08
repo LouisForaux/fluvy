@@ -1,7 +1,7 @@
 import { readPrefs, type EnergyPrefs } from '../energy-model/prefs.js';
 import { prefSources } from '../energy-model/sources.js';
 import { says, type Rules } from '../shared/words.js';
-import type { EnergyRoles } from './types.js';
+import type { EnergyRoles, SourcePower } from './types.js';
 import {
   BATTERY_POWER,
   CHARGER,
@@ -38,56 +38,65 @@ const ROLE_WORDS: Rules<Role> = [
 const PHASE =
   /(^|[\s_.-])(l[1-3]|phase[\s_-]?[1-3abc]|fase[\s_-]?[1-3]|faz[\s_-]?[1-3])([\s_.-]|$)/i;
 
-/** A source's power sensor from the energy preferences and whether it counts towards the house as negative. */
-function preferredPower(
+/**
+ * Every source of a kind the energy preferences give a power sensor the house has, in their order: each with its own
+ * sign, and its own charge where it states one.
+ */
+function preferredPowers(
   home: HomeRegistry,
   prefs: EnergyPrefs | null,
   type: 'solar' | 'grid' | 'battery',
-): { id: string; inverted: boolean } | undefined {
-  for (const source of readPrefs(prefs).sources) {
-    if (source.kind !== type || !source.measure) continue;
-    const id = source.measure.power?.[0];
-    if (id && home.hasState(id)) return { id, inverted: source.measure.invert ?? false };
-  }
-  return undefined;
+): SourcePower[] {
+  return readPrefs(prefs).sources.flatMap((source) => {
+    const id = source.kind === type ? source.measure?.power?.[0] : undefined;
+    if (!id || !home.hasState(id)) return [];
+    const level = source.soc && home.hasState(source.soc) ? source.soc : undefined;
+    return [{ id, inverted: source.measure?.invert ?? false, ...(level ? { level } : {}) }];
+  });
 }
 
 export function findEnergyRoles(home: HomeRegistry, prefs: EnergyPrefs | null): EnergyRoles {
   const { powers, energies } = home;
   const house = readPrefs(prefs);
-  // the energy dashboard's own power sensors first (they carry their sign); otherwise the readings by their words
-  const solarPref = preferredPower(home, prefs, 'solar');
-  const gridPref = preferredPower(home, prefs, 'grid');
-  const batteryPref = preferredPower(home, prefs, 'battery');
+  // the energy dashboard's own power sensors first, every source of a kind (they carry their sign); otherwise the
+  // readings by their words, one a kind
+  const solarPrefs = preferredPowers(home, prefs, 'solar');
+  const gridPref = preferredPowers(home, prefs, 'grid')[0];
+  const batteryPrefs = preferredPowers(home, prefs, 'battery');
   // each reading's one role by its words (a reading the preferences name may say any)
   const role = new Map(
     [...powers, ...energies].map((id) => [id, says(home.label(id), ROLE_WORDS)]),
   );
   const saying = (list: readonly string[], said: Role): string[] =>
     list.filter((id) => role.get(id) === said);
-  const solarPower = solarPref?.id ?? saying(powers, 'solar')[0];
+  const solarWords = saying(powers, 'solar').slice(0, 1);
+  const solarPowers = solarPrefs.length
+    ? solarPrefs
+    : solarWords.map((id) => ({ id, inverted: false }));
+  const arrays = solarPowers.map((p) => p.id);
   // a meter named for what leaves the house is never the grid's own: it is the export beside an import
-  const exporting = saying(powers, 'export').filter((id) => id !== solarPower);
-  const gridMeters = saying(powers, 'grid').filter((id) => id !== solarPower);
+  const exporting = saying(powers, 'export').filter((id) => !arrays.includes(id));
+  const gridMeters = saying(powers, 'grid').filter((id) => !arrays.includes(id));
   const phases = gridMeters.filter((id) => PHASE.test(home.label(id)));
   const gridPhases = !gridPref && phases.length >= 2 ? phases.slice(0, 3) : [];
   const gridPower = gridPref?.id ?? gridMeters.find((id) => !gridPhases.includes(id));
   const gridExport = !gridPref ? exporting[0] : undefined;
-  const batteryPower =
-    batteryPref?.id ??
-    saying(powers, 'battery').find((id) => id !== solarPower && id !== gridPower);
-  const charger = saying(powers, 'charger').find(
-    (id) => ![solarPower, gridPower, batteryPower].includes(id),
-  );
-  const homePower = saying(powers, 'home').find(
-    (id) => ![solarPower, gridPower, batteryPower].includes(id),
-  );
-  // the battery's charge: the energy dashboard's, else the battery-class sensor beside its power sensor
-  const batteryLevel =
-    house.sources.find((s) => s.kind === 'battery' && s.soc && home.hasState(s.soc))?.soc ??
-    (batteryPower
-      ? home.beside(batteryPower, 'battery').find((id) => home.hasState(id))
-      : undefined);
+  // each battery's charge: its own in the energy dashboard (one found by its words, the dashboard's), else the
+  // battery-class sensor beside its power sensor
+  const stated = house.sources.find(
+    (s) => s.kind === 'battery' && s.soc && home.hasState(s.soc),
+  )?.soc;
+  const batteryWords = saying(powers, 'battery')
+    .filter((id) => !arrays.includes(id) && id !== gridPower)
+    .slice(0, 1)
+    .map((id) => ({ id, inverted: false, ...(stated ? { level: stated } : {}) }));
+  const batteryPowers = (batteryPrefs.length ? batteryPrefs : batteryWords).map((p) => {
+    const level = p.level ?? home.beside(p.id, 'battery').find((id) => home.hasState(id));
+    return level ? { ...p, level } : p;
+  });
+  const taken = [...arrays, gridPower, ...batteryPowers.map((p) => p.id)];
+  const charger = saying(powers, 'charger').find((id) => !taken.includes(id));
+  const homePower = saying(powers, 'home').find((id) => !taken.includes(id));
   const solarToday =
     saying(energies, 'solar').find((id) => TODAY.test(home.label(id))) ??
     house.sources.find((s) => s.kind === 'solar')?.energyIn[0];
@@ -108,17 +117,15 @@ export function findEnergyRoles(home: HomeRegistry, prefs: EnergyPrefs | null): 
       .filter((id) => home.state(id) !== undefined && home.stateClass(id) === 'total_increasing');
   const meters = [...house.water, ...house.gas].filter((id) => home.hasState(id));
   return {
-    solarPower,
+    solarPowers,
     gridPower,
     gridImport: gridExport ? gridPower : undefined,
     gridExport: gridExport && gridPower ? gridExport : undefined,
     gridPhases,
-    batteryPower,
-    batteryLevel,
+    batteryPowers,
     homePower,
     charger,
     gridInvert: gridPref?.inverted ?? false,
-    batteryInvert: batteryPref?.inverted ?? false,
     gridSigned: gridPref !== undefined || gridPhases.length > 0,
     solarToday,
     consumption,
@@ -131,7 +138,7 @@ export function findEnergyRoles(home: HomeRegistry, prefs: EnergyPrefs | null): 
     prefsMeters: house.sources.some((s) => s.energyIn.length > 0 || s.energyOut.length > 0),
     meters: meters.length ? meters : [...volume('water'), ...volume('gas')].slice(0, 4),
     any: Boolean(
-      solarPower || gridPower || gridPhases.length || consumption.length || energies.length,
+      arrays.length || gridPower || gridPhases.length || consumption.length || energies.length,
     ),
   };
 }

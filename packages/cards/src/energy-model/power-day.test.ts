@@ -180,4 +180,33 @@ describe('the house right now', () => {
   it('says nothing when a sensor cannot be read', () => {
     expect(liveTotals([source('grid', { power: ['sensor.gone'] })], () => missing)).toBeNull();
   });
+
+  it('counts one of several of a kind that cannot be read as nothing; none read, nothing is known (#140)', () => {
+    const arrays = [
+      source('solar', { power: ['sensor.e1'] }),
+      source('solar', { power: ['sensor.e2'] }),
+      source('grid', { power: ['sensor.grid'] }),
+    ];
+    const states: Record<string, EntityView> = {
+      'sensor.e2': view('942'),
+      'sensor.grid': view('300'),
+    };
+    expect(liveTotals(arrays, (id) => states[id] ?? missing)?.solar).toBe(942);
+    expect(liveTotals(arrays, (id) => (id === 'sensor.grid' ? view('300') : missing))).toBeNull();
+  });
+
+  it('keeps a bucket where one of two batteries has no mean, a gap where neither has', () => {
+    const batteries = [
+      source('battery', { power: ['sensor.a'] }),
+      source('battery', { power: ['sensor.b'] }),
+    ];
+    const buckets = powerBuckets(
+      rows({ 'sensor.a': [0.4, null, null], 'sensor.b': [0.2, 0.3, null] }),
+      batteries,
+    );
+    expect(buckets.map((b) => [b.start / 300_000, b.totals.fromBattery])).toEqual([
+      [0, expect.closeTo(0.6)],
+      [1, 0.3],
+    ]);
+  });
 });

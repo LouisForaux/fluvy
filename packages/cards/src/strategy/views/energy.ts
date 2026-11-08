@@ -9,6 +9,8 @@ import {
   hasBattery,
   hasSources,
   runsOf,
+  solarCurves,
+  solarGauges,
   when,
 } from '../layout.js';
 import { capped, each, looseAfter, moreCard } from '../caps.js';
@@ -27,7 +29,7 @@ export function liveCards(ctx: StrategyContext): Card[] {
   const { energy, t } = ctx;
   return [
     ...when(hasSources(energy), () => [energyFlow(energy, ctx.style)]),
-    ...when(hasSources(energy) && (energy.solarPower || energy.batteryPower), () => [
+    ...when(hasSources(energy) && (energy.solarPowers.length || hasBattery(energy)), () => [
       energyBalance(energy),
     ]),
     ...when(energy.prefsMeters, () => [full('energy', { variant: 'sources' })]),
@@ -104,13 +106,13 @@ export function todayTiles(ctx: StrategyContext): Card[] {
 /** The flow and the day by source first, then each part of the system, and the day's curve. */
 function nowView(ctx: StrategyContext): Section[] {
   const { t, energy } = ctx;
-  const { solarPower, gridPower, homePower, consumptionPowers } = energy;
+  const { gridPower, homePower, consumptionPowers } = energy;
   return balanced(ctx, [
     ...liveCards(ctx),
     ...(energy.prefsMeters
       ? []
-      : solarPower
-        ? [full('energy', { entity: solarPower, name: t('energy.solar') })]
+      : energy.solarPowers.length
+        ? solarCurves(energy, { name: t('energy.solar') })
         : gridPower
           ? [full('energy', { entity: gridPower, name: t('energy.grid') })]
           : homePower
@@ -152,15 +154,15 @@ function todayView(ctx: StrategyContext): Section[] {
     : [];
 }
 
-/** What the sun makes: today's production, its last days as bars, the inverter's gauge and its day. */
+/** What the sun makes: today's production, its last days as bars, each inverter's gauge and its day. */
 function productionView(ctx: StrategyContext): Section[] {
   const { t, energy } = ctx;
-  const { solarPower, solarToday } = energy;
+  const { solarToday } = energy;
   return balanced(ctx, [
     ...when(solarToday, (id) => [full('production', { entity: id })]),
     ...when(solarToday, (id) => [full('history-bars', { entity: id, color: 'amber' })]),
-    ...when(solarPower, (id) => [full('gauge', { entity: id })]),
-    ...when(solarPower, (id) => [full('energy', { entity: id, name: t('energy.solar') })]),
+    ...solarGauges(energy),
+    ...solarCurves(energy, { name: t('energy.solar') }),
   ]);
 }
 
@@ -215,7 +217,7 @@ export const ENERGY_VIEWS: readonly ViewSpec[] = [
     icon: 'fluvy:sun',
     title: 'strategy.production',
     build: productionView,
-    when: ({ energy }) => Boolean(energy.solarPower || energy.solarToday),
+    when: ({ energy }) => Boolean(energy.solarPowers.length || energy.solarToday),
   },
   {
     key: 'devices',

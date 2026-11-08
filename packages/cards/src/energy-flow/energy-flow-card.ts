@@ -41,7 +41,7 @@ import {
   type PrefSource,
   type SourceKind,
 } from '../energy-model/prefs.js';
-import { readMeasure, type Directed } from '../energy-model/reading.js';
+import { net, readMeasure, together, type Directed } from '../energy-model/reading.js';
 import {
   bothWays,
   DEFAULT_THRESHOLD,
@@ -462,7 +462,10 @@ export class FluvyEnergyFlowCard extends Card<EnergyFlowCardConfig> {
     } else {
       const configs = this.sourceList();
       nodes = configs.map((c, i) => this.liveNode(c, i, configs));
-      const readable = nodes.every((n) => !n.dead);
+      // a source that cannot be read counts as nothing while another of its kind reads (an array asleep)
+      const readable = nodes.every(
+        (n) => together(nodes.filter((o) => o.kind === n.kind).map((o) => net(o.reading))) !== null,
+      );
       allocation = readable && nodes.length ? allocate(totalsOf(nodes)) : null;
       if (!configs.length && (this.config?.sources?.length || this.prefs !== undefined))
         empty = 'sources';

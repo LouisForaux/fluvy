@@ -44,3 +44,12 @@ export function readMeasure(measure: PowerMeasure, entity: (id: string) => Entit
 /** The net (in − out), or null. */
 export const net = (d: Directed): number | null =>
   d.in === null || d.out === null ? null : d.in - d.out;
+
+/**
+ * What several sources of a kind read together (two arrays, two batteries): those that can be read, added — one asleep
+ * or away counts as nothing, never as the kind's zero — and unknown only when none of them can be read.
+ */
+export const together = (values: readonly (number | null)[]): number | null =>
+  values.length && values.every((v) => v === null)
+    ? null
+    : values.reduce<number>((sum, v) => sum + (v ?? 0), 0);

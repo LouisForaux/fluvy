@@ -19,6 +19,15 @@ describe('exportPositive', () => {
     expect(exportPositive(meter, SUN)).toBe(false);
   });
 
+  it('reads the sun as every array together, so one array’s idle hours are not the dark (#140)', () => {
+    // an east array from 4 to 12, a west one from 12 to 22; the house exports all day and imports at night
+    const hours = Array.from({ length: 24 }, (_unused, i) => i);
+    const east = day(hours.map((i) => (i >= 4 && i < 12 ? 1500 : 0)));
+    const west = day(hours.map((i) => (i >= 12 && i < 22 ? 1500 : 0)));
+    const meter = day(hours.map((i) => (i >= 4 && i < 22 ? -1000 : 600)));
+    expect(exportPositive(meter, [...east, ...west])).toBe(false);
+  });
+
   it('without solar every hour is dark: a house cannot export', () => {
     expect(exportPositive(day(Array(24).fill(-800)), undefined)).toBe(true);
     expect(exportPositive(day(Array(24).fill(800)), undefined)).toBe(false);

@@ -37,6 +37,11 @@ of signed sensors, one per phase (or per inverter, per string), summed **per sig
 Each source may also have a `name`, an `icon`, a `color` (any Home Assistant colour, or `#rrggbb`), `threshold` (the
 watts under which it rests, 10 by default), `arrows: none` and `show: active | never` (never: counted, not drawn).
 
+Several sources of one kind — two arrays, two batteries — are listed one after the other, each with its own sensor
+and sign, and each is drawn as its own node named by its sensor. One that cannot be read (an inverter asleep, a
+battery away) shows as unavailable and counts as nothing, so the house is still worked out from the others; the kind
+is unknown only when none of its sources can be read. A card that names one `solar` source reads it as it always did.
+
 ## A house that imports and exports at once
 
 A three-phase house with its solar on one phase can import on two phases while it exports on the third. A single net

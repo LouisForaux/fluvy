@@ -75,6 +75,20 @@ describe('the balance: what comes in against what goes out', () => {
     expect(b.outTotal).toBeNull();
   });
 
+  it('one of several of a kind that cannot be read counts as nothing; none read, the kind is unknown (#140)', () => {
+    // E1's inverter offline, E2 making 942 W
+    const b = balanceOf([flow('solar', null, null), flow('solar', 942, 0), flow('grid', 300, 0)]);
+    expect(b.coming.find((i) => i.kind === 'solar')?.value).toBe(942);
+    expect(b.house).toBe(1242);
+    const dark = balanceOf([
+      flow('solar', null, null),
+      flow('solar', null, null),
+      flow('grid', 300, 0),
+    ]);
+    expect(dark.coming.find((i) => i.kind === 'solar')?.value).toBeNull();
+    expect(dark.house).toBeNull();
+  });
+
   it('several of a kind are summed; one alone keeps its own name and colour', () => {
     const b = balanceOf([
       flow('solar', 2100, 0, { name: 'East' }),

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import type { HaFormSchemaItem } from '@fluvy/core';
+import type { HaFormSchemaItem, HomeAssistant } from '@fluvy/core';
 import { describe, expect, it } from 'vitest';
 import { allocate } from '../energy-model/allocate.js';
 import { normaliseConfig } from '../shared/config.js';
@@ -387,5 +387,57 @@ describe('the sources editor', () => {
     expect(names(sources?.schemaOf?.({ type: 'nope' }) ?? [])).toEqual(
       names(sources?.schema ?? []),
     );
+  });
+});
+
+describe('several sources of a kind', () => {
+  if (!customElements.get('fluvy-energy-flow-card'))
+    customElements.define('fluvy-energy-flow-card', FluvyEnergyFlowCard);
+  const power = (id: string, state: string) => ({
+    entity_id: id,
+    state,
+    attributes: { unit_of_measurement: 'W', device_class: 'power' },
+    last_changed: '',
+    last_updated: '',
+  });
+  /** What the house uses as the flow reads it: two arrays (E1, E2) and the grid bringing 300 W. */
+  const houseOf = async (e1: string, e2: string): Promise<number | null> => {
+    const card = document.createElement('fluvy-energy-flow-card') as FluvyEnergyFlowCard;
+    card.setConfig({
+      type: 'custom:fluvy-energy-flow-card',
+      sources: [
+        { type: 'solar', power: 'sensor.e1' },
+        { type: 'solar', power: 'sensor.e2' },
+        { type: 'grid', power: 'sensor.grid' },
+      ],
+    });
+    card.hass = {
+      language: 'en',
+      locale: { language: 'en', number_format: 'language', time_format: '24' },
+      config: {},
+      themes: { darkMode: false },
+      states: {
+        'sensor.e1': power('sensor.e1', e1),
+        'sensor.e2': power('sensor.e2', e2),
+        'sensor.grid': power('sensor.grid', '300'),
+      },
+      entities: {},
+      devices: {},
+      areas: {},
+      localize: (key: string) => key,
+      callWS: async () => ({}),
+    } as unknown as HomeAssistant;
+    document.body.append(card);
+    await card.updateComplete;
+    const scene = (card as unknown as { build(): { houseValue: number | null } }).build();
+    card.remove();
+    return scene.houseValue;
+  };
+
+  it('counts an array that cannot be read as nothing while another reads; none read, the house is unknown (#140)', async () => {
+    // E1's inverter offline, E2 making 942 W: the house uses 1242 W
+    expect(await houseOf('unavailable', '942')).toBe(1242);
+    expect(await houseOf('600', '942')).toBe(1842);
+    expect(await houseOf('unavailable', 'unavailable')).toBeNull();
   });
 });

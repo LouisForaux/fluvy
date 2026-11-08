@@ -2,7 +2,7 @@ import { summarise, type EntityView, type HomeAssistant, type Series } from '@fl
 import type { Totals } from './allocate.js';
 import { fullDays, houseMidnight, type Range } from './period.js';
 import { measureIds, type PowerMeasure, type PrefSource } from './prefs.js';
-import { readMeasure } from './reading.js';
+import { net, readMeasure, together } from './reading.js';
 
 /**
  * The house's day from its POWER sensors (the ones the Energy dashboard's power section names): the recorder's
@@ -100,8 +100,9 @@ function flowAt(
 }
 
 /**
- * The day's buckets in kW, oldest first. A bucket exists only where every source that flows both ways (the grid, a
- * battery, a car) has its means: a missing one is a gap in the curve. The sun without a row is the sun at rest.
+ * The day's buckets in kW, oldest first. A bucket exists only where every kind that flows both ways (the grid, a
+ * battery, a car) has its means: none of a kind is a gap in the curve, one of several missing counts as nothing (a
+ * battery away). The sun without a row is the sun at rest.
  */
 export function powerBuckets(
   rows: PowerRows,
@@ -120,23 +121,18 @@ export function powerBuckets(
   const starts = [...new Set(Object.values(rows).flatMap((list) => list.map((r) => r.start)))].sort(
     (a, b) => a - b,
   );
+  const measured = sources.filter((s) => s.measure);
   const out: { start: number; totals: Totals }[] = [];
   for (const start of starts) {
+    const flows = measured.map((source) => ({
+      kind: source.kind,
+      flow: flowAt(source.measure as PowerMeasure, (id) => means.get(id)?.get(start) ?? null),
+    }));
+    if (flows.some((f) => twoWay(f.kind) && !flows.some((o) => o.kind === f.kind && o.flow)))
+      continue;
     const totals = zeroTotals();
-    let gap = false;
-    for (const source of sources) {
-      if (!source.measure) continue;
-      const flow = flowAt(source.measure, (id) => means.get(id)?.get(start) ?? null);
-      if (flow === null) {
-        if (twoWay(source.kind)) {
-          gap = true;
-          break;
-        }
-        continue;
-      }
-      addFlow(totals, source.kind, flow.into, flow.out);
-    }
-    if (!gap) out.push({ start, totals });
+    for (const { kind, flow } of flows) if (flow) addFlow(totals, kind, flow.into, flow.out);
+    out.push({ start, totals });
   }
   return out;
 }
@@ -242,21 +238,20 @@ export function fetchMeanSeries(
 }
 
 /**
- * The house's flows right now, in watts, from the sources' live sensors: `null` when one cannot be read (a total that
- * skipped a dead sensor would be a wrong number).
+ * The house's flows right now, in watts, from the sources' live sensors: `null` when a kind cannot be read (a total that
+ * skipped a dead sensor would be a wrong number); one of several of a kind that cannot counts as nothing (`together`).
  */
 export function liveTotals(
   sources: readonly PrefSource[],
   entity: (id: string) => EntityView,
 ): Totals | null {
+  const read = sources.flatMap((s) =>
+    s.measure ? [{ kind: s.kind, d: readMeasure(s.measure, entity) }] : [],
+  );
+  const known = (kind: PrefSource['kind']): boolean =>
+    together(read.filter((r) => r.kind === kind).map((r) => net(r.d))) !== null;
+  if (!read.length || !read.every((r) => known(r.kind))) return null;
   const totals = zeroTotals();
-  let any = false;
-  for (const source of sources) {
-    if (!source.measure) continue;
-    const d = readMeasure(source.measure, entity);
-    if (d.in === null || d.out === null) return null;
-    addFlow(totals, source.kind, d.in, d.out);
-    any = true;
-  }
-  return any ? totals : null;
+  for (const { kind, d } of read) addFlow(totals, kind, d.in ?? 0, d.out ?? 0);
+  return totals;
 }

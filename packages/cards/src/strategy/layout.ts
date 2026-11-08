@@ -1,5 +1,13 @@
 import { OUTDOOR, type HomeRegistry } from './home-registry.js';
-import type { Card, CardStyle, EnergyRoles, Section, StrategyContext, View } from './types.js';
+import type {
+  Card,
+  CardStyle,
+  EnergyRoles,
+  Section,
+  SourcePower,
+  StrategyContext,
+  View,
+} from './types.js';
 // the house's reading is a chunk of its own, fetched with this one: the columns are cut with what the house draws
 import { houseHeightOf } from '../house-heights.js';
 
@@ -52,9 +60,17 @@ export const applianceTile = (home: HomeRegistry, id: string): Card => {
   const readouts = home.readoutsOf(id);
   return tile(id, { ...home.named(id), ...(readouts.length ? { readouts: [...readouts] } : {}) });
 };
+/** A source's power in the energy cards' words: its sensor, its own sign, a battery's own charge. */
+const powerKeys = (p: SourcePower): Record<string, unknown> => ({
+  power: p.id,
+  ...(p.inverted ? { invert: true } : {}),
+  ...(p.level ? { level: p.level } : {}),
+});
+
 /**
- * The house's sources in the energy cards' own words — or none when the energy dashboard carries their power
- * sensors: then the cards read it themselves (every grid connection, array and battery, with their signs).
+ * The house's sources in the energy cards' own words, every array and battery — or none when the energy dashboard
+ * carries their power sensors: then the cards read it themselves (every grid connection, array and battery, with their
+ * signs).
  */
 export function energySources(e: EnergyRoles): Record<string, unknown>[] {
   if (e.prefsPower) return [];
@@ -66,24 +82,29 @@ export function energySources(e: EnergyRoles): Record<string, unknown>[] {
         ? [{ type: 'grid', power: e.gridPower, ...(e.gridInvert ? { invert: true } : {}) }]
         : [];
   return [
-    ...(e.solarPower ? [{ type: 'solar', power: e.solarPower }] : []),
+    ...e.solarPowers.map((p) => ({ type: 'solar', ...powerKeys(p) })),
     ...grid,
-    ...(e.batteryPower
-      ? [
-          {
-            type: 'battery',
-            power: e.batteryPower,
-            ...(e.batteryInvert ? { invert: true } : {}),
-            ...(e.batteryLevel ? { level: e.batteryLevel } : {}),
-          },
-        ]
-      : []),
+    ...e.batteryPowers.map((p) => ({ type: 'battery', ...powerKeys(p) })),
   ];
 }
 
 /** Whether the house has sources for the flow and the balance to draw. */
 export const hasSources = (e: EnergyRoles): boolean =>
-  e.prefsPower || Boolean(e.solarPower || e.gridPower || e.gridPhases.length || e.batteryPower);
+  e.prefsPower ||
+  Boolean(e.solarPowers.length || e.gridPower || e.gridPhases.length || e.batteryPowers.length);
+
+/** What the sun makes now: a gauge an array, never one array for them all. */
+export const solarGauges = (e: EnergyRoles): Card[] =>
+  e.solarPowers.map((p) => full('gauge', { entity: p.id }));
+
+/**
+ * What the sun made today: its array's curve, named as `named` says, or with several arrays a curve each, named by its
+ * own sensor.
+ */
+export const solarCurves = (e: EnergyRoles, named: Record<string, string>): Card[] =>
+  e.solarPowers.map((p) =>
+    full('energy', { entity: p.id, ...(e.solarPowers.length === 1 ? named : {}) }),
+  );
 
 const sourcesOf = (e: EnergyRoles): Record<string, unknown> => {
   const sources = energySources(e);
@@ -120,25 +141,15 @@ export const gridCard = (e: EnergyRoles): Card =>
           : { power: e.gridPower, ...(e.gridInvert ? { invert: true } : {}) },
   );
 
-/** The house's batteries: the energy dashboard's, or the one found by its words with its charge. */
+/** The house's batteries: the energy dashboard's, or every one found with its charge. */
 export const batteriesCard = (e: EnergyRoles): Card =>
   full(
     'batteries',
-    e.prefsPower || !e.batteryPower
-      ? {}
-      : {
-          batteries: [
-            {
-              power: e.batteryPower,
-              ...(e.batteryInvert ? { invert: true } : {}),
-              ...(e.batteryLevel ? { level: e.batteryLevel } : {}),
-            },
-          ],
-        },
+    e.prefsPower || !e.batteryPowers.length ? {} : { batteries: e.batteryPowers.map(powerKeys) },
   );
 
 /** Whether the house has a battery the batteries card can read (the energy dashboard's gives its power too). */
-export const hasBattery = (e: EnergyRoles): boolean => Boolean(e.batteryPower);
+export const hasBattery = (e: EnergyRoles): boolean => e.batteryPowers.length > 0;
 
 /** Items in runs of `size` (the readings' three, the stat tiles' four), in their order. */
 export const runsOf = <T>(items: readonly T[], size: number): T[][] =>

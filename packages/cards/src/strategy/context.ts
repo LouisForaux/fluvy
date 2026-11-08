@@ -59,10 +59,15 @@ export function framed(
 
 /** A grid meter found by its words (not given by the energy preferences) takes the sign its last day shows. */
 async function signedEnergyRoles(hass: HomeAssistant, roles: EnergyRoles): Promise<EnergyRoles> {
-  if (!roles.gridPower || roles.gridSigned || roles.gridExport || roles.batteryPower) return roles;
+  if (!roles.gridPower || roles.gridSigned || roles.gridExport || roles.batteryPowers.length)
+    return roles;
   return {
     ...roles,
-    gridInvert: await gridExportPositive(hass, roles.gridPower, roles.solarPower),
+    gridInvert: await gridExportPositive(
+      hass,
+      roles.gridPower,
+      roles.solarPowers.map((p) => p.id),
+    ),
   };
 }
 

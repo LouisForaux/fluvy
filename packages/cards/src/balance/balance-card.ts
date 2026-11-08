@@ -73,7 +73,7 @@ import {
 } from '../energy/freshness.js';
 import { HeadFit } from '../energy/head.js';
 import { phaseBlock, phaseStyles, phaseWatts } from '../energy/phases.js';
-import { scaled, scaleOf, WATT_LADDERS, type Scale } from '../energy/power.js';
+import { scaled, scaleOf, shortName, WATT_LADDERS, type Scale } from '../energy/power.js';
 import { kindField, MEASURE_WORDS, measureFields, PHASES_ALIAS } from '../energy/sources-editor.js';
 import { statsCols, statsStyles } from '../energy/stats.js';
 import { Card, type BaseKey } from '../shared/base.js';
@@ -463,8 +463,17 @@ export class FluvyEnergyBalanceCard extends Card<EnergyBalanceCardConfig> {
       const configs = this.sourceList();
       flows = configs.map((c) => {
         const reading = this.read(c);
-        if (!dead && (reading.in === null || reading.out === null))
-          dead = { label: c.name ?? f(this.hass, `kind_${c.type}`), entity: sourceIds(c)[0] };
+        if (!dead && (reading.in === null || reading.out === null)) {
+          // one of several of its kind (two arrays) is named by its sensor, as the flow names it
+          const entity = sourceIds(c)[0];
+          const several = configs.filter((o) => o.type === c.type).length > 1;
+          dead = {
+            label:
+              c.name ??
+              (several && entity ? shortName(this.entity(entity)) : f(this.hass, `kind_${c.type}`)),
+            entity,
+          };
+        }
         return {
           kind: c.type,
           reading: rested(reading, c.threshold ?? DEFAULT_THRESHOLD),

@@ -14,6 +14,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   history where it was a smooth hill.
 - The Sensor card's curve is the mean of each half hour, and its Min and Max the window's own extremes, where both
   were the sensor's readings at 48 moments of the day.
+- A house whose Energy dashboard names several arrays or batteries finds every one on the automatic dashboards: in
+  the flow, the balance and the Batteries card, and a gauge and a solar curve for each array.
 
 ### Added
 
@@ -38,6 +40,11 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   until the range changed.
 - The Sensor, Readouts, Humidity and Gauge cards read a sensor's history at one moment of each step, so a peak between
   two steps was lost and a short one taken for the whole step: each point is the step's mean now.
+- The automatic dashboards' flow, Solar card and gauge read only the first array the Energy dashboard names, so a
+  house whose first inverter was offline showed 0 W of sun while the second made 942 W: every array and battery
+  counts, each with its own sign (#140).
+- The Energy flow and Energy balance cards, and the Energy card's chart by source, said nothing of the house while one
+  of two arrays or batteries could not be read: one that cannot counts as nothing while another of its kind reads.
 
 ## [1.17.0] — 2026-11-07
 

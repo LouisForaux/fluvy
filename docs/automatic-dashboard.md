@@ -116,7 +116,9 @@ small) and lead to every appliance.
   — and an entity whose state arrives late (Home Assistant still starting) is found the moment it does.
 - **The weather service's sensors** (the platform is a weather integration) stay out of the climate view.
 - **Solar, grid, battery**: the Energy dashboard first — when it carries the grid's power sensors the energy cards
-  are given no sources and read it themselves (every connection, two sensors kept as two). Otherwise power sensors
+  are given no sources and read it themselves (every connection, two sensors kept as two). Every array and battery it
+  names counts, each with its own sign and charge: the flow and the balance are given them all, and the sun's gauge
+  and curve are one an array, named by its sensor. Otherwise power sensors
   whose words say so: a meter named for what leaves the house (*export*, *feed-in*, *einspeisung*, *vertido*…) is the
   grid's second sensor, never the grid itself; grid meters named by phase (*L1*, *Phase A*, *fase 2*) are read per
   phase; a grid meter that reads negative through the night is understood as exporting-positive and inverted; the

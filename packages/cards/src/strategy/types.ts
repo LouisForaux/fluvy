@@ -135,24 +135,34 @@ export interface View {
 /** What `energy/get_prefs` answers, in every shape it has had (the energy model reads it). */
 export type { EnergyPrefs } from '../energy-model/prefs.js';
 
+/** A source's power sensor as the energy cards read it: its own sign, and a battery's own charge. */
+export interface SourcePower {
+  readonly id: string;
+  /** It counts towards the house as negative (the card's `invert`). */
+  readonly inverted: boolean;
+  readonly level?: string;
+}
+
 /** The energy readings found once, each by its role. */
 export interface EnergyRoles {
-  readonly solarPower: string | undefined;
+  /** Every array: the energy dashboard's, each with its own sign; else the one a reading's words name. */
+  readonly solarPowers: readonly SourcePower[];
   readonly gridPower: string | undefined;
   /** The grid read by two sensors found by their words: what comes in (the grid meter) and what goes out. */
   readonly gridImport: string | undefined;
   readonly gridExport: string | undefined;
   /** The grid read per phase: its meters named L1, L2, L3 (then there is no net meter to read). */
   readonly gridPhases: readonly string[];
-  readonly batteryPower: string | undefined;
-  /** The battery's state of charge: the energy dashboard's, else the battery sensor beside its power. */
-  readonly batteryLevel: string | undefined;
+  /**
+   * Every battery: the energy dashboard's, each with its own sign and charge; else the one a reading's words name, its
+   * charge the energy dashboard's, else the battery sensor beside its power.
+   */
+  readonly batteryPowers: readonly SourcePower[];
   readonly homePower: string | undefined;
   /** A car charger's power sensor, found by its words. */
   readonly charger: string | undefined;
-  /** The grid / battery meter counts towards the house as negative (the card's `grid_invert` / `battery_invert`). */
+  /** The grid meter counts towards the house as negative (the card's `grid_invert`). */
   readonly gridInvert: boolean;
-  readonly batteryInvert: boolean;
   /** The grid meter came from the energy dashboard's preferences, with its sign: nothing left to find out. */
   readonly gridSigned: boolean;
   readonly solarToday: string | undefined;

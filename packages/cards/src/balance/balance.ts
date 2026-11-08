@@ -1,11 +1,12 @@
 import type { SourceKind } from '../energy-model/prefs.js';
-import type { Directed } from '../energy-model/reading.js';
+import { together, type Directed } from '../energy-model/reading.js';
 
 /**
  * The energy balance's arithmetic: what comes in against what goes out. Coming in: what each kind of source gives the
  * house (the sun, the grid's import, a battery or a car discharging, a generator). Going out: what charges a battery or
  * a car, what is exported, and the house — the remainder, so the two totals agree by construction. Nothing is
- * estimated: a figure that cannot be read is `null`, and every figure that depends on it (a total, the house) too.
+ * estimated: a figure that cannot be read is `null`, and every figure that depends on it (a total, the house) too —
+ * but one of several sources of a kind (two arrays) counts as nothing while another of its kind reads (`together`).
  */
 
 /** One source as the balance reads it: toward the house and away from it (W live, Wh over a period). */
@@ -54,7 +55,7 @@ export function balanceOf(flows: readonly Flow[]): Balance {
   };
   const item = (kind: SourceKind, way: 'in' | 'out'): Item => ({
     kind,
-    value: sumOf(of(kind).map((f) => f.reading[way])),
+    value: together(of(kind).map((f) => f.reading[way])),
     ...own(of(kind)),
   });
 

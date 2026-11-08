@@ -13,6 +13,8 @@ import {
   readoutsCards,
   runsOf,
   sizedTile,
+  solarCurves,
+  solarGauges,
   thermostat,
   tileRows,
   when,
@@ -160,8 +162,8 @@ export function homeView(ctx: StrategyContext): Section[] {
         ? [[full('weather', { entity: weather })], [full('clock', { variant: 'digital', weather })]]
         : [[full('clock', { variant: 'digital' })]]),
       when(hasSources(energy), () => [energyFlow(energy, ctx.style)]),
-      energy.solarPower
-        ? [full('energy', { entity: energy.solarPower, title: t('energy.solar') })]
+      energy.solarPowers.length
+        ? solarCurves(energy, { title: t('energy.solar') })
         : energy.homePower
           ? [full('energy', { entity: energy.homePower })]
           : [],
@@ -262,19 +264,19 @@ export function climateView(ctx: StrategyContext): Section[] {
  */
 export function energyView(ctx: StrategyContext): Section[] {
   const { t, energy } = ctx;
-  const { solarPower, gridPower, solarToday, consumptionPowers } = energy;
+  const { gridPower, solarToday, consumptionPowers } = energy;
   return balanced(ctx, [
     ...liveCards(ctx),
     ...(energy.prefsMeters
       ? []
-      : solarPower
-        ? [full('energy', { entity: solarPower, title: t('energy.solar') })]
+      : energy.solarPowers.length
+        ? solarCurves(energy, { title: t('energy.solar') })
         : gridPower
           ? [full('energy', { entity: gridPower, title: t('energy.grid') })]
           : []),
     ...todayCards(ctx),
     ...todayTiles(ctx),
-    ...when(solarPower, (id) => [full('gauge', { entity: id })]),
+    ...solarGauges(energy),
     ...when(solarToday, (id) => [full('production', { entity: id })]),
     ...when(solarToday, (id) => [full('history-bars', { entity: id, color: 'amber' })]),
     ...when(consumptionPowers.length >= 2, () => [

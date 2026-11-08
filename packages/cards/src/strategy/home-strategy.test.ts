@@ -144,11 +144,11 @@ describe('custom:fluvy-home strategy — a house named in Japanese', () => {
       'ja',
     );
     expect(findEnergyRoles(registry, null)).toMatchObject({
-      solarPower: 'sensor.taiyoukou',
+      solarPowers: [{ id: 'sensor.taiyoukou' }],
       gridPower: 'sensor.kaiden',
       gridImport: 'sensor.kaiden',
       gridExport: 'sensor.baiden',
-      batteryPower: 'sensor.chikudenchi',
+      batteryPowers: [{ id: 'sensor.chikudenchi' }],
       charger: 'sensor.ev_juudenki',
       homePower: 'sensor.katei',
     });
@@ -246,9 +246,9 @@ describe('custom:fluvy-home strategy — a house named in Japanese', () => {
       'zh-Hans',
     );
     expect(findEnergyRoles(registry, null)).toMatchObject({
-      solarPower: 'sensor.pv',
+      solarPowers: [{ id: 'sensor.pv' }],
       gridPower: 'sensor.meter',
-      batteryPower: 'sensor.storage',
+      batteryPowers: [{ id: 'sensor.storage' }],
       charger: 'sensor.wallbox',
       homePower: 'sensor.house',
     });
@@ -1059,6 +1059,70 @@ describe('custom:fluvy-home strategy', () => {
       (c) => c.type === 'custom:fluvy-energy-devices-card',
     ) as unknown as { rows: { entity: string }[] };
     expect(devices.rows.map((r) => r.entity)).toEqual(['sensor.washing_machine_energy_today']);
+  });
+
+  it('counts every array and battery the energy dashboard names, each with its own sign and charge (#140)', async () => {
+    const power = (id: string, state: string) =>
+      entity(id, state, {
+        unit_of_measurement: 'W',
+        device_class: 'power',
+        state_class: 'measurement',
+        friendly_name: id.split('.')[1],
+      });
+    // the reporter's house: E1's inverter offline, E2 making 942 W; the grid metered, its power found by its words; two
+    // batteries, the second's meter signed the other way
+    const hass = demoHass({
+      more: [
+        power('sensor.mppt_power_e1', 'unavailable'),
+        power('sensor.mppt_power_e2', '942'),
+        power('sensor.pack_a_power', '300'),
+        power('sensor.pack_b_power', '-200'),
+        entity('sensor.pack_a_level', '64', { unit_of_measurement: '%', device_class: 'battery' }),
+      ],
+      sources: [
+        { type: 'grid', stat_energy_from: 'sensor.grid_energy_today' },
+        { type: 'solar', stat_energy_from: 'sensor.e1_energy', stat_rate: 'sensor.mppt_power_e1' },
+        { type: 'solar', stat_energy_from: 'sensor.e2_energy', stat_rate: 'sensor.mppt_power_e2' },
+        {
+          type: 'battery',
+          stat_energy_from: 'sensor.pack_a_out',
+          power_config: { stat_rate: 'sensor.pack_a_power' },
+          stat_soc: 'sensor.pack_a_level',
+        },
+        {
+          type: 'battery',
+          stat_energy_from: 'sensor.pack_b_out',
+          power_config: { stat_rate_inverted: 'sensor.pack_b_power' },
+        },
+      ],
+    }) as never;
+    const { views } = await FluvyHomeStrategy.generate({ type: 'custom:fluvy-home' }, hass);
+    const cards = (path: string) =>
+      views.find((v) => v.path === path)!.sections.flatMap((s) => s.cards);
+    const flow = cards('energy').find(
+      (c) => c.type === 'custom:fluvy-energy-flow-card',
+    ) as unknown as { sources: Record<string, unknown>[] };
+    expect(flow.sources).toEqual([
+      { type: 'solar', power: 'sensor.mppt_power_e1' },
+      { type: 'solar', power: 'sensor.mppt_power_e2' },
+      { type: 'grid', power: 'sensor.grid_meter_power' },
+      { type: 'battery', power: 'sensor.pack_a_power', level: 'sensor.pack_a_level' },
+      { type: 'battery', power: 'sensor.pack_b_power', invert: true },
+    ]);
+    expect(cards('energy').find((c) => c.type === 'custom:fluvy-batteries-card')).toMatchObject({
+      batteries: [
+        { power: 'sensor.pack_a_power', level: 'sensor.pack_a_level' },
+        { power: 'sensor.pack_b_power', invert: true },
+      ],
+    });
+    // the sun's gauge and curve an array each, named by its own sensor: never the first for both (in any column)
+    const sun = (path: string) =>
+      cards(path)
+        .filter((c) => String(c['entity']).startsWith('sensor.mppt'))
+        .map((c) => `${types([c])[0]} ${String(c['entity'])}${c['name'] ? ' named' : ''}`)
+        .sort();
+    expect(sun('energy')).toEqual(['gauge sensor.mppt_power_e1', 'gauge sensor.mppt_power_e2']);
+    expect(sun('home')).toEqual(['energy sensor.mppt_power_e1', 'energy sensor.mppt_power_e2']);
   });
 
   it('reads an export meter as the grid’s second sensor, never as the grid', async () => {
