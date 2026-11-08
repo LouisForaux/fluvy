@@ -288,6 +288,8 @@
     "dashboard.caps": "Long lists",
     "dashboard.shortened": "Shortened",
     "dashboard.in_full": "In full",
+    "dashboard.exclude": "Entities left out",
+    "dashboard.exclude_sub": "Shown on no view and counted nowhere, as if the house had none",
     "wall.subview": "Back from a subview",
     "wall.subview_sub": "A wall has no header: a button with the view’s name, or Home Assistant’s header in subviews",
     "wall.subview_button": "Back button",

@@ -26,7 +26,7 @@ import {
   plugWasher,
   tuyaKettle,
 } from '../appliance/fixtures/index.js';
-import { areaContents, type HomeAssistant } from '@fluvy/core';
+import { areaContents, inList, type HomeAssistant, type RoomTuning } from '@fluvy/core';
 
 import {
   DEMO_ENERGY_SOURCES,
@@ -1927,5 +1927,141 @@ describe('custom:fluvy-home strategy — capped lists (#78)', () => {
       ).filter((card) => card['more_path'] === '/fluvy-home/home-lights');
     expect(await lightsMore(CAPS.lights + 1)).toEqual([]);
     expect((await lightsMore(CAPS.lights + 2)).map((card) => card['more'])).toEqual([2]);
+  });
+});
+
+describe('custom:fluvy-home strategy — what a dashboard leaves out of every view (#141)', () => {
+  const THERMOSTAT = 'climate.shui_xiang_wen_kong_qi_re_shui_qi_xu_ni';
+  /**
+   * The reporter's house, in the demo home with one of everything: a water heater's virtual thermostat in the kitchen
+   * among the air conditioners, and the inverter's MPPT readings, whose words make either of them the solar power,
+   * beside its total.
+   */
+  const reporter = () => {
+    const mppt = (n: number, watts: string) =>
+      entity(`sensor.inverter_mppt_${n}_power`, watts, {
+        device_class: 'power',
+        unit_of_measurement: 'W',
+        friendly_name: `Inverter MPPT ${n} 总功率`,
+      });
+    return house([
+      ...DEMO_EXTRAS,
+      ...DEMO_ROOMS,
+      entity(
+        THERMOSTAT,
+        'heat',
+        {
+          friendly_name: '水箱温控 空气热水器 虚拟',
+          hvac_modes: ['off', 'heat'],
+          temperature: 55,
+          current_temperature: 52,
+        },
+        { area_id: 'kitchen', platform: 'generic_thermostat' },
+      ),
+      mppt(1, '820'),
+      mppt(2, '790'),
+    ]) as unknown as HomeAssistant;
+  };
+  /** An entry for each view, the reporter's two first: ids, a pattern, a device (the printer's). */
+  const EXCLUDE = [
+    THERMOSTAT,
+    'sensor.inverter_mppt_*',
+    'light.hall',
+    'sensor.garden_humidity',
+    'camera.garden',
+    'lock.front_door',
+    'media_player.tv',
+    'calendar.family',
+    'd-printer',
+  ];
+  /** Every entity of the house the entries leave out. */
+  const leftOut = (hass: HomeAssistant): string[] =>
+    Object.keys(hass.states).filter(inList(hass, EXCLUDE));
+  /** What the cards draw: every entity they name, but in a room card's `exclude`. */
+  const drawn = (views: readonly View[], hass: HomeAssistant): Set<string> =>
+    namedIn(
+      cardsIn(views).map(({ exclude, ...card }) =>
+        card.type === 'custom:fluvy-room-card' ? card : { ...card, exclude },
+      ),
+      hass,
+    );
+
+  it('draws none of it on any view of any dashboard, the rooms’ and the lists’ subviews too', async () => {
+    const hass = reporter();
+    const left = leftOut(hass);
+    expect(left).toContain('sensor.p1s_print_status');
+    for (const type of ['home', 'rooms', 'energy', 'security', 'wall'] as const) {
+      const config = { type: `custom:fluvy-${type}` } as const;
+      const before = drawn((await generate(config, hass)).views, hass);
+      const { views } = await generate({ ...config, exclude: EXCLUDE }, hass);
+      const after = drawn(views, hass);
+      // what it drew of them it draws no more, and everything else as it did
+      expect(
+        left.some((id) => before.has(id)),
+        type,
+      ).toBe(true);
+      expect(
+        left.filter((id) => after.has(id)),
+        type,
+      ).toEqual([]);
+      expect(
+        [...before].filter((id) => !after.has(id) && !left.includes(id)),
+        type,
+      ).toEqual([]);
+      expect(
+        cardsIn(views).filter((card) => card['device'] === 'd-printer'),
+        type,
+      ).toEqual([]);
+    }
+  });
+
+  it('keeps the air conditioners on the Climate view, and the water heater off it', async () => {
+    const hass = reporter();
+    const climate = async (exclude: readonly string[] = []) =>
+      cardsIn(
+        (await generate({ type: 'custom:fluvy-home', exclude }, hass)).views.filter(
+          (view) => view.path === 'climate',
+        ),
+      )
+        .filter((card) => card.type === 'custom:fluvy-thermostat-card')
+        .map((card) => card['entity']);
+    const every = await climate();
+    expect(every).toContain(THERMOSTAT);
+    expect(await climate(EXCLUDE)).toEqual(every.filter((id) => id !== THERMOSTAT));
+  });
+
+  it('never takes a reading it leaves out for an energy role: the solar power is the inverter’s', () => {
+    const roles = (exclude?: readonly string[]) =>
+      JSON.stringify(findEnergyRoles(new HomeRegistry(reporter(), {}, exclude), null));
+    // the reporter's MPPT readings say solar as the inverter's own does, and come first
+    expect(roles()).toContain('inverter_mppt');
+    expect(roles(EXCLUDE)).not.toContain('inverter_mppt');
+    expect(roles(EXCLUDE)).toContain('"sensor.solar_inverter_power"');
+  });
+
+  it('counts none of it in a room, whose card is told to leave it out as the dashboard does', async () => {
+    const hass = reporter();
+    expect(new HomeRegistry(hass).contents('kitchen').devices).toContain(THERMOSTAT);
+    const home = new HomeRegistry(hass, {}, EXCLUDE);
+    expect(home.contents('kitchen').entities).not.toContain(THERMOSTAT);
+    const { views } = await generate({ type: 'custom:fluvy-rooms', exclude: EXCLUDE }, hass);
+    const card = cardsIn(views).find(
+      (each) => each.type === 'custom:fluvy-room-card' && each['area'] === 'kitchen',
+    )!;
+    // what it leaves out of the kitchen, nothing of another room's
+    expect(card['exclude']).toEqual([THERMOSTAT]);
+    expect(areaContents(hass, 'kitchen', card as RoomTuning)).toEqual(home.contents('kitchen'));
+    expect(reachedFrom(views, 'room-kitchen', hass as never).has(THERMOSTAT)).toBe(false);
+  });
+
+  it('joins a room’s own exclude, and keeps what a room includes, as a room does', () => {
+    const hass = reporter();
+    const kitchen = new HomeRegistry(hass, { kitchen: { exclude: ['switch.kettle'] } }, EXCLUDE);
+    expect(kitchen.tuning('kitchen')).toEqual({ exclude: ['switch.kettle', THERMOSTAT] });
+    const kept = new HomeRegistry(hass, { kitchen: { include: [THERMOSTAT] } }, EXCLUDE);
+    expect(kept.contents('kitchen').devices).toContain(THERMOSTAT);
+    // a list that leaves nothing out tunes no room
+    for (const exclude of [[], ['light.nothing_here'], [7, '', null] as never])
+      expect(new HomeRegistry(hass, {}, exclude).tuning('kitchen')).toEqual({});
   });
 });

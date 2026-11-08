@@ -10,10 +10,12 @@ import { GATEWAYS } from '../shared/domain.js';
 import { says, type Rules } from '../shared/words.js';
 import {
   areaContents,
+  areaEntities,
   areaOf,
   areasInOrder,
   deviceNameOf,
   floorsInOrder,
+  inList,
   isLoad,
   localize,
   plain,
@@ -191,7 +193,17 @@ export type Registry = Pick<
 > &
   Partial<Pick<HomeAssistant, 'floors'>>;
 
+/** A registry's table by entity id, less the entities `left` answers. */
+const without = <T>(
+  table: Readonly<Record<string, T>>,
+  left: (id: string) => boolean,
+): Record<string, T> => Object.fromEntries(Object.entries(table).filter(([id]) => !left(id)));
+
 export class HomeRegistry {
+  /** The house as the dashboard reads it: without what its `exclude` leaves out, as if the house had none of it. */
+  private readonly hass: Registry;
+  /** What the dashboard's `exclude` leaves out (#141). */
+  private readonly left: (id: string) => boolean;
   /** Entity ids by domain, sorted: every query starts from one domain's list. */
   private readonly byDomain = new Map<string, string[]>();
   /** Answers already computed: the registries do not change while a dashboard is generated. */
@@ -204,12 +216,24 @@ export class HomeRegistry {
     return this.hass;
   }
 
-  /** `rooms`: each room's own `include` and `exclude` by its area (the dashboard's `rooms`, #95). */
+  /**
+   * `rooms`: each room's own `include` and `exclude` by its area (the dashboard's `rooms`, #95). `exclude`: what no
+   * view shows nor counts (the dashboard's `exclude`, #141), read as a room's `exclude` is (`inList`).
+   */
   constructor(
-    private readonly hass: Registry,
+    private readonly house: Registry,
     private readonly rooms: Readonly<Record<string, RoomTuning>> = {},
+    exclude?: readonly string[],
   ) {
-    for (const id of Object.keys(hass.states).sort()) {
+    this.left = inList(house, exclude);
+    this.hass = Object.keys(house.states).some(this.left)
+      ? {
+          ...house,
+          states: without(house.states, this.left),
+          entities: without(house.entities ?? {}, this.left),
+        }
+      : house;
+    for (const id of Object.keys(this.hass.states).sort()) {
       const domain = id.slice(0, id.indexOf('.'));
       const list = this.byDomain.get(domain);
       if (list) list.push(id);
@@ -241,22 +265,26 @@ export class HomeRegistry {
 
   /**
    * A room's own `include` and `exclude`, as the dashboard names them: its card's, its count's and its page's. The
-   * raw configuration is read as written: anything but a room's two lists leaves the room as its area holds it.
+   * raw configuration is read as written: anything but a room's two lists leaves the room as its area holds it. What
+   * the dashboard leaves out of every view (`exclude`) and the room shows joins its `exclude`, so its card leaves it
+   * out too; what the room includes it keeps, as a room does.
    */
   tuning(areaId: string): RoomTuning {
     const rooms: Readonly<Record<string, unknown>> = Object(this.rooms);
     const own = (Object.hasOwn(rooms, areaId) ? rooms[areaId] : undefined) as
       Partial<Record<keyof RoomTuning, unknown>> | null | undefined;
+    const left = areaEntities(this.house, areaId).filter(this.left);
+    const exclude = [...(Array.isArray(own?.exclude) ? own.exclude : []), ...left];
     return {
       ...(Array.isArray(own?.include) ? { include: own.include } : {}),
-      ...(Array.isArray(own?.exclude) ? { exclude: own.exclude } : {}),
+      ...(Array.isArray(own?.exclude) || left.length ? { exclude } : {}),
     };
   }
 
-  /** What a room holds (`areaContents`, the room card's own rule), as the dashboard tunes it. */
+  /** What a room holds (`areaContents`, the room card's own rule, of the house as its card reads it), as tuned. */
   contents(areaId: string): AreaContents {
     return this.memo(`contents ${areaId}`, () =>
-      areaContents(this.hass, areaId, this.tuning(areaId)),
+      areaContents(this.house, areaId, this.tuning(areaId)),
     );
   }
 

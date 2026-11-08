@@ -2311,6 +2311,8 @@
     "dashboard.caps": "Długie listy",
     "dashboard.shortened": "Skrócone",
     "dashboard.in_full": "W całości",
+    "dashboard.exclude": "Pominięte encje",
+    "dashboard.exclude_sub": "Niewidoczne w żadnym widoku i nigdzie nieliczone, jakby nie było ich w domu",
     "wall.subview": "Powrót z podwidoku",
     "wall.subview_sub": "Tryb ściany nie ma nagłówka: przycisk z nazwą widoku albo nagłówek Home Assistanta w podwidokach",
     "wall.subview_button": "Przycisk Wstecz",

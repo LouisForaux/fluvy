@@ -98,6 +98,11 @@ export interface FluvyStrategyConfig {
    * by, whether the dashboard shows it, and what its page holds.
    */
   rooms?: Readonly<Record<string, RoomTuning>>;
+  /**
+   * What no view shows nor counts, as if the house had none of it (#141): entity ids, patterns of ids
+   * (`sensor.debug_*`), device ids or domains, as a room's `exclude` takes them.
+   */
+  exclude?: readonly string[];
 }
 
 /** The home dashboard's config: the same keys, its views by name. */

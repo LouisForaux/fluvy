@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Listes longues",
     "dashboard.shortened": "Abrégées",
     "dashboard.in_full": "Complètes",
+    "dashboard.exclude": "Entités exclues",
+    "dashboard.exclude_sub": "Affichées sur aucune vue et comptées nulle part, comme si la maison n’en avait pas",
     "wall.subview": "Retour d’une sous-vue",
     "wall.subview_sub": "Un mur n’a pas d’en-tête : un bouton au nom de la vue, ou l’en-tête de Home Assistant dans les sous-vues",
     "wall.subview_button": "Bouton retour",

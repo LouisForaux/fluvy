@@ -1340,6 +1340,31 @@ function capsChoice(ctx: PanelContext, urlPath: string, current: unknown): Templ
   );
 }
 
+/** Home Assistant's entity picker, as many as chosen: what a dashboard leaves out (Home Assistant's own element). */
+const ENTITIES = { entity: { multiple: true } } as const;
+
+/**
+ * What a dashboard leaves out of every view (`exclude`, #141), in Home Assistant's entity picker; an entry the raw
+ * configuration writes otherwise (a pattern, a device, a domain) stays as written. None chosen takes the key away.
+ */
+function entitiesChoice(ctx: PanelContext, urlPath: string, current: unknown): TemplateResult {
+  const words = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((entry): entry is string => typeof entry === 'string' && entry !== '')
+      : [];
+  return html`<p class="pn-hint">${ctx.t('dashboard.exclude_sub')}</p>
+    <ha-selector
+      .hass=${ctx.hass}
+      .selector=${ENTITIES}
+      .value=${words(current)}
+      .disabled=${!ctx.admin}
+      @value-changed=${(event: CustomEvent<{ value?: unknown }>) => {
+        const chosen = words(event.detail.value);
+        ctx.editStrategy(urlPath, { exclude: chosen.length ? chosen : undefined });
+      }}
+    ></ha-selector>`;
+}
+
 export interface DashboardActions {
   create(template: Template): void;
   recreate(urlPath: string): void;
@@ -1408,7 +1433,9 @@ function dashboardOptions(
             ? areasChoice(ctx, dashboard.urlPath, strategy['areas'])
             : option.kind === 'caps'
               ? capsChoice(ctx, dashboard.urlPath, strategy['caps'])
-              : optionChoice(ctx, dashboard.urlPath, option, strategy[option.key])
+              : option.kind === 'entities'
+                ? entitiesChoice(ctx, dashboard.urlPath, strategy['exclude'])
+                : optionChoice(ctx, dashboard.urlPath, option, strategy[option.key])
         }`;
     })}
     ${

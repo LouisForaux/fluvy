@@ -470,6 +470,9 @@ describe('the dashboard templates', () => {
         ),
       ).toEqual({ caps: { lights: 12, humidity: 'none' } });
       expect(strategyOptions({ caps: 'some' }, template)).toEqual({});
+      // what a dashboard leaves out is the house's own, as its weather is: every template offers it, no file carries it
+      expect(template.options.some((option) => option.key === 'exclude')).toBe(true);
+      expect(strategyOptions({ exclude: ['climate.water_heater'] }, template)).toEqual({});
     }
   });
 

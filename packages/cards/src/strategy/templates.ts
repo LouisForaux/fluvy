@@ -36,9 +36,11 @@ export type TemplateOption =
   | { readonly key: 'areas'; readonly kind: 'areas'; readonly label: KeyOf<'panel'> }
   /** How many of a long list a view shows (`caps`): the house's caps, or every list whole (`none`). */
   | { readonly key: 'caps'; readonly kind: 'caps'; readonly label: KeyOf<'panel'> }
+  /** What no view shows nor counts (`exclude`, #141): the house's own entities, which a settings file never carries. */
+  | { readonly key: 'exclude'; readonly kind: 'entities'; readonly label: KeyOf<'panel'> }
   /** One of a few values; the first is the default and is never written. */
   | {
-      readonly key: Exclude<OptionKey, 'hide' | 'areas' | 'caps'>;
+      readonly key: Exclude<OptionKey, 'hide' | 'areas' | 'caps' | 'exclude'>;
       readonly kind: 'choice';
       readonly label: KeyOf<'panel'>;
       readonly values: readonly OptionValue[];
@@ -72,7 +74,7 @@ export interface Template {
 }
 
 const choice = (
-  key: Exclude<OptionKey, 'hide' | 'areas' | 'caps'>,
+  key: Exclude<OptionKey, 'hide' | 'areas' | 'caps' | 'exclude'>,
   label: KeyOf<'panel'>,
   values: readonly OptionValue[],
 ): TemplateOption => ({ key, kind: 'choice', label, values });
@@ -95,6 +97,8 @@ const FLOW = choice('flow_style', 'dashboard.flow', words(['stream', 'legs', 'ra
 const ROOM = choice('room_variant', 'dashboard.rooms', words(['photo', 'tile', 'row']));
 /** The long lists: at the house's caps, each with its "N more" row, or whole. */
 const CAPS: TemplateOption = { key: 'caps', kind: 'caps', label: 'dashboard.caps' };
+/** What every view leaves out, as if the house had none of it. */
+const EXCLUDE: TemplateOption = { key: 'exclude', kind: 'entities', label: 'dashboard.exclude' };
 /** The views as chips under the greeting, besides the header's tabs. */
 const GREETING_TABS = choice('greeting_tabs', 'dashboard.greeting_tabs', [
   { value: 'hide', label: 'dashboard.header_only' },
@@ -122,7 +126,7 @@ export const TEMPLATES: readonly Template[] = [
     // the rooms open from the Rooms view: none without it
     rooms: (ctx, paths) => (paths.includes('rooms') ? everyRoom(ctx, () => 'rooms') : []),
     appliances: true,
-    options: [HIDE, THERMOSTAT, TILES, FLOW, ROOM, GREETING_TABS, CAPS],
+    options: [HIDE, THERMOSTAT, TILES, FLOW, ROOM, GREETING_TABS, CAPS, EXCLUDE],
   },
   {
     id: 'rooms',
@@ -135,7 +139,7 @@ export const TEMPLATES: readonly Template[] = [
     header: 'hello',
     views: roomsViews,
     rooms: (ctx) => everyRoom(ctx, (area) => roomTab(ctx, area)),
-    options: [ROOM, THERMOSTAT, TILES, GREETING_TABS, CAPS],
+    options: [ROOM, THERMOSTAT, TILES, GREETING_TABS, CAPS, EXCLUDE],
   },
   {
     id: 'energy',
@@ -147,7 +151,7 @@ export const TEMPLATES: readonly Template[] = [
     columns: 3,
     header: 'hello',
     views: ENERGY_VIEWS,
-    options: [HIDE, FLOW, GREETING_TABS, CAPS],
+    options: [HIDE, FLOW, GREETING_TABS, CAPS, EXCLUDE],
   },
   {
     id: 'security',
@@ -164,6 +168,7 @@ export const TEMPLATES: readonly Template[] = [
       choice('camera_refresh', 'dashboard.refresh', counts([5, 10, 30], 'dashboard.seconds')),
       GREETING_TABS,
       CAPS,
+      EXCLUDE,
     ],
   },
   {
@@ -186,6 +191,7 @@ export const TEMPLATES: readonly Template[] = [
       THERMOSTAT,
       choice('scenes_max', 'dashboard.scenes', counts([4, 6, 8], 'dashboard.count')),
       CAPS,
+      EXCLUDE,
     ],
   },
 ];
@@ -212,7 +218,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 /**
  * A dashboard's options from a settings file or a raw configuration: only the keys its template knows, each well
- * formed (a house's own entities, such as its weather, do not travel).
+ * formed (a house's own entities, such as its weather or what it leaves out, do not travel).
  */
 export function strategyOptions(raw: unknown, template: Template): Record<string, unknown> {
   if (!isRecord(raw)) return {};
@@ -224,7 +230,7 @@ export function strategyOptions(raw: unknown, template: Template): Record<string
     } else if (option.kind === 'caps') {
       const caps = capsOf(value);
       if (caps === 'none' || Object.keys(caps).length) options[option.key] = caps;
-    } else if (Array.isArray(value)) {
+    } else if (option.kind !== 'entities' && Array.isArray(value)) {
       const known =
         option.kind === 'views' ? optionalViews(template).map((view) => view.key) : undefined;
       const kept = value.filter(

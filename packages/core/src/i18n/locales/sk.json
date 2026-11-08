@@ -2553,6 +2553,8 @@
     "dashboard.caps": "Dlhé zoznamy",
     "dashboard.shortened": "Skrátené",
     "dashboard.in_full": "Úplné",
+    "dashboard.exclude": "Vynechané entity",
+    "dashboard.exclude_sub": "Nezobrazia sa v žiadnom zobrazení a nikde sa nezapočítajú, akoby ich dom nemal",
     "wall.subview": "Návrat z podzobrazenia",
     "wall.subview_sub": "Nástenka nemá hlavičku: tlačidlo s názvom zobrazenia alebo hlavička Home Assistantu v podzobrazeniach",
     "wall.subview_button": "Tlačidlo Späť",

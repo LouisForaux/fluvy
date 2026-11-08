@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Lange Listen",
     "dashboard.shortened": "Gekürzt",
     "dashboard.in_full": "Vollständig",
+    "dashboard.exclude": "Ausgelassene Entitäten",
+    "dashboard.exclude_sub": "Auf keiner Ansicht gezeigt und nirgends gezählt, als hätte das Haus sie nicht",
     "wall.subview": "Zurück aus einer Unteransicht",
     "wall.subview_sub": "Eine Wand hat keine Kopfzeile: eine Taste mit dem Namen der Ansicht oder die Kopfzeile von Home Assistant in Unteransichten",
     "wall.subview_button": "Zurück-Taste",

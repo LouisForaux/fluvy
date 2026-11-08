@@ -2498,6 +2498,8 @@
     "dashboard.caps": "长列表",
     "dashboard.shortened": "缩短",
     "dashboard.in_full": "完整显示",
+    "dashboard.exclude": "排除的实体",
+    "dashboard.exclude_sub": "不在任何视图中显示，也不计入任何统计，就像家中没有它们一样",
     "wall.subview": "从子视图返回",
     "wall.subview_sub": "壁挂面板没有顶栏：用带视图名称的按钮，或在子视图中使用 Home Assistant 的顶栏",
     "wall.subview_button": "返回按钮",

@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Lange lijsten",
     "dashboard.shortened": "Ingekort",
     "dashboard.in_full": "Volledig",
+    "dashboard.exclude": "Uitgesloten entiteiten",
+    "dashboard.exclude_sub": "Op geen enkele weergave getoond en nergens geteld, alsof het huis ze niet heeft",
     "wall.subview": "Terug uit een subweergave",
     "wall.subview_sub": "Een wand heeft geen kopbalk: een knop met de naam van de weergave, of de kopbalk van Home Assistant in subweergaven",
     "wall.subview_button": "Terugknop",

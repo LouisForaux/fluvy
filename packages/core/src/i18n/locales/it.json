@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Elenchi lunghi",
     "dashboard.shortened": "Ridotti",
     "dashboard.in_full": "Completi",
+    "dashboard.exclude": "Entità escluse",
+    "dashboard.exclude_sub": "Non compaiono in nessuna vista e non contano da nessuna parte, come se la casa non le avesse",
     "wall.subview": "Indietro da una sottovista",
     "wall.subview_sub": "Una parete non ha intestazione: un pulsante con il nome della vista, o l’intestazione di Home Assistant nelle sottoviste",
     "wall.subview_button": "Tasto indietro",

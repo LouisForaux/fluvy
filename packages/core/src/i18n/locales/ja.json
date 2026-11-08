@@ -2440,6 +2440,8 @@
     "dashboard.caps": "長いリスト",
     "dashboard.shortened": "短縮",
     "dashboard.in_full": "すべて",
+    "dashboard.exclude": "除外するエンティティ",
+    "dashboard.exclude_sub": "どのビューにも表示せず、どこにも数えません。家にないものとして扱います",
     "wall.subview": "サブビューから戻る",
     "wall.subview_sub": "壁掛け画面にはヘッダーがないため、ビュー名のボタンか、サブビューだけHome Assistantのヘッダーを使います",
     "wall.subview_button": "戻るボタン",

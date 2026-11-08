@@ -11,6 +11,15 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   another language than English in Home Assistant's own words for them, as its own cards do ("Niedrig", "Ventilation
   naturelle", "Équilibré"), where they said the word the integration sent ("Low", "Natural wind", "Balanced").
 
+### Added
+
+- An automatic dashboard leaves out the entities it is told to (`exclude`, or Fluvy's settings › Dashboards ›
+  Entities left out, in Home Assistant's entity picker), as if the house had none of them, without hiding them
+  anywhere else in Home Assistant: no view shows one, no room counts one and the energy roles never take one for a
+  meter, so a water heater's thermostat leaves the Climate view to the air conditioners and an inverter's MPPT
+  readings leave the solar power to its total. An entry may be a pattern of ids (`sensor.debug_*`), a device or a
+  domain, as a room's `exclude` takes them (#141).
+
 ### Fixed
 
 - The Thermostat card says its fan speeds and presets in the page's language: Home Assistant's own word for each, the

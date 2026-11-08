@@ -446,6 +446,67 @@ describe('the settings panel', () => {
     panel.remove();
   });
 
+  it('lists what a dashboard leaves out in Home Assistant’s entity picker, and saves the list it changes to (#141)', async () => {
+    const saved: { type: string; url_path?: string; config?: unknown }[] = [];
+    const strategy = {
+      type: 'custom:fluvy-home',
+      exclude: ['climate.water_heater', 'sensor.debug_*'],
+    };
+    const { panel, root, button, settle } = await mount(true, {
+      panels: {
+        'fluvy-auto': {
+          component_name: 'lovelace',
+          url_path: 'fluvy-auto',
+          title: 'Fluvy auto',
+          icon: 'fluvy:sun',
+        },
+      },
+      callWS: async (message: { type: string; url_path?: string | null; config?: unknown }) => {
+        if (message.type === 'lovelace/config/save') {
+          saved.push(message as never);
+          return {};
+        }
+        if (message.type === 'lovelace/dashboards/list') return [];
+        if (message.type === 'lovelace/config' && message.url_path === 'fluvy-auto')
+          return { strategy };
+        return { views: [] };
+      },
+    });
+    panel.tab = 'dashboard';
+    await settle();
+    const picker = root.querySelector('ha-selector') as HTMLElement & {
+      selector: unknown;
+      value: unknown;
+      disabled: boolean;
+    };
+    // under its words, the list as written, a pattern too
+    expect(picker.previousElementSibling?.textContent).toBe(
+      'Shown on no view and counted nowhere, as if the house had none',
+    );
+    expect(picker.selector).toEqual({ entity: { multiple: true } });
+    expect(picker.value).toEqual(strategy.exclude);
+    expect(picker.disabled).toBe(false);
+    const choose = async (value: unknown) => {
+      picker.dispatchEvent(new CustomEvent('value-changed', { detail: { value } }));
+      await settle();
+    };
+    await choose(['sensor.debug_*']);
+    expect(root.querySelector('.pn-bar')?.textContent).toContain('Fluvy auto · Entities left out');
+    button('Save')!.click();
+    await settle();
+    await settle();
+    expect(saved.at(-1)?.config).toEqual({
+      strategy: { type: 'custom:fluvy-home', exclude: ['sensor.debug_*'] },
+    });
+    // none left takes the key away
+    await choose([]);
+    button('Save')!.click();
+    await settle();
+    await settle();
+    expect(saved.at(-1)?.config).toEqual({ strategy: { type: 'custom:fluvy-home' } });
+    panel.remove();
+  });
+
   it('edits the wall whole and this device apart: the screensaver minutes saved with the house, the device on Save', async () => {
     localStorage.removeItem('fluvy:device');
     const { panel, root, row, chip, button, handle, settle } = await mount();

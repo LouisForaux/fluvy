@@ -2552,6 +2552,8 @@
     "dashboard.caps": "Hosszú listák",
     "dashboard.shortened": "Rövidítve",
     "dashboard.in_full": "Teljes egészében",
+    "dashboard.exclude": "Kihagyott entitások",
+    "dashboard.exclude_sub": "Egyik nézeten sem jelennek meg, és sehol sem számítanak, mintha a házban nem is lennének",
     "wall.subview": "Vissza egy almezőből",
     "wall.subview_sub": "A falnak nincs fejléce: a nézet nevével ellátott gomb, vagy a Home Assistant fejléce az almezőkben",
     "wall.subview_button": "Vissza gomb",

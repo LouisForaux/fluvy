@@ -141,6 +141,7 @@ there; *Recreate* takes them all back to their defaults):
 | `greeting_tabs` | `hide` (default), `show` | home, rooms, energy, security | the views as chips under the greeting too, besides the header's tabs (until 1.4 they always were) |
 | `caps` | a list's own number or `none` by its key (`caps: { lights: 12, humidity: none }`), or `none` for every list | all | how many of a long list a view shows (default: the house's caps, above, each with its "N more" row); the panel offers *Shortened* (the default) or *In full* |
 | `rooms` | by area id, a room's `include` and `exclude`, as the room card takes them: entity ids, patterns of ids, device ids or domains (`rooms: { kitchen: { exclude: [switch.dishwasher_*] } }`) | home, rooms, wall | what that room's card counts and fills by, whether the room is shown, and what its page holds; in the raw configuration only (the settings file never carries a house's entities) |
+| `exclude` | a list of entity ids, patterns of ids, device ids or domains, as a room's `exclude` takes them (`exclude: [climate.water_heater, sensor.inverter_mppt_*]`) | all | what no view shows nor counts, as if the house had none of it (below); the panel offers it in Home Assistant's entity picker, and the settings file never carries it |
 | `weather` | a `weather.*` entity | all | the weather of the greeting and the clock (default: the first) |
 | `language` | `en`, `es`, `de`, `nl`, `fr`, `it`, `pt-BR`, `pt-PT`, `tr`, `ja`, `hu`, `sk`, `pl`, `zh-Hans` | all | the dashboard's words in that language, whoever opens it |
 
@@ -148,6 +149,28 @@ Without `language`, the dashboard's words follow the language of whoever opens i
 chosen in the panel's *Preferences*). A house is read in every language at once: a switch called *Küche* or
 *cocina* is a light's room in any of them. The settings file *Preferences* exports (its last card, *Fluvy*) carries every dashboard's options
 under `dashboards`, by url path; a file from Fluvy 1.2 (one `dashboard` key) still lands on the home dashboard.
+
+## Leaving entities out
+
+`exclude` takes entities out of every view of a dashboard, its rooms' pages and its "N more" pages, without hiding them
+from Home Assistant: its own pages, its area cards and every other dashboard still show them. The dashboard reads the
+house as if it had none of them: no card shows one, no room counts one (each room's card is told to leave out those it
+holds), the energy roles never take one when they find a meter by its words, and a device named whole leaves with
+every entity it has. A room's own `include` still brings in what it names.
+
+A house whose Climate view should hold its air conditioners alone, and whose inverter reports each MPPT's power beside
+its total (which the words would take for the solar power before the total):
+
+```yaml
+strategy:
+  type: custom:fluvy-home
+  exclude:
+    - climate.water_heater_thermostat   # on a dashboard of its own
+    - sensor.inverter_mppt_*            # every MPPT reading, the total kept
+```
+
+In the panel's *Dashboards* tab each dashboard lists what it leaves out under *Entities left out*, in Home Assistant's
+entity picker; a pattern, a device or a domain written in the raw configuration stays there as written.
 
 ## Limits
 

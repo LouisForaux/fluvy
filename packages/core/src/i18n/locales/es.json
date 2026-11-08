@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Listas largas",
     "dashboard.shortened": "Recortadas",
     "dashboard.in_full": "Completas",
+    "dashboard.exclude": "Entidades excluidas",
+    "dashboard.exclude_sub": "No aparecen en ninguna vista ni cuentan en ningún sitio, como si la casa no las tuviera",
     "wall.subview": "Volver de una subvista",
     "wall.subview_sub": "Una pared no tiene cabecera: un botón con el nombre de la vista, o la cabecera de Home Assistant en las subvistas",
     "wall.subview_button": "Botón atrás",

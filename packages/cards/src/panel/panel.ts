@@ -215,6 +215,8 @@ export class FluvyPanel extends LitElement {
   recreateTimer = 0;
   /** The dashboard whose options were touched last: the one the preview draws. */
   private lastEdited = '';
+  /** Home Assistant's pickers the Dashboards tab offers (what a dashboard leaves out), pulled in once. */
+  private pickers: Promise<void> | undefined;
   private barTimer = 0;
   private stillTimer = 0;
   private fontTimer = 0;
@@ -882,6 +884,10 @@ export class FluvyPanel extends LitElement {
         );
       }
       case 'dashboard':
+        // Home Assistant's entity picker is its editors': pulled in as a card's editor pulls them
+        this.pickers ??= import('../shared/rows-editor.js').then((editor) =>
+          editor.ensureEditorElements(),
+        );
         return dashboards(ctx, {
           create: (template) => createDashboard(this, ctx, template),
           recreate: (urlPath) => recreateDashboard(this, ctx, urlPath),

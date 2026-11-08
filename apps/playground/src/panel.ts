@@ -11,6 +11,7 @@ import {
   type LookHandle,
   type SavedSeries,
 } from '@fluvy/core';
+import { defineSelectorStub } from './ha-selector.js';
 import { createMemoryLook, type MemoryLook } from './look-memory.js';
 
 /**
@@ -19,14 +20,14 @@ import { createMemoryLook, type MemoryLook } from './look-memory.js';
  * dashboard (`missing`), Reset armed (`armed`), the notice after a save (`saved`), a person wearing their own
  * look (`own`), the look on the whole of Home Assistant (`everywhere`, with the frame), a look tried on the whole
  * app with nothing changed (`trial`), a profile that chose the Fluvy theme (`themed`), edits on the other tabs
- * waiting to be saved (`edits`), the language menu open (`menu`), every template's dashboard created
- * (`dashboards`), a dashboard's Recreate row armed (`recreate`), this browser a wall panel (`wall`), three palettes
- * saved by the house (`palettes`), the wall dark with a veil on the mesh (`night`), a warning of the house's own saved
- * and a danger in its very colour waiting (`statuses`), the house's charts in the soft style with a gauge that moves
- * (`styled`: every fine row, its waves too), three sets of series colours kept by the house, the second worn
- * (`sets`), a new set being made with two colours too close, one too pale for a light card, which it wears deepened,
- * and two of the palette's, the first being picked (`editor`), the house's cards see-through at 80 % (`glass`). Several
- * join with commas.
+ * waiting to be saved (`edits`), the language menu open (`menu`), every template's dashboard created, the home's
+ * leaving out a water heater and the inverter's MPPT readings (`dashboards`), a dashboard's Recreate row armed
+ * (`recreate`), this browser a wall panel (`wall`), three palettes saved by the house (`palettes`), the wall dark
+ * with a veil on the mesh (`night`), a warning of the house's own saved and a danger in its very colour waiting
+ * (`statuses`), the house's charts in the soft style with a gauge that moves (`styled`: every fine row, its waves
+ * too), three sets of series colours kept by the house, the second worn (`sets`), a new set being made with two
+ * colours too close, one too pale for a light card, which it wears deepened, and two of the palette's, the first
+ * being picked (`editor`), the house's cards see-through at 80 % (`glass`). Several join with commas.
  */
 export type PanelState =
   | 'pending'
@@ -119,10 +120,27 @@ export function mountPanel(
   created.clear();
   if (has('dashboards')) {
     for (const dashboard of TEMPLATE_DASHBOARDS) created.set(dashboard.url_path, dashboard);
-    // the wall's "rooms shown" are the house's areas: the demo home's, on this page
+    configs.set('fluvy-auto', {
+      strategy: {
+        type: 'custom:fluvy-home',
+        exclude: ['water_heater.tank', 'sensor.inverter_mppt_*'],
+      },
+    });
+    // the wall's "rooms shown" are the house's areas: the demo home's, on this page; the water heater the home leaves
+    // out is the house's own, named
     hass = {
       ...hass,
       areas: Object.fromEntries(DEMO_AREAS.map((area) => [area.area_id, { ...area }])),
+      states: {
+        ...hass.states,
+        'water_heater.tank': {
+          entity_id: 'water_heater.tank',
+          state: 'eco',
+          attributes: { friendly_name: 'Water heater' },
+          last_changed: '2026-09-17T19:47:00Z',
+          last_updated: '2026-09-17T19:47:00Z',
+        } as HassEntity,
+      },
     } as HomeAssistant;
   }
   // two sensors that see a person, so the Screen card offers its wake-on-motion dropdown (a room as the hint)
@@ -198,6 +216,8 @@ export function mountPanel(
     panel.hass = { ...panel.hass, panels: panelsFor(states) } as HomeAssistant;
   };
   stage.classList.add('pg-panel');
+  // the Dashboards tab's entity picker is Home Assistant's
+  defineSelectorStub();
   stage.append(panel);
   // the moment asked for, once the panel has its settings
   setTimeout(() => {

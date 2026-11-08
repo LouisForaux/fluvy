@@ -373,8 +373,13 @@ export const panelStyles = css`
     background: #000; /* the wall's veil is black: a screen going dark, whatever the palette */
     pointer-events: none;
   }
-  .pn-hint + fluvy-select {
+  .pn-hint + fluvy-select,
+  .pn-hint + ha-selector {
     margin-top: 12px;
+  }
+  /* Home Assistant's own picker (what a dashboard leaves out) takes the card's width, as its own forms give it */
+  ha-selector {
+    display: block;
   }
   /* the wall's address: a value that wraps in a read-only box, its copy button under it — beside it where a
      panel is wide enough for both (the button keeps its content width) */

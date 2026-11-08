@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Listas longas",
     "dashboard.shortened": "Resumidas",
     "dashboard.in_full": "Completas",
+    "dashboard.exclude": "Entidades deixadas de fora",
+    "dashboard.exclude_sub": "Não aparecem em nenhuma visualização nem contam em lugar nenhum, como se a casa não as tivesse",
     "wall.subview": "Voltar de uma subvisualização",
     "wall.subview_sub": "Uma parede não tem cabeçalho: um botão com o nome da visualização, ou o cabeçalho do Home Assistant nas subvisualizações",
     "wall.subview_button": "Botão voltar",

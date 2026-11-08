@@ -230,10 +230,11 @@ export const itemHelpers: Labeler = (schema) =>
     : undefined);
 
 /**
- * `ha-form` and `ha-sortable` belong to Home Assistant's editors; when a card's editor opens before
- * they are defined, the entities card's editor (which uses both) pulls them in.
+ * `ha-form` and `ha-sortable` belong to Home Assistant's editors (its pickers with them); when a card's editor, or the
+ * settings panel's Dashboards tab, opens before they are defined, the entities card's editor (which uses both) pulls
+ * them in.
  */
-async function ensureEditorElements(): Promise<void> {
+export async function ensureEditorElements(): Promise<void> {
   if (customElements.get('ha-form') && customElements.get('ha-sortable')) return;
   try {
     const helpers = (await window.loadCardHelpers?.()) as

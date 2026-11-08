@@ -365,6 +365,15 @@ function answers(hass: Registries, entries: readonly string[]): (id: string) => 
     patterns.some((parts) => fits(parts, id));
 }
 
+/**
+ * Whether an entity answers a list as a room's `include` and `exclude` read theirs (`answers`), its words alone: what
+ * an automatic dashboard's `exclude` leaves out of every view (#141).
+ */
+export const inList = (
+  hass: Registries,
+  list: readonly unknown[] | undefined,
+): ((id: string) => boolean) => answers(hass, entriesOf(list));
+
 export function areaContents(
   hass: Registries,
   areaId: string,
@@ -373,7 +382,7 @@ export function areaContents(
   const shown = areaEntities(hass, areaId);
   const include = entriesOf(tuning.include);
   const included = answers(hass, include);
-  const excluded = answers(hass, entriesOf(tuning.exclude));
+  const excluded = inList(hass, tuning.exclude);
   // an entity or a device named whole comes from wherever it is (an entity even hidden: the room names it)
   const named = include.flatMap((entry) =>
     hass.states[entry]

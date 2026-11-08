@@ -1322,6 +1322,8 @@
     "dashboard.caps": "Uzun listeler",
     "dashboard.shortened": "Kısaltılmış",
     "dashboard.in_full": "Tam",
+    "dashboard.exclude": "Hariç tutulan varlıklar",
+    "dashboard.exclude_sub": "Hiçbir görünümde gösterilmez, hiçbir yerde sayılmaz; evde yokmuş gibi",
     "wall.subview": "Alt görünümden dönüş",
     "wall.subview_sub": "Duvarda başlık yok: görünümün adını taşıyan bir düğme ya da alt görünümlerde Home Assistant başlığı",
     "wall.subview_button": "Geri düğmesi",
