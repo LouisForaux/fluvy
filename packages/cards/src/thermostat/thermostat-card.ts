@@ -763,6 +763,22 @@ export class FluvyThermostatCard extends Card<ThermostatCardConfig> {
       .filter((o): o is OptionItem => o !== undefined);
   }
 
+  /**
+   * The fan speed's word. The three speeds every language already names are translated (the words live in the core
+   * catalogue's `fan` table, so every locale carries them); anything else the integrations send — "quiet", "auto", a
+   * vendor's own — keeps the word it sent, as before.
+   */
+  private fanWord(raw: string): string {
+    const known: Record<string, 'fan.low' | 'fan.mid' | 'fan.high'> = {
+      low: 'fan.low',
+      mid: 'fan.mid',
+      medium: 'fan.mid',
+      high: 'fan.high',
+    };
+    const message = known[raw.toLowerCase()];
+    return message ? this.t(message) : pretty(raw);
+  }
+
   private renderModes(view: EntityView, m: Model, modes: readonly OptionItem[]): TemplateResult {
     const style = this.config?.modes_style ?? 'tiles';
     const select = (key: string): void => this.setMode(view, m, key);
@@ -908,7 +924,7 @@ export class FluvyThermostatCard extends Card<ThermostatCardConfig> {
           ? html`${label(this.t('climate.fan'))}${chipRow(
               m.fans.map((f) => ({
                 key: f,
-                label: pretty(f),
+                label: this.fanWord(f),
                 active: f === m.fan,
                 unavailable: unusable,
               })),

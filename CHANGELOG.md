@@ -4,6 +4,7 @@ All notable changes to Fluvy are recorded here. The format follows [Keep a Chang
 and the versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+- Localize the standard fan speeds (low, mid, high) in the thermostat card.
 
 ## [1.17.0] — 2026-11-07
 
