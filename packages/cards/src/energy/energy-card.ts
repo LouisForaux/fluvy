@@ -24,6 +24,7 @@ import { axis, emptyState, head, readout, round, type Tone } from '@fluvy/ui';
 import { energyStyles } from '@fluvy/ui/styles/energy';
 import {
   AXIS_GAP,
+  bucket,
   chartKeysOf,
   chartStyles,
   drawRead,
@@ -91,6 +92,7 @@ import {
   liveTotals,
   powerBuckets,
   powered,
+  type MeanSeries,
 } from '../energy-model/power-day.js';
 import { measureIds, readPrefs, type EnergyPrefs, type PrefSource } from '../energy-model/prefs.js';
 import { KIND } from '../energy-model/sources.js';
@@ -215,9 +217,12 @@ export const STACK_CAPS: ChartCaps = {
 const gridOn = (choice: GridChoice | undefined): boolean =>
   choice !== false && choice !== 'none' && choice !== 'x';
 
-/** A range's length in ms (an open one's, until now). */
+/**
+ * A range's length in ms (an open one's, until now). Its end is the last millisecond it holds (a day's 23:59:59.999,
+ * as Home Assistant's pickers end it): a day is 24 hours, and the middle of its axis 12:00.
+ */
 const spanOf = (range: Range, now: Date): number =>
-  (range.end ?? now).getTime() - range.start.getTime();
+  (range.end ? range.end.getTime() + 1 : now.getTime()) - range.start.getTime();
 
 /** Whether a range holds the moment: its "right now" reading is of the range. */
 const holdsNow = (range: Range, now: Date): boolean =>
@@ -286,7 +291,8 @@ interface Frame {
 /** A chart line's key beside a readout's label (energy.css): 12 wide, 8 from the words. */
 const KEY = 20;
 const HEADROOM = 44; // the bubble's room: the chart rule in design/language.md
-const POINTS = 48; // a full window: one point per half hour of a day
+/** The history's means over a window, 288: five minutes each over a day; the curve draws at most one a pixel. */
+const FINE = 288;
 const REFRESH = 5 * 60_000; // how long the shared history cache keeps an answer
 const DAY_MINUTES = 24 * 60;
 const DAY_FROM = 3; // hours into the day from which "24 h" means the calendar day (40 px of curve in a 320 column)
@@ -340,7 +346,6 @@ interface ChartWindow {
   readonly day: boolean;
   /** Hours of history to ask for. */
   readonly hours: number;
-  readonly points: number;
   /** Fraction of the axis the series covers. */
   readonly extent: number;
   /** A date picker's range: the series is its means, and over more than a day the axis is its dates. */
@@ -453,7 +458,8 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     counted_: { state: true },
   };
 
-  declare series_: Series | null;
+  /** The line's readings: the history's means over its window, or a picker's range bucket by bucket (`step`). */
+  declare series_: (Series & Partial<Pick<MeanSeries, 'step'>>) | null;
   declare loaded_: boolean;
   /**
    * The `sources` and `overview` variants: today's buckets (from the power sensors' five-minute means when the Energy
@@ -642,7 +648,6 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
       return {
         day: fullDays(range.start, range.end ?? now) < 1,
         hours: span / 3_600_000,
-        points: POINTS,
         extent: clamp((now.getTime() - range.start.getTime()) / span, 0, 1),
         range,
       };
@@ -650,14 +655,12 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     const asked = clamp(Math.round(Number(this.config?.hours ?? 24)) || 24, 1, 168);
     const minutes = minutesIntoDay(this.hass, now);
     // the first hours of a day are a few pixels of curve blown up to full height: until there is a day to draw, the last 24 h roll
-    if (asked !== 24 || minutes < DAY_FROM * 60)
-      return { day: false, hours: asked, points: POINTS, extent: 1 };
+    if (asked !== 24 || minutes < DAY_FROM * 60) return { day: false, hours: asked, extent: 1 };
     // asked in five-minute steps, so cards opened within the same beat share one cached answer
     const hours = Math.floor(minutes / 5) / 12;
     return {
       day: true,
       hours,
-      points: clamp(Math.round(hours * 2), 2, POINTS),
       extent: clamp(minutes / DAY_MINUTES, 0, 1),
     };
   }
@@ -700,21 +703,25 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     }
     void this.loadCounted(hass);
     if (!id || !hass.states[id]) return;
-    const { hours, points, range } = this.chartWindow();
-    // a picker's range: the sensor's means over it, from the recorder's statistics
+    const { hours, range } = this.chartWindow();
+    const now = this.now();
+    const beat = Math.floor(now.getTime() / REFRESH);
+    // a picker's range: the sensor's means over it, from the recorder's statistics (again every five minutes while it
+    // holds now)
     const key = range
-      ? `${id}|${range.start.toISOString()}|${range.end?.toISOString() ?? ''}|${points}`
-      : `${id}|${hours}|${points}|${Math.floor(this.now().getTime() / REFRESH)}`;
+      ? `${id}|${range.start.toISOString()}|${range.end?.toISOString() ?? ''}|${holdsNow(range, now) ? beat : ''}`
+      : `${id}|${hours}|${beat}`;
     if (key === this.asked) return;
     this.asked = key;
     const series = await (range
-      ? fetchMeanSeries(hass, id, range, points)
-      : fetchHistory(hass, id, hours, points));
+      ? fetchMeanSeries(hass, id, range, now)
+      : fetchHistory(hass, id, hours, FINE));
     if (key !== this.asked) return; // a newer request owns the chart
     // read the other way round, the curve is too: its least is its greatest
     this.series_ =
       series && this.config?.invert
         ? {
+            ...series,
             values: series.values.map((v) => -v),
             min: -series.max,
             max: -series.min,
@@ -1284,7 +1291,25 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     return { cursor, parts: readoutParts(this.hass, view, point, this.config), time };
   }
 
+  /**
+   * The line as drawn and where it ends: at most a point a pixel of the curve, each the mean of the readings it
+   * stands for, ending on the reading now where it is live (history is up to five minutes old) — a picker's range
+   * at its last bucket's start, history at now.
+   */
+  private line(window: ChartWindow, live: number | null): { values: number[]; extent: number } {
+    const all = this.series_?.values ?? [];
+    const step = this.series_?.step;
+    const extent =
+      step && window.range
+        ? clamp(((all.length - 1) * step) / spanOf(window.range, this.now()), 0, 1)
+        : window.extent;
+    const values = bucket(all, Math.max(2, Math.round(this.contentWidth * extent)), 'mean');
+    if (live !== null && values.length) values[values.length - 1] = live;
+    return { values, extent };
+  }
+
   private renderChart(
+    values: readonly number[],
     extent: number,
     live: number | null,
     value: string,
@@ -1296,12 +1321,9 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     // a sensor that is not there has no history to wait for: the chart's room says so, not a shimmer
     if (!this.loaded_ && !missing)
       return html`<div class="ef-chart"><div class="fv-skeleton"></div></div>`;
-    const values = missing ? [] : [...(this.series_?.values ?? [])];
-    if (values.length < 2) {
+    if (missing || values.length < 2) {
       return html`<div class="ef-chart">${this.noHistory()}</div>`;
     }
-    // history is up to five minutes old; the curve ends on the reading the bubble quotes
-    if (live !== null) values[values.length - 1] = live;
     const spec = this.lineSpec(values, extent, at?.cursor);
     const thin = spec.style.preset === 'classic' && this.config?.line_width === 'thin';
     // the chart wears the card's tone: its curve is drawn in the same ink as the head; its bubble says what is read,
@@ -1384,9 +1406,11 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     // the line wears the tone of what it shows (the card's own, else what the Energy dashboard says its sensor is)
     const tone: Tone = off ? 'off' : toneOf(this.config, this.lineTone(view.id));
     const window = this.chartWindow();
-    const { day, hours, extent, range } = window;
+    const { day, hours, range } = window;
     // a picker on a past range: the reading now is not the range's, and the readout says the range's last value
     const live = view.status === 'ok' && this.live() ? this.signed(view) : null;
+    const line = this.line(window, live);
+    const extent = line.extent;
     const last = this.series_?.values[this.series_.values.length - 1];
     const parts =
       live === null && range && last !== undefined
@@ -1416,9 +1440,7 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
       trailing: 44,
       shorter: missing ? [stateWord(this.hass, view), ''] : [],
     });
-    const curveValues = [...(this.series_?.values ?? [])];
-    if (live !== null && curveValues.length) curveValues[curveValues.length - 1] = live;
-    const at = this.loaded_ ? this.scrubbed(curveValues, view, window) : null;
+    const at = this.loaded_ ? this.scrubbed(line.values, view, { ...window, extent }) : null;
     // the cost beside the reading, or under it where the two do not hold the column: measured on what the reading
     // says now and while the curve is read (a time), at the curve's widest figures, so reading it never moves the row;
     // with no curve (a sensor that is not there), at the widest a house says, as an unavailable one keeps its curve's
@@ -1443,6 +1465,7 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
       );
     // the chart, then its clock under the plot: after a style's scale where it draws one
     const chart = this.renderChart(
+      line.values,
       extent,
       live,
       parts.value,

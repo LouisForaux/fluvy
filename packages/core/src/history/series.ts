@@ -47,35 +47,52 @@ export function summarise(values: readonly number[]): Series | null {
   return { values, min, max, average: sum / values.length };
 }
 
-/** Time-weighted buckets: each output point is the last known value at the end of its bucket. */
+/**
+ * Readings as `count` evenly spaced points: each the mean of what was read across its slot, a reading holding until
+ * the next (the first back to the window's start), so a spike between two points is neither lost nor taken for its
+ * whole slot — or, `last`, the reading at each slot's end (a meter's).
+ */
 export function resample(
   points: readonly { t: number; v: number }[],
   start: number,
   end: number,
   count: number,
+  last = false,
 ): number[] {
   if (points.length === 0) return [];
   const out: number[] = [];
+  const step = (end - start) / count;
   let index = 0;
-  let last = points[0]!.v;
-  for (let i = 0; i < count; i++) {
-    const t = start + ((i + 1) / count) * (end - start);
-    while (index < points.length && points[index]!.t <= t) {
-      last = points[index]!.v;
-      index++;
+  let held = points[0]!.v;
+  for (let i = 1; i <= count; i++) {
+    const to = start + i * step;
+    let at = to - step;
+    let area = 0;
+    while (index < points.length && points[index]!.t <= to) {
+      const { t, v } = points[index++]!;
+      if (t > at) {
+        area += held * (t - at);
+        at = t;
+      }
+      held = v;
     }
-    out.push(last);
+    out.push(last ? held : (area + held * (to - at)) / step);
   }
   return out;
 }
 
+/**
+ * A sensor's history over the last `hours` as `count` points (`resample`: means, or a meter's readings, `last`), its
+ * extremes the window's own: a peak between two points is still the window's peak.
+ */
 export function fetchHistory(
   hass: HomeAssistant,
   entityId: string,
   hours = 24,
   count = 48,
+  last = false,
 ): Promise<Series | null> {
-  const key = `${entityId}|${hours}|${count}`;
+  const key = `${entityId}|${hours}|${count}|${last}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.promise;
   const end = new Date();
@@ -94,7 +111,9 @@ export function fetchHistory(
       const points = (result?.[entityId] ?? [])
         .map((row) => ({ t: row.lu * 1000, v: /\d/.test(row.s) ? Number(row.s) : NaN })) // `Number('')` is 0: an empty state is a hole, not a zero
         .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.v));
-      return summarise(resample(points, start.getTime(), end.getTime(), count));
+      const series = summarise(resample(points, start.getTime(), end.getTime(), count, last));
+      const read = summarise(points.map((p) => p.v));
+      return series && read && { ...series, min: read.min, max: read.max };
     })
     .catch(() => null);
   return remember(key, promise);

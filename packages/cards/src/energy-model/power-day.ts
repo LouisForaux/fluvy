@@ -1,4 +1,4 @@
-import type { EntityView, HomeAssistant, Series } from '@fluvy/core';
+import { summarise, type EntityView, type HomeAssistant, type Series } from '@fluvy/core';
 import type { Totals } from './allocate.js';
 import { fullDays, houseMidnight, type Range } from './period.js';
 import { measureIds, type PowerMeasure, type PrefSource } from './prefs.js';
@@ -183,29 +183,39 @@ export function bucketMinutes(rows: PowerRows): number {
   return 5;
 }
 
-const series = new Map<string, { at: number; promise: Promise<Series | null> }>();
+/** A sensor's means bucket by bucket, and a bucket's length (ms): the first value is the range's first bucket. */
+export interface MeanSeries extends Series {
+  readonly step: number;
+}
+
+const series = new Map<string, { at: number; promise: Promise<MeanSeries | null> }>();
 
 /**
- * A sensor's means over a range as a curve, the shape the recorder's history is read in (`fetchHistory`): five-minute
- * means over up to two days, hourly beyond, resampled to `count` points, kept five minutes. `null` when unreadable.
+ * A sensor's means over a range, every bucket as Home Assistant's history draws it — at its start, so 12:00 reads the
+ * bucket from 12:00 to 12:05: five-minute buckets over up to two days, hours beyond, up to the last one begun by `until`
+ * (the range's end, or now while it runs). A bucket the recorder has no mean for (not compiled yet, the sensor away)
+ * reads the last one before it. Kept five minutes; `null` when unreadable or empty.
  */
 export function fetchMeanSeries(
   hass: HomeAssistant,
   id: string,
   range: Range,
-  count: number,
-): Promise<Series | null> {
-  const end = range.end ?? new Date();
-  const key = `${id}|${range.start.toISOString()}|${range.end?.toISOString() ?? ''}|${count}`;
+  until: Date,
+): Promise<MeanSeries | null> {
+  const from = range.start.getTime();
+  const end = Math.min(range.end?.getTime() ?? Infinity, until.getTime());
+  const key = `${id}|${from}|${Math.floor(end / 300_000)}`;
   const hit = series.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.promise;
+  const hourly = fullDays(range.start, new Date(end)) >= 2;
+  const step = hourly ? 3_600_000 : 300_000;
   const promise = hass
     .callWS<Record<string, MeanRow[]>>({
       type: 'recorder/statistics_during_period',
       start_time: range.start.toISOString(),
-      end_time: end.toISOString(),
+      end_time: new Date(end).toISOString(),
       statistic_ids: [id],
-      period: fullDays(range.start, end) < 2 ? '5minute' : 'hour',
+      period: hourly ? 'hour' : '5minute',
       types: ['mean'],
     })
     .then((result) => {
@@ -213,25 +223,20 @@ export function fetchMeanSeries(
         (row) => row.mean !== null && row.mean !== undefined && Number.isFinite(Number(row.mean)),
       );
       if (!rows.length) return null;
-      // `count` points over the range, each the last mean known at its moment (as the history's curve is sampled)
-      const from = range.start.getTime();
-      const step = (end.getTime() - from) / count;
       const values: number[] = [];
       let index = 0;
-      let last = Number(rows[0]?.mean);
-      for (let i = 1; i <= count; i++) {
-        while (
-          index < rows.length &&
-          (rows[index]?.end ?? rows[index]?.start ?? 0) <= from + i * step
-        )
-          last = Number(rows[index++]?.mean);
-        values.push(last);
+      let mean = Number(rows[0]?.mean);
+      for (let t = from; t <= end; t += step) {
+        while (index < rows.length && (rows[index] as MeanRow).start <= t)
+          mean = Number(rows[index++]?.mean);
+        values.push(mean);
       }
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      return { values, min, max, average: values.reduce((sum, v) => sum + v, 0) / count };
+      const summary = summarise(values);
+      return summary && { ...summary, step };
     })
     .catch(() => null);
+  // a running range asks again every five minutes: what is older than that goes
+  for (const [k, v] of series) if (Date.now() - v.at >= TTL) series.delete(k);
   series.set(key, { at: Date.now(), promise });
   return promise;
 }

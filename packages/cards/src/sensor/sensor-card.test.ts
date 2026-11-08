@@ -13,7 +13,7 @@ const { TEMP, HUM } = fixtures.inputs;
 /** A day of an energy meter (kWh, counting up): what it gained each half hour, added up. */
 const METER = TEMP.reduce<number[]>((sums, v, i) => [...sums, (sums[i - 1] ?? 1000) + v / 40], []);
 
-/** A house whose recorder answers every window with the readings, one in the middle of each of its 48 slots. */
+/** A house whose recorder answers every window with the readings, one at the start of each of its 48 slots. */
 const house = (): HomeAssistant => {
   const readings: Record<string, readonly number[]> = {
     'sensor.temp': TEMP,
@@ -60,7 +60,7 @@ const house = (): HomeAssistant => {
       return {
         [id]: values.map((v, i) => ({
           s: String(v),
-          lu: (start + ((i + 0.5) / 48) * (end - start)) / 1000,
+          lu: (start + (i / 48) * (end - start)) / 1000,
         })),
       };
     },

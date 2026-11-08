@@ -9,13 +9,29 @@ import {
 } from '../history/series.js';
 
 describe('history', () => {
-  it('resamples to evenly spaced points holding the last known value', () => {
+  it('resamples to evenly spaced points, each the mean of what held across its slot', () => {
     const points = [
       { t: 0, v: 1 },
       { t: 50, v: 3 },
       { t: 90, v: 7 },
     ];
-    expect(resample(points, 0, 100, 4)).toEqual([1, 3, 3, 7]);
+    // the last slot held 3 for 15 and 7 for 10
+    expect(resample(points, 0, 100, 4)).toEqual([1, 1, 3, 4.6]);
+    // a spike between two points is neither lost nor taken for its whole slot
+    const spike = [
+      { t: 0, v: 0 },
+      { t: 10, v: 10 },
+      { t: 15, v: 0 },
+    ];
+    expect(resample(spike, 0, 100, 4)).toEqual([2, 0, 0, 0]);
+  });
+  it('reads a meter at each slot’s end, never a mean', () => {
+    const points = [
+      { t: 0, v: 1 },
+      { t: 50, v: 3 },
+      { t: 90, v: 7 },
+    ];
+    expect(resample(points, 0, 100, 4, true)).toEqual([1, 3, 3, 7]);
   });
   it('returns nothing for an empty series and summarises the rest', () => {
     expect(resample([], 0, 100, 4)).toEqual([]);
@@ -71,6 +87,14 @@ describe('history cache', () => {
       rows(['', 'unavailable', '4', 'unknown', '2'])) as unknown as HomeAssistant['callWS']);
     const series = await fetchHistory(hass, 'sensor.t', 24, 2);
     expect(series).toMatchObject({ min: 2, max: 4 });
+  });
+
+  it('says the window’s own extremes: a peak between two points is still its peak', async () => {
+    const hass = hassWith((async () =>
+      rows([1, 1, 1, 9, 1, 1, 1, 1])) as unknown as HomeAssistant['callWS']);
+    const series = await fetchHistory(hass, 'sensor.t', 24, 2);
+    expect(series?.max).toBe(9);
+    expect(Math.max(...(series?.values ?? []))).toBeLessThan(9);
   });
 
   it('keeps statistics and history apart even for the same entity', async () => {

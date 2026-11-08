@@ -291,6 +291,53 @@ describe('a follower’s figures in the unit and decimals asked', () => {
     expect(text(card)).not.toMatch(/0\.50\s?kW/);
   });
 
+  it('the energy card over a past cloudy day draws every five minutes and reads Home Assistant’s 12:00 at noon (#138)', async () => {
+    const day = picker(true);
+    const midnight = day.start.getTime();
+    // an array's five-minute means (kW): a hill clouds cut into, 2.61 at 12:00 between two dips, its peak 2.94 at 11:35
+    const means = Array.from({ length: 288 }, (_unused, i) => {
+      const sun = Math.max(0, Math.sin(((i - 84) / 120) * Math.PI)) * 1.6;
+      return i === 139 ? 2.94 : i === 144 ? 2.61 : i % 7 === 3 ? sun * 0.3 : sun;
+    });
+    const hass = {
+      ...hassWith(day),
+      states: {
+        'sensor.pv': {
+          entity_id: 'sensor.pv',
+          state: '0',
+          attributes: { unit_of_measurement: 'kW', device_class: 'power' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      callWS: async (message: Record<string, unknown>) =>
+        message['type'] === 'recorder/statistics_during_period'
+          ? {
+              'sensor.pv': means.map((mean, i) => ({
+                start: midnight + i * 300_000,
+                end: midnight + (i + 1) * 300_000,
+                mean,
+              })),
+            }
+          : {},
+    } as unknown as HomeAssistant;
+    const card = await mount(
+      'fluvy-energy-card',
+      { entity: 'sensor.pv', collection_key: 'energy_t', chart: 'classic', decimals: 2 },
+      hass,
+    );
+    const line = card.shadowRoot?.querySelector('.ef-chart .curve-line')?.getAttribute('d') ?? '';
+    expect(line.split(' C')).toHaveLength(288);
+    // read at the middle of the day's axis: Home Assistant's 12:00, the bucket from 12:00 to 12:05
+    (card as unknown as { scrubber: { set(value: number): void } }).scrubber.set(0.5);
+    await card.updateComplete;
+    const readout = card.shadowRoot?.querySelector('.ef-top .fv-readout');
+    expect(readout?.querySelector('.fv-readout__label')?.textContent?.trim()).toBe('12:00');
+    expect(readout?.querySelector('.fv-readout__value')?.textContent?.replace(/\s+/g, ' ')).toMatch(
+      /2\.61\s?kW/,
+    );
+  });
+
   it('the energy and production cards offer the pickers and the sensor’s own units in one choice', async () => {
     const hass = hassWith(picker());
     for (const tag of ['fluvy-energy-card', 'fluvy-production-card']) {

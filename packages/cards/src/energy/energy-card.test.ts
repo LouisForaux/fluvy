@@ -87,7 +87,7 @@ const settle = async (card: FluvyEnergyCard): Promise<void> => {
   }
 };
 
-/** A card over a rolling window (six hours: the series spans the card), so its chart is the fixtures' frame. */
+/** A card over a rolling window (six hours: the series spans the card). */
 async function mount(
   config: Partial<EnergyCardConfig>,
   hass: HomeAssistant = house(),
@@ -115,14 +115,21 @@ const ds = (card: FluvyEnergyCard, selector: string): string[] =>
 
 afterEach(() => document.body.replaceChildren());
 
+/** The points a line's path goes through: its start and the end of each of its curves. */
+const pointsOf = (d: string): number => d.split(' C').length;
+
 describe('the energy card’s line, drawn by the engine', () => {
-  it('draws classic as 1.10 did, path for path, while the house keeps its factory style', async () => {
-    // the fixtures' sensor curve: its shape is the power's, a hundred times over (a tight scale reads no unit)
+  it('draws the classic curve (1.10’s geometry, `classic.test.ts`) through a point a pixel at most', async () => {
+    // a 320 column: the window's 288 means, every one
     const card = await mount({});
-    const line = ds(card, '.ef-chart .curve-line');
-    expect(line).toEqual([fixtures.curveGeometry.sensor.line]);
-    expect(ds(card, '.ef-chart .curve-area')).toEqual([fixtures.curveGeometry.sensor.area]);
+    const [line] = ds(card, '.ef-chart .curve-line');
+    expect(pointsOf(line ?? '')).toBe(288);
+    expect(ds(card, '.ef-chart .curve-area')).toHaveLength(1);
     expect(card.shadowRoot!.querySelectorAll('.ef-chart .curve-dot').length).toBe(1);
+    // a 112 column: one point a pixel, each the mean of the means it stands for
+    card.width = 152;
+    await settle(card);
+    expect(pointsOf(ds(card, '.ef-chart .curve-line')[0] ?? '')).toBe(112);
   });
 
   it('keeps a classic thin line at 1.10’s one pixel, the card’s own rule', async () => {

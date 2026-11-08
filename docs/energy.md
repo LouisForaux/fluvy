@@ -172,6 +172,11 @@ show_compare: true              # Compare: the period before beside the span, on
   it from the Energy dashboard's settings, never from a reading, so a curve keeps its colour whatever it says; every
   one is a colour of your palette. It draws one curve: several on one card are the Chart card's, in the house's
   series colours (fluvy's settings → Charts).
+  The curve is its sensor's own. Following a date picker it is the recorder's five-minute means (hours over more than
+  two days), each where Home Assistant's history draws it, so 12:00 reads the five minutes from 12:00 and a cloudy
+  day keeps its peaks; without one, its history in 288 points, each the mean of what the sensor read across it. A
+  column with fewer pixels than that draws a point a pixel, each the mean of the ones it stands for: nothing is
+  skipped.
   A meter that reads negative while it imports takes `invert: true`: "Right now" reads 1.4 kW, not −1.4 kW, and the
   curve stands above the line. A total under the chart shows its sensor's state, and a meter that keeps counting (a
   lifetime meter, `total_increasing`) has counted everything since it was fitted: "12.5 MWh" under a day's curve.

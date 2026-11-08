@@ -160,6 +160,9 @@ const charted = (view: EntityView): boolean =>
     ? view.number !== null
     : view.status === 'missing' || Boolean(view.unit || view.attr('state_class'));
 
+/** A meter's history is its readings (a bar is what it gained between two); any other sensor's, the means it read. */
+const meter = (view: EntityView): boolean => /^total/.test(String(view.attr('state_class')));
+
 /** The largest readout size a text state fits in: a word is a value too, and a value never ellipsizes. */
 function sizeFor(
   text: string,
@@ -470,7 +473,7 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
     this.loadExtras(hass, hours);
     const previous = this.history.request(
       `${view.id}|${hours}`,
-      () => fetchHistory(hass, view.id, hours, POINTS),
+      () => fetchHistory(hass, view.id, hours, POINTS, meter(view)),
       (series) => {
         this.drawn = hours;
         this.series_ = series;
@@ -494,7 +497,7 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
       this.extraHistory.set(id, refresher);
       refresher.request(
         `${id}|${hours}`,
-        () => fetchHistory(hass, id, hours, POINTS),
+        () => fetchHistory(hass, id, hours, POINTS, meter(this.entity(id))),
         (series) => {
           this.extras_ = { ...this.extras_, [id]: series };
         },

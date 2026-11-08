@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { EntityView } from '@fluvy/core';
-import { liveTotals, powerBuckets, powered } from './power-day.js';
+import type { EntityView, HomeAssistant } from '@fluvy/core';
+import { bucket } from '../chart/engine/model.js';
+import { fetchMeanSeries, liveTotals, powerBuckets, powered } from './power-day.js';
 import type { PrefSource } from './prefs.js';
 
 const source = (kind: PrefSource['kind'], measure: PrefSource['measure']): PrefSource => ({
@@ -73,6 +74,71 @@ describe('the day from the power sensors', () => {
     expect(powered([source('grid', { power: ['sensor.g'] }), source('solar', null)])).toBe(false);
     expect(powered([source('grid', { power: ['sensor.g'] })])).toBe(true);
     expect(powered([])).toBe(false);
+  });
+});
+
+describe('a sensor’s means over a picker’s range', () => {
+  const MIDNIGHT = Date.parse('2026-11-07T00:00:00Z');
+  const FIVE = 300_000;
+  /**
+   * A cloudy day of an array's five-minute means (kW): a hill from 07:00 to 17:00 that clouds cut into, 2.61 at
+   * 12:00 between two dips, its peak 2.94 at 11:35.
+   */
+  const CLOUDY = Array.from({ length: 288 }, (_unused, i) => {
+    const sun = Math.max(0, Math.sin(((i - 84) / 120) * Math.PI)) * 1.6;
+    return i === 139 ? 2.94 : i === 144 ? 2.61 : i % 7 === 3 ? sun * 0.3 : sun;
+  });
+  const house = (means: readonly number[], asked: Record<string, unknown>[] = []) =>
+    ({
+      callWS: async (message: Record<string, unknown>) => {
+        asked.push(message);
+        const from = Date.parse(String(message['start_time']));
+        const to = Date.parse(String(message['end_time']));
+        return {
+          'sensor.pv': means
+            .map((mean, i) => ({
+              start: MIDNIGHT + i * FIVE,
+              end: MIDNIGHT + (i + 1) * FIVE,
+              mean,
+            }))
+            .filter((row) => row.start >= from && row.end <= to + 1),
+        };
+      },
+    }) as unknown as HomeAssistant;
+  const day = { start: new Date(MIDNIGHT), end: new Date(MIDNIGHT + 86_400_000 - 1) };
+
+  it('keeps every bucket, each at its start: 12:00 reads the bucket from 12:00, the peak is whole', async () => {
+    const series = await fetchMeanSeries(
+      house(CLOUDY),
+      'sensor.pv',
+      day,
+      new Date(MIDNIGHT + 2 * 86_400_000),
+    );
+    expect(series?.values).toHaveLength(288);
+    expect(series?.step).toBe(FIVE);
+    expect(series?.values[144]).toBe(2.61);
+    expect(series?.max).toBe(Math.max(...CLOUDY));
+    // the old curve: 48 points, each the last mean known at its half hour — the noon spike and the peak are gone
+    const sampled = Array.from({ length: 48 }, (_unused, i) => CLOUDY[i * 6 + 5] as number);
+    expect(Math.max(...sampled)).toBeLessThan(2);
+  });
+
+  it('draws fewer points as the mean of the buckets each stands for, never a sample of them', () => {
+    const drawn = bucket(CLOUDY, 96, 'mean');
+    expect(drawn[48]).toBeCloseTo(((CLOUDY[144] as number) + CLOUDY[145]! + CLOUDY[146]!) / 3, 9);
+    const sum = (values: readonly number[]) => values.reduce((a, b) => a + b, 0);
+    // a mean keeps the day's energy: the area under the curve is the same
+    expect(sum(drawn) * 3).toBeCloseTo(sum(CLOUDY), 9);
+  });
+
+  it('runs to the last bucket begun while the range holds now, one not compiled yet reading the one before', async () => {
+    const asked: Record<string, unknown>[] = [];
+    // 14:03, the 14:00 bucket not compiled
+    const now = new Date(MIDNIGHT + (14 * 60 + 3) * 60_000);
+    const series = await fetchMeanSeries(house(CLOUDY.slice(0, 168), asked), 'sensor.pv', day, now);
+    expect(asked[0]?.['end_time']).toBe(now.toISOString());
+    expect(series?.values).toHaveLength(169);
+    expect(series?.values[168]).toBe(CLOUDY[167]);
   });
 });
 

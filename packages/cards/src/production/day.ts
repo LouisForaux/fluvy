@@ -84,7 +84,8 @@ async function fromHistory(
   const midnight = houseMidnight(hass, now).getTime();
   const elapsed = Math.max(BUCKET, now.getTime() - midnight);
   const count = Math.max(1, Math.round(elapsed / BUCKET));
-  const series = await fetchHistory(hass, entityId, elapsed / HOUR, count);
+  // a meter's reading at each step's end, never a mean: an hour is what it gained between two readings
+  const series = await fetchHistory(hass, entityId, elapsed / HOUR, count, true);
   if (!series || series.values.length === 0) return null;
   const values = series.values;
   const step = elapsed / count;

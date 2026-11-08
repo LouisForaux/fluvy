@@ -67,7 +67,7 @@ export function fetchChargeDay(
   return promise;
 }
 
-/** A sensor the recorder keeps no statistics for (no `state_class`): its history, one reading per five minutes. */
+/** A sensor the recorder keeps no statistics for (no `state_class`): its history, one mean per five minutes. */
 async function fromHistory(
   hass: HomeAssistant,
   id: string,
@@ -78,8 +78,8 @@ async function fromHistory(
   const count = Math.max(2, Math.floor(span / STEP));
   const series = await fetchHistory(hass, id, span / 3_600_000, count);
   const values = series?.values ?? [];
-  // each value is the level at the end of its own five minutes
-  return values.map((level, i) => [start + ((i + 1) / values.length) * span, level] as const);
+  // each value is the level's mean over its own five minutes, at their middle as a statistic's is
+  return values.map((level, i) => [start + ((i + 0.5) / values.length) * span, level] as const);
 }
 
 /**

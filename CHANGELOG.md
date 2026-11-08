@@ -10,6 +10,10 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 - The Thermostat card's fan speeds and presets, the Fan card's presets and the Vacuum card's suction speak a page in
   another language than English in Home Assistant's own words for them, as its own cards do ("Niedrig", "Ventilation
   naturelle", "Équilibré"), where they said the word the integration sent ("Low", "Natural wind", "Balanced").
+- The Energy card's curve shows its sensor's every five minutes, so a cloudy day is as jagged as in Home Assistant's
+  history where it was a smooth hill.
+- The Sensor card's curve is the mean of each half hour, and its Min and Max the window's own extremes, where both
+  were the sensor's readings at 48 moments of the day.
 
 ### Added
 
@@ -27,6 +31,13 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   language read them as the integration sent them; the Fan card's presets and the Vacuum card's suction say Home
   Assistant's words too. Where a person chose a language of their own for Fluvy, Fluvy's words come first, Home
   Assistant's being the page's language. Thanks to @waphbs, who brought the standard speeds to every language (#142).
+- The Energy card drew one in six of its sensor's five-minute means, each half an hour late, so on a cloudy day it
+  read 1.27 kW at 12:00 on a smooth hill where Home Assistant's history read 2.61 kW: it draws every bucket where Home
+  Assistant does now, and where the column is narrower each point is the mean of the ones it stands for (#138).
+- The Energy card following a date picker on today squeezed the whole day into the hours so far, and drew nothing new
+  until the range changed.
+- The Sensor, Readouts, Humidity and Gauge cards read a sensor's history at one moment of each step, so a peak between
+  two steps was lost and a short one taken for the whole step: each point is the step's mean now.
 
 ## [1.17.0] — 2026-11-07
 

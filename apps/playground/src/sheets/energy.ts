@@ -39,6 +39,88 @@ export class TwelveHour extends HTMLElement implements LovelaceCard {
 }
 if (!customElements.get('pg-twelve-hour')) customElements.define('pg-twelve-hour', TwelveHour);
 
+const FIVE = 300_000;
+/** A pseudo-random fraction of an index, the same on every page. */
+const noise = (i: number): number => (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1;
+
+/**
+ * A cloudy day of an array's power (#138), as Home Assistant keeps it: its five-minute means (kW) — a hill from 07:00
+ * to 17:00 that clouds cut into, 2.61 at 12:00 between two dips, its peak 2.94 at 11:35.
+ */
+const CLOUDY = Array.from({ length: 288 }, (_, i) => {
+  if (i === 139) return 2.94;
+  if (i === 144) return 2.61;
+  const sun = Math.max(0, Math.sin(((i - 84) / 120) * Math.PI)) ** 1.5 * 2.3;
+  const sky = noise(i);
+  // a cloud's shade, or the bright edge of one
+  return Math.round(sun * (sky > 0.85 ? 1.15 : 0.3 + 0.6 * sky) * 100) / 100;
+});
+
+/** Where an instant falls on the cloudy day: its five-minute bucket of the page's day. */
+const bucketOf = (t: number): number => Math.floor((t - new Date(t).setHours(0, 0, 0, 0)) / FIVE);
+
+/** The minutes inside a bucket: around its mean, which they average to (the history the recorder means). */
+const minuteOf = (t: number): number => {
+  const mean = CLOUDY[bucketOf(t)] ?? 0;
+  const k = Math.floor(t / 60_000) % 5;
+  return Math.max(0, mean * (1 + [0.25, -0.25, 0.12, -0.12, 0][k]!));
+};
+
+/**
+ * Home Assistant's own line of the cloudy day: its five-minute means, each at its start, under a plain polyline — what
+ * the energy card above it must draw (the same peaks, 12:00 the bucket from 12:00).
+ */
+class MeansLine extends HTMLElement implements LovelaceCard {
+  setConfig(): void {
+    const w = 320;
+    const h = 120;
+    const top = Math.max(...CLOUDY);
+    const at = (i: number): string =>
+      `${((i / 288) * w).toFixed(1)},${(h - ((CLOUDY[i] ?? 0) / top) * (h - 8)).toFixed(1)}`;
+    this.style.cssText = 'display:block;padding:12px 20px;font:500 11px system-ui;color:#888';
+    this.innerHTML = `<div>Home Assistant · 12:00 ${CLOUDY[144]} kW · peak ${top} kW</div>
+      <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="display:block">
+        <line x1="${w / 2}" x2="${w / 2}" y1="0" y2="${h}" stroke="#bbb" stroke-dasharray="2 3" />
+        <polyline fill="none" stroke="#7a9a2a" stroke-width="1" vector-effect="non-scaling-stroke"
+          points="${CLOUDY.map((_, i) => at(i)).join(' ')}" />
+      </svg>`;
+  }
+
+  getCardSize(): number {
+    return 3;
+  }
+
+  set hass(_hass: HomeAssistant) {}
+}
+if (!customElements.get('pg-means-line')) customElements.define('pg-means-line', MeansLine);
+
+/** The cloudy array as the recorder answers for it: its statistics' buckets compiled so far, its minutes' history. */
+const cloudyWs = {
+  'recorder/statistics_during_period': (message: Record<string, unknown>) => {
+    const ids = message['statistic_ids'] as readonly string[];
+    if (!ids.includes('sensor.ef_cloudy_pv')) return undefined;
+    const from = Math.floor(Date.parse(String(message['start_time'])) / FIVE) * FIVE;
+    const to = Math.min(
+      Date.parse(String(message['end_time'] ?? new Date().toISOString())),
+      Date.now(),
+    );
+    const rows = [];
+    for (let start = from; start + FIVE <= to; start += FIVE)
+      rows.push({ start, end: start + FIVE, mean: CLOUDY[bucketOf(start)] });
+    return { 'sensor.ef_cloudy_pv': rows };
+  },
+  'history/history_during_period': (message: Record<string, unknown>) => {
+    const ids = message['entity_ids'] as readonly string[];
+    if (!ids.includes('sensor.ef_cloudy_pv')) return undefined;
+    const from = Math.floor(Date.parse(String(message['start_time'])) / 60_000) * 60_000;
+    const to = Date.parse(String(message['end_time']));
+    const states = [];
+    for (let t = from; t <= to; t += 60_000)
+      states.push({ s: minuteOf(t).toFixed(3), lu: Math.max(t, from) / 1000 });
+    return { 'sensor.ef_cloudy_pv': states };
+  },
+};
+
 type Attributes = Record<string, unknown>;
 const power = (name: string, unit: 'W' | 'kW' = 'W'): Attributes => ({
   friendly_name: name,
@@ -144,6 +226,9 @@ export const sheet: SheetSpec = {
       { friendly_name: 'Kitchen tap', unit_of_measurement: 'L', device_class: 'water' },
     ],
 
+    /* the cloudy day's array (#138), asleep now */
+    ['sensor.ef_cloudy_pv', '0.00', power('Solar production', 'kW')],
+
     /* hard states */
     ['sensor.ef_quiet_power', '1200', power('Utility room power')], // no history at all
     ['sensor.ef_dead_power', 'unavailable', power('House power')],
@@ -172,12 +257,16 @@ export const sheet: SheetSpec = {
 
   statistics: { 'sensor.ef_grid_meter': { kind: 'counter', hourly: GRID_METER } },
 
+  /** The picker the cloudy day's card follows: today, unless the page says `?period=`. */
+  collections: ['energy_cloudy'],
+
   /**
    * The flat's Energy dashboard: its grid (the power and the lifetime meter), a second connection whose meter reads
    * negative while it imports, the sun, and the heat pump among the individual devices — what an energy card's line
    * reads as the grid's, the sun's or the house's.
    */
   ws: {
+    ...cloudyWs,
     'energy/get_prefs': () => ({
       energy_sources: [
         {
@@ -479,6 +568,38 @@ export const sheet: SheetSpec = {
           ],
         },
       ],
+    },
+    // #138: a cloudy day, every five minutes where Home Assistant puts it — following a picker (its statistics), and
+    // not (its history) — each over Home Assistant's own line of the same means
+    {
+      title: 'A cloudy day · following a picker',
+      cards: [
+        {
+          type: 'custom:fluvy-energy-card',
+          entity: 'sensor.ef_cloudy_pv',
+          collection_key: 'energy_cloudy',
+          tone: 'solar',
+          decimals: 2,
+        },
+        { type: 'pg-means-line' },
+      ],
+    },
+    {
+      title: 'A cloudy day · its history',
+      cards: [
+        {
+          type: 'custom:fluvy-energy-card',
+          entity: 'sensor.ef_cloudy_pv',
+          tone: 'solar',
+          decimals: 2,
+        },
+        { type: 'pg-means-line' },
+      ],
+    },
+    // the sensor card on the same history: each half hour's mean, its Min and Max the day's own
+    {
+      title: 'A cloudy day · the sensor card',
+      cards: [{ type: 'custom:fluvy-sensor-card', entity: 'sensor.ef_cloudy_pv' }],
     },
     // the compact chart at its own size: half a section
     {
