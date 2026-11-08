@@ -88,10 +88,11 @@ export function fanHeight(
     (config.show_oscillation !== false && features & OSCILLATE ? 1 : 0) +
     (config.show_direction !== false && features & DIRECTION ? 1 : 0);
   const shown = config.show_presets === false || !(features & PRESET_MODE) ? [] : presets;
+  const style = config.preset_style;
   return (
     228 +
     (rows ? 16 + ROW * rows : 0) +
-    chipBlock(chipRows(shown.map(pretty), config.preset_style === 'chips' ? 'chips' : 'full'))
+    chipBlock(chipRows(shown.map(pretty), style === 'chips' ? 'chips' : 'full'), style)
   );
 }
 

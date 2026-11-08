@@ -7,7 +7,7 @@ import { appliancesHeight } from '../appliances-family.js';
 import { alertsHeight } from '../alerts-family.js';
 import { houseHeightOf } from '../house-heights.js';
 import { familiesDefined } from '../index.js';
-import { chipRows, optionRows, statsRows, textWidth } from './heights.js';
+import { chipBlock, chipRows, optionRows, statsRows, textWidth } from './heights.js';
 
 // the cards declare their heights from their configs as they register; the families' chunks land before the tests go
 beforeAll(() => familiesDefined);
@@ -77,6 +77,11 @@ describe('words, letter by letter', () => {
         'chips',
       ),
     ).toBeGreaterThan(3);
+    // a filled row's rows touch; content-sized chips that wrap are 8 apart, as the row's gap sets them
+    expect(chipBlock(2)).toBe(36 + 8 + 2 * 44);
+    expect(chipBlock(2, 'chips')).toBe(36 + 8 + 2 * 44 + 8);
+    expect(chipBlock(1, 'chips')).toBe(chipBlock(1));
+    expect(chipBlock(0, 'chips')).toBe(0);
   });
 
   it('lays option tiles out as the rows draw: three a row, two where a word is long, four as two by two', () => {

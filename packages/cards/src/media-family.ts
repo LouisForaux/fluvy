@@ -44,7 +44,7 @@ export function mediaHeight(config: LovelaceCardConfig, sources: readonly string
   if (config['variant'] === 'mini') return 76;
   const shown = config['show_source'] === false ? [] : sources.slice(0, MAX_SOURCES);
   const style = config['source_style'] === 'chips' ? 'chips' : 'full';
-  return (config['show_volume'] === false ? 264 : 352) + chipBlock(chipRows(shown, style));
+  return (config['show_volume'] === false ? 264 : 352) + chipBlock(chipRows(shown, style), style);
 }
 
 /**

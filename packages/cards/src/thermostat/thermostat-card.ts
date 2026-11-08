@@ -217,16 +217,17 @@ export function thermostatHeight(
       ? offers.modes
       : offers.modes.slice(0, SHOWN);
   const words = shown.map((m) => pretty(m.replace('_', '/')));
+  const chips = (items: readonly string[], style: string | undefined): number =>
+    chipBlock(chipRows(items, style === 'chips' ? 'chips' : 'full'), style);
   const modes =
     config.show_modes === false || !shown.length
       ? 0
       : (config.modes_style ?? 'tiles') === 'tiles'
         ? optionBlock(optionRows(words))
-        : chipBlock(chipRows(words, config.modes_style === 'chips' ? 'chips' : 'full'));
-  const chips = (items: readonly string[], style: RowStyle | undefined): number =>
-    chipBlock(chipRows(items.map(pretty), style === 'chips' ? 'chips' : 'full'));
-  const presets = config.show_presets === false ? 0 : chips(offers.presets, config.preset_style);
-  const fans = config.show_fan === false ? 0 : chips(offers.fans, config.fan_style);
+        : chips(words, config.modes_style);
+  const presets =
+    config.show_presets === false ? 0 : chips(offers.presets.map(pretty), config.preset_style);
+  const fans = config.show_fan === false ? 0 : chips(offers.fans.map(pretty), config.fan_style);
   return height + modes + presets + fans;
 }
 

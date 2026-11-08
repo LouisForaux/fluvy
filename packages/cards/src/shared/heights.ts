@@ -156,8 +156,12 @@ export function chipRows(
   return rowsOf(count, Math.max(1, columns));
 }
 
-/** A row of chips under its label: 16 above, the 20 label, 8, then its rows of 44 (the grid’s rows touch). */
-export const chipBlock = (rows: number): number => (rows ? 36 + 8 + rows * 44 : 0);
+/**
+ * A row of chips under its label: 16 above, the 20 label, 8, then its rows of 44 — a filled row's touch (the grid's),
+ * content-sized chips (`chips`) that wrap are 8 apart (the row's gap).
+ */
+export const chipBlock = (rows: number, style?: string): number =>
+  rows ? 36 + 8 + rows * 44 + (style === 'chips' ? (rows - 1) * CHIP_GAP : 0) : 0;
 
 /**
  * The rows a set of option tiles takes at `width`, `gap` apart: as many columns as the count suggests

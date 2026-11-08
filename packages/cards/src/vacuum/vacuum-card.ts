@@ -136,7 +136,7 @@ export function vacuumHeight(config: VacuumCardConfig, does?: RobotDoes): number
     has('start') || has('pause') || has('stop') || has('dock') || has('locate') ? 60 : 0;
   const style = config.suction_style === 'chips' ? 'chips' : 'full';
   const suction = has('suction')
-    ? chipBlock(does ? chipRows(does.speeds.map(pretty), style) : 2)
+    ? chipBlock(does ? chipRows(does.speeds.map(pretty), style) : 2, style)
     : 0;
   return 64 + readouts + battery + commands + suction + 20;
 }
