@@ -1,4 +1,4 @@
-import { strings, type HomeAssistant, type LovelaceConfigForm } from '@fluvy/core';
+import { chartDefaults, strings, type HomeAssistant, type LovelaceConfigForm } from '@fluvy/core';
 import type { BaseKey } from '../shared/base.js';
 import type { ChartCaps } from '../shared/chart-config.js';
 import { chartEngine } from '../shared/chart-load.js';
@@ -33,17 +33,18 @@ import type { SensorCardConfig } from './sensor-card.js';
 const s = strings('sensor');
 
 /**
- * What the sensor's chart can draw: a rolling window that ends at now (no now of its own, no forecast), a scale, and
- * bars where it is alone and its readings add up (several sensors each keep their own scale: lines only).
- * `CHART_CAPS` is all of it, what the editor's keys are drawn from; `capsIn` what a config (and its sensor) allows.
+ * What the sensor's chart can draw: a rolling window that ends at now (no now of its own, no forecast), its line
+ * through it, a scale, and bars where it is alone and its readings add up (several sensors each keep their own scale:
+ * lines only). `CHART_CAPS` is all of it, what the editor's keys are drawn from; `capsIn` what a config (and its
+ * sensor) allows.
  */
-const CHART_CAPS: ChartCaps = { bars: true, axis: true };
+const CHART_CAPS: ChartCaps = { bars: true, axis: true, time: true };
 
 const severalIn = (data: Readonly<Record<string, unknown>>): boolean =>
   normaliseExtras(data['entities']).length > 0;
 
 const capsIn = (data: Readonly<Record<string, unknown>>, hass?: HomeAssistant): ChartCaps => {
-  if (severalIn(data)) return { axis: true, several: true };
+  if (severalIn(data)) return { axis: true, several: true, time: true };
   // whether its readings add up is the engine's to say: it lands with the bundle, long before an editor opens
   const attributes = hass?.states[String(data['entity'] ?? '')]?.attributes ?? {};
   const readings = chartEngine()?.readingsOf(
@@ -51,7 +52,7 @@ const capsIn = (data: Readonly<Record<string, unknown>>, hass?: HomeAssistant): 
     attributes['state_class'],
     attributes['unit_of_measurement'],
   );
-  return { axis: true, bars: readings?.bars ?? false };
+  return { axis: true, bars: readings?.bars ?? false, time: true };
 };
 
 /** The card's own sensor and, in `entities`, up to two more drawn beside it. */
@@ -88,6 +89,7 @@ export const keys = configKeys<SensorCardConfig>()([
   'show_axis',
   'highlight',
   'animate',
+  'points',
 ]);
 
 export const lists: readonly RowsListSpec[] = [
@@ -109,6 +111,7 @@ export const lists: readonly RowsListSpec[] = [
 /** What the editor shows where the config says nothing: what the card does then. */
 export const defaults: EditorDefaults = (config, hass) => ({
   variant: 'chart',
+  hours: chartDefaults().settings.window,
   show_stats: true,
   ...NUMBER_DEFAULTS,
   ...chartEngine()?.chartDefaultsFor(config, capsIn(config, hass)),

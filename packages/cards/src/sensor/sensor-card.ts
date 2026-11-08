@@ -1,4 +1,5 @@
 import {
+  chartDefaults,
   digitsOf,
   fetchHistory,
   formatDate,
@@ -45,7 +46,7 @@ import { HeadFit } from '../energy/head.js';
 import { Card, type CardEditor } from '../shared/base.js';
 import type { ChartCaps, ChartKeys } from '../shared/chart-config.js';
 import { ChartLoader, type ChartEngine } from '../shared/chart-load.js';
-import type { ChartSpec, ScrubController } from '../chart/engine/index.js';
+import type { ChartSpec, ResolvedStyle, ScrubController, TimeLine } from '../chart/engine/index.js';
 
 import { toneOf } from '../shared/colour.js';
 import { TextRuler } from '../shared/fit.js';
@@ -74,7 +75,7 @@ export interface SensorCardConfig extends FluvyCardConfig, NumberKeys, Omit<Char
    * ("Temperature") when no other sensor on the chart measures the same, else its name beyond the title.
    */
   label?: string;
-  /** Rolling window of history in hours (default 24), ending at "now". */
+  /** Rolling window of history in hours, ending at "now"; none: the house's (Charts, 12 by default). */
   hours?: number;
   show_stats?: boolean;
   /** `chart` = the wide card; `tile` = the sheet's sensor tile (readout, trend arrow, spark). */
@@ -97,7 +98,7 @@ const HOUR_MS = 3_600_000;
 /** The bars a window is read in: an hour each over a day, never more than 24. */
 const MAX_BARS = 24;
 /** The tile's spark: classic, or minimal where the card's style is (a thin line ending in its dot). */
-const SPARK_CAPS: ChartCaps = { styles: ['classic', 'minimal'] };
+const SPARK_CAPS: ChartCaps = { styles: ['classic', 'minimal'], time: true };
 
 const down4 = (n: number): number => Math.max(4, Math.floor(n / 4) * 4);
 const capitalise = (text: string): string => text.charAt(0).toLocaleUpperCase() + text.slice(1);
@@ -455,10 +456,13 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
   /**
    * "Last N hours" is a rolling window: the series always fills the width and ends at "now". At one
    * in the morning a calendar-day axis would show an almost empty card, which is not what a sensor
-   * card is for (the energy card keeps the day axis: "today" is its subject).
+   * card is for (the energy card keeps the day axis: "today" is its subject). None: the house's.
    */
   private get hours(): number {
-    return Math.min(168, Math.max(1, Math.round(this.config?.hours ?? 24)));
+    return Math.min(
+      168,
+      Math.max(1, Math.round(this.config?.hours ?? chartDefaults().settings.window)),
+    );
   }
 
   /* ---------- history ---------- */
@@ -473,7 +477,7 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
     this.loadExtras(hass, hours);
     const previous = this.history.request(
       `${view.id}|${hours}`,
-      () => fetchHistory(hass, view.id, hours, POINTS, meter(view)),
+      () => fetchHistory(hass, view.id, hours, POINTS, meter(view), this.config?._now),
       (series) => {
         this.drawn = hours;
         this.series_ = series;
@@ -497,7 +501,7 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
       this.extraHistory.set(id, refresher);
       refresher.request(
         `${id}|${hours}`,
-        () => fetchHistory(hass, id, hours, POINTS, meter(this.entity(id))),
+        () => fetchHistory(hass, id, hours, POINTS, meter(this.entity(id)), this.config?._now),
         (series) => {
           this.extras_ = { ...this.extras_, [id]: series };
         },
@@ -717,8 +721,8 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
           ? nothing
           : html`<div class="am-spark fv-tone--${tone}">
               ${
-                engine && values.length > 1
-                  ? this.spark(engine, values, down4(inner - 8))
+                engine && series && values.length > 1
+                  ? this.spark(engine, view, series, down4(inner - 8))
                   : html`<div class="fv-skeleton"></div>`
               }
             </div>`
@@ -806,9 +810,12 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
     const engine = this.charts.engine;
     const fraction = this.scrubber?.value ?? null;
     // the skeleton stands until the engine and the history are both here: one transition, no flash
-    const spec = engine && series ? this.chartSpec(engine, view, values, width, hours) : null;
-    // read where the finger is: a bar's own figure (the slot's), else the line's there
+    const drawn = engine && series ? this.chartSpec(engine, view, series, width, hours) : null;
+    const spec = drawn?.spec ?? null;
+    // read where the finger is: a bar's own figure (the slot's), else the reading at the time the line snaps to
     const read = engine && spec && fraction !== null ? engine.readAt(spec, fraction) : null;
+    const timed = fraction !== null ? drawn?.line?.read(fraction) : null;
+    const cursor = timed?.fraction ?? fraction;
     const bars = spec?.series[0]?.values ?? [];
     const slotted = spec !== null && engine !== undefined && engine.isBars(spec.style.preset);
     // a bar is drawn in the unit the card asks: its reading is brought back to the sensor's own, as every figure is
@@ -820,15 +827,15 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
           ? bar === undefined || bar === null
             ? null
             : bar * this.divisor(view)
-          : engine.sampleAt(values, fraction as number);
+          : (timed?.v ?? null);
     const at =
       point === null || read === null
         ? null
         : {
-            cursor: fraction as number,
+            cursor: cursor as number,
             ...this.parts(view, point, digitsOf(this.hass, view, point)),
             // a bar says when its slot began
-            time: this.momentAt(slotted ? read.index / bars.length : (fraction as number), hours),
+            time: this.momentAt(slotted ? read.index / bars.length : (cursor as number), hours),
           };
     const left = engine && spec ? engine.plotOf(spec).left : 0;
     // out of reach the curve is the window it had, in the off skin, its bubble at "now" saying "—"
@@ -871,41 +878,92 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
   /**
    * One sensor's chart: its style for what it can draw (bars where its readings add up), its scale holding zero where
    * the quantity starts there. As bars, the window is read in at most 24 slots (an hour each over a day): a
-   * measure's mean there, or what a counter gained.
+   * measure's mean there, or what a counter gained; as a line, its line through the window (`lineOf`).
    */
   private chartSpec(
     engine: ChartEngine,
     view: EntityView,
-    values: readonly number[],
+    series: Series,
     width: number,
     hours: number,
-  ): ChartSpec {
+  ): { spec: ChartSpec; line: TimeLine | null } {
     const readings = engine.readingsOf(view.deviceClass, view.attr('state_class'), view.unit);
-    const base = this.chartBase(engine, { axis: true, bars: readings.bars });
+    const base = this.chartBase(engine, { axis: true, bars: readings.bars, time: true });
     // in the unit the card asks (its scale reads kW where its figures do), the curve's shape the same
     const divisor = this.divisor(view);
-    const shown = divisor === 1 ? values : values.map((v) => v / divisor);
-    const drawn = engine.isBars(base.style.preset)
-      ? engine.bucket(shown, Math.min(MAX_BARS, Math.max(1, Math.round(hours))), readings.rule)
-      : shown;
+    const line = engine.isBars(base.style.preset)
+      ? null
+      : this.lineOf(engine, view, series, width, hours, base.style, 1 / divisor);
     return {
-      ...base,
-      frame: { width, height: CHART_HEIGHT, headroom: HEADROOM },
-      series: [{ values: drawn }],
-      zero: readings.zero,
-      id: 'fv',
+      spec: {
+        ...base,
+        // a step asked closer than the style's line reads is drawn thinner
+        style: line?.style ?? base.style,
+        frame: { width, height: CHART_HEIGHT, headroom: HEADROOM },
+        series: [
+          line ?? {
+            values: engine.bucket(
+              series.values.map((v) => v / divisor),
+              Math.min(MAX_BARS, Math.max(1, Math.round(hours))),
+              readings.rule,
+            ),
+          },
+        ],
+        zero: readings.zero,
+        id: 'fv',
+      },
+      line,
     };
+  }
+
+  /**
+   * A sensor's line through the window (the engine's `pastLine`): its readings on the house's round times, as calmly
+   * as `width` draws them in `style` (or every `points`), ending on its reading now, its values times `scale`.
+   */
+  private lineOf(
+    engine: ChartEngine,
+    view: EntityView,
+    series: Series,
+    width: number,
+    hours: number,
+    style: ResolvedStyle,
+    scale?: number,
+  ): TimeLine<ResolvedStyle> {
+    const now = this.now().getTime();
+    return engine.pastLine(
+      series.readings ?? [],
+      hours,
+      now,
+      width,
+      style,
+      this.hass,
+      view.number,
+      scale,
+    );
   }
 
   /**
    * The tile's spark, 24 tall with 4 around it: `minimal` where the card's style is minimal (a thin line ending in its
    * dot), else the classic curve with its fill and its dot.
    */
-  private spark(engine: ChartEngine, values: readonly number[], width: number): TemplateResult {
+  private spark(
+    engine: ChartEngine,
+    view: EntityView,
+    series: Series,
+    width: number,
+  ): TemplateResult {
+    const line = this.lineOf(
+      engine,
+      view,
+      series,
+      width,
+      this.hours,
+      engine.styleOf(this.config, SPARK_CAPS),
+    );
     return engine.drawChart({
       frame: { width, height: 24, headroom: 4, pad: 4 },
-      series: [{ values }],
-      style: engine.styleOf(this.config, SPARK_CAPS),
+      series: [line],
+      style: line.style,
       id: 'fv',
     });
   }
@@ -1025,10 +1083,18 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
     const width = down4(this.contentWidth);
     // no bubble over the plot (the time goes on the axis row), so no headroom: the curves keep the single chart's band
     const H = SEVERAL_CHART;
-    const fraction = this.scrubber?.value ?? null;
     const loaded = rows.every((row) => row.series !== undefined || !charted(row.sensor));
     const engine = this.charts.engine;
-    const texts = rows.map(({ item, sensor, series }) => {
+    const base = engine ? this.chartBase(engine, { axis: true, several: true, time: true }) : null;
+    // each sensor's line through the window, read where the finger is at the time the first one snaps to
+    const lines = rows.map(({ sensor, series }) =>
+      engine && base && series
+        ? this.lineOf(engine, sensor, series, width, hours, base.style)
+        : null,
+    );
+    const pointed = this.scrubber?.value ?? null;
+    const fraction = pointed === null ? null : (lines[0]?.read(pointed)?.fraction ?? pointed);
+    const texts = rows.map(({ item, sensor }, index) => {
       const label = labelOf(
         item.name == null ? {} : { name: this.nameFor(sensor, item.name) },
         sensor,
@@ -1043,7 +1109,7 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
           unit: '',
         };
       if (fraction !== null) {
-        const point = series && engine ? engine.sampleAt(series.values, fraction) : null;
+        const point = lines[index]?.read(fraction)?.v ?? null;
         // the moment read is written as the reading now is (its precision): the figure never grows under the finger
         return point === null
           ? { label, value: '—', unit: '' }
@@ -1053,12 +1119,14 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
     });
     const fit = this.pairFit(texts);
     // one chart, each curve on its own scale (units differ), the cursor across them; it reads where the finger is
-    const spec: ChartSpec | null = engine
+    const spec: ChartSpec | null = base
       ? {
-          ...this.chartBase(engine, { axis: true, several: true }),
+          ...base,
+          // every line on one window and width: one stroke for all
+          style: lines.find(Boolean)?.style ?? base.style,
           frame: { width, height: H, headroom: 12 },
-          series: rows.map(({ tone, accent, series }) => ({
-            values: series?.values ?? [],
+          series: rows.map(({ tone, accent }, index) => ({
+            ...(lines[index] ?? { values: [] }),
             colour: tone,
             ...(accent ? { accent } : {}),
           })),
@@ -1158,10 +1226,10 @@ export class FluvySensorCard extends Card<SensorCardConfig> {
     const value = view.number;
     if (!series || value === null || series.values.length < 2) return series;
     return {
+      ...series,
       values: [...series.values.slice(0, -1), value],
       min: Math.min(series.min, value),
       max: Math.max(series.max, value),
-      average: series.average,
     };
   }
 }

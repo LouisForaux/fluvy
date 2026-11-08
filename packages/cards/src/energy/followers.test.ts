@@ -291,7 +291,7 @@ describe('a follower’s figures in the unit and decimals asked', () => {
     expect(text(card)).not.toMatch(/0\.50\s?kW/);
   });
 
-  it('the energy card over a past cloudy day draws every five minutes and reads Home Assistant’s 12:00 at noon (#138)', async () => {
+  it('the energy card over a past cloudy day draws it calmly, every 30 or every 5 minutes, and reads Home Assistant’s 12:00 at noon in each (#138)', async () => {
     const day = picker(true);
     const midnight = day.start.getTime();
     // an array's five-minute means (kW): a hill clouds cut into, 2.61 at 12:00 between two dips, its peak 2.94 at 11:35
@@ -321,21 +321,40 @@ describe('a follower’s figures in the unit and decimals asked', () => {
             }
           : {},
     } as unknown as HomeAssistant;
-    const card = await mount(
-      'fluvy-energy-card',
-      { entity: 'sensor.pv', collection_key: 'energy_t', chart: 'classic', decimals: 2 },
-      hass,
-    );
-    const line = card.shadowRoot?.querySelector('.ef-chart .curve-line')?.getAttribute('d') ?? '';
-    expect(line.split(' C')).toHaveLength(288);
-    // read at the middle of the day's axis: Home Assistant's 12:00, the bucket from 12:00 to 12:05
-    (card as unknown as { scrubber: { set(value: number): void } }).scrubber.set(0.5);
-    await card.updateComplete;
-    const readout = card.shadowRoot?.querySelector('.ef-top .fv-readout');
-    expect(readout?.querySelector('.fv-readout__label')?.textContent?.trim()).toBe('12:00');
-    expect(readout?.querySelector('.fv-readout__value')?.textContent?.replace(/\s+/g, ' ')).toMatch(
-      /2\.61\s?kW/,
-    );
+    const config = {
+      entity: 'sensor.pv',
+      collection_key: 'energy_t',
+      chart: 'classic',
+      decimals: 2,
+    };
+    const line = (card: HTMLElement): SVGPathElement =>
+      card.shadowRoot?.querySelector('.ef-chart .curve-line') as SVGPathElement;
+    const noon = async (card: HTMLElement): Promise<void> => {
+      // read at the middle of the day's axis: Home Assistant's 12:00, the bucket from 12:00 to 12:05
+      (card as unknown as { scrubber: { set(value: number): void } }).scrubber.set(0.5);
+      await (card as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+      const readout = card.shadowRoot?.querySelector('.ef-top .fv-readout');
+      expect(readout?.querySelector('.fv-readout__label')?.textContent?.trim()).toBe('12:00');
+      expect(
+        readout?.querySelector('.fv-readout__value')?.textContent?.replace(/\s+/g, ' '),
+      ).toMatch(/2\.61\s?kW/);
+    };
+    // automatic: a 320 column holds a point every half hour (6.7 px apart), each the mean around it, at the house's line
+    const calm = await mount('fluvy-energy-card', config, hass);
+    expect(line(calm).getAttribute('d')?.split(' C')).toHaveLength(49);
+    expect(line(calm).getAttribute('style')).toBeNull();
+    await noon(calm);
+    // every 30 minutes: Home Assistant's reading at each half hour, so the line passes through 2.61 at 12:00
+    const halves = await mount('fluvy-energy-card', { ...config, points: '30m' }, hass);
+    const d = line(halves).getAttribute('d') ?? '';
+    expect(d.split(' C')).toHaveLength(49);
+    expect(d).not.toBe(line(calm).getAttribute('d'));
+    await noon(halves);
+    // every 5 minutes: every bucket, 1.1 px apart, drawn as Home Assistant's hairline
+    const fives = await mount('fluvy-energy-card', { ...config, points: '5m' }, hass);
+    expect(line(fives).getAttribute('d')?.split(' C')).toHaveLength(288);
+    expect(line(fives).getAttribute('style')).toBe('stroke-width:1px');
+    await noon(fives);
   });
 
   it('the energy and production cards offer the pickers and the sensor’s own units in one choice', async () => {

@@ -87,6 +87,8 @@ describe('history cache', () => {
       rows(['', 'unavailable', '4', 'unknown', '2'])) as unknown as HomeAssistant['callWS']);
     const series = await fetchHistory(hass, 'sensor.t', 24, 2);
     expect(series).toMatchObject({ min: 2, max: 4 });
+    // what was read, as it was read: the readings a chart draws its line through and reads at a moment (1.18)
+    expect(series?.readings?.map((r) => r.v)).toEqual([4, 2]);
   });
 
   it('says the window’s own extremes: a peak between two points is still its peak', async () => {

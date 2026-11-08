@@ -385,10 +385,15 @@ const chartsTab = (page) => ({
     page.locator('fluvy-panel .pn-tile').filter({
       has: page.locator('.pn-swatch__label', { hasText: new RegExp(`^${name}$`) }),
     }),
-  labels: () =>
+  /** The rows of a card of the tab, by its title: the Details card's from the factory. */
+  labels: (title = 'Details') =>
     page
-      .locator('fluvy-panel .pn-card .pn-label')
+      .locator('fluvy-panel .pn-card', {
+        has: page.locator('.fv-card__title', { hasText: new RegExp(`^${title}$`) }),
+      })
+      .locator('.pn-label')
       .evaluateAll((all) => all.map((label) => label.textContent.trim())),
+  chip: (name) => page.locator('fluvy-panel .fv-chip', { hasText: new RegExp(`^${name}$`) }),
   row: (title) => page.locator('fluvy-panel .fv-row', { hasText: title }),
   set: (name) => page.locator('fluvy-panel .pn-set', { hasText: name }),
   editor: page.locator('fluvy-panel .pn-editor'),
@@ -493,6 +498,27 @@ const chartsTab = (page) => ({
       (await barText(page)) === '' &&
       !/fc-chart--/.test((await drawn()) ?? 'none'),
   );
+  // the time every chart shows and how far apart its points stand (1.18): every style's, classic's too
+  const window = () =>
+    sensor.evaluate((card) => card.shadowRoot.querySelector('.fv-card__sub')?.textContent.trim());
+  check(
+    'the Time card offers the time shown and the points in classic, the last 12 hours and automatic chosen',
+    JSON.stringify(await c.labels('Time')) === JSON.stringify(['Time shown', 'A point every']) &&
+      (await c.chip('12 h').getAttribute('aria-pressed')) === 'true' &&
+      (await c.chip('Automatic').getAttribute('aria-pressed')) === 'true' &&
+      /last 12 h/.test((await window()) ?? ''),
+    await window(),
+  );
+  await c.chip('24 h').click();
+  await settle(page, 600);
+  check(
+    'a window chip applies at once: the card on the page that names none shows the last 24 hours, the bar names it',
+    /last 24 h/.test((await window()) ?? '') &&
+      (await barText(page)) === 'Charts · Time shown · 24 h',
+    `${await window()} · ${await barText(page)}`,
+  );
+  await c.chip('12 h').click();
+  await settle(page, 300);
   // motion off: the previews and the tiles draw their resting frame, nothing animates
   await c.tile('Soft').click();
   await settle(page, 200);

@@ -1,4 +1,4 @@
-import { chartDefaults, type ChartPreset, type GaugePreset } from '@fluvy/core';
+import { chartDefaults, type ChartPreset, type GaugePreset, type PointEvery } from '@fluvy/core';
 
 /**
  * What a card says of its chart: the named style (`chart`) and the fine keys that override the style's own and the
@@ -8,7 +8,7 @@ import { chartDefaults, type ChartPreset, type GaugePreset } from '@fluvy/core';
  * `chartKeysOf`, `styleOf`), what they do and the editor's Chart section are the chart chunk's.
  */
 
-export type { ChartPreset, GaugePreset };
+export type { ChartPreset, GaugePreset, PointEvery };
 
 export type Curve = 'smooth' | 'straight' | 'step';
 export type FillKind = 'gradient' | 'flat' | 'none';
@@ -38,6 +38,8 @@ export interface ChartKeys {
   highlight?: Highlight;
   /** Whether this chart draws itself in and moves; none: the house's. */
   animate?: boolean;
+  /** How far apart a line through time draws its points: calmly for its width (`auto`), or every 5, 15, 30 min or 1 h; none: the house's. */
+  points?: PointEvery;
 }
 
 export type FineKey = Exclude<keyof ChartKeys, 'chart'>;
@@ -62,6 +64,10 @@ export interface ChartCaps {
   readonly styles?: readonly ChartPreset[];
   /** The fine keys its chart acts on where they are not every one a style acts on: a stacked chart's line, grid and scale. */
   readonly keys?: readonly FineKey[];
+  /** Its line runs through time read from the recorder: how far apart its points stand can be chosen (`points`). */
+  readonly time?: boolean;
+  /** The finest its readings come (ms): an hour's statistics cannot be drawn every five minutes. */
+  readonly finest?: number;
 }
 
 /**

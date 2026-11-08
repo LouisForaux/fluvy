@@ -1,4 +1,10 @@
-import { chartDefaults, type ChartPreset, type ChartSettings, type GaugePreset } from '@fluvy/core';
+import {
+  chartDefaults,
+  type ChartPreset,
+  type ChartSettings,
+  type GaugePreset,
+  type PointEvery,
+} from '@fluvy/core';
 import type { Tone } from '@fluvy/ui';
 import {
   type ChartCaps,
@@ -166,6 +172,7 @@ export const CHART_KEYS = [
   'show_now',
   'highlight',
   'animate',
+  'points',
 ] as const satisfies readonly (keyof ChartKeys)[];
 
 /** The chart keys of a config, as given. */
@@ -183,6 +190,7 @@ const LINE: readonly FineKey[] = [
   'show_grid',
   'show_axis',
   'animate',
+  'points',
 ];
 
 /** The fine keys each style acts on: a key a style cannot draw is not offered in it, and does nothing in it. */
@@ -200,10 +208,11 @@ export const ACTS: Readonly<Record<ChartPreset, readonly FineKey[]>> = {
     'show_now',
     'highlight',
     'animate',
+    'points',
   ],
   bars: ['show_grid', 'show_axis', 'show_now', 'highlight', 'animate'],
   columns: ['show_grid', 'show_axis', 'show_now', 'animate'],
-  band: ['line_width', 'show_points', 'show_grid', 'show_axis', 'show_now', 'animate'],
+  band: ['line_width', 'show_points', 'show_grid', 'show_axis', 'show_now', 'animate', 'points'],
 };
 
 /** A house chart setting a style draws with (fluvy's settings → Charts): motion and the gauges' waves aside. */
@@ -244,6 +253,7 @@ export function acts(key: FineKey, preset: ChartPreset, caps: ChartCaps): boolea
   if (key === 'show_now') return caps.now === true;
   if (key === 'show_axis') return caps.axis !== false;
   if (key === 'highlight') return !caps.several;
+  if (key === 'points') return caps.time === true;
   return true;
 }
 
@@ -349,13 +359,15 @@ export interface ResolvedStyle {
   readonly bars: PresetSpec['bars'];
   /** Whether the chart draws itself in (off: its resting frame at once). */
   readonly animate: boolean;
+  /** How far apart a line through time draws its points (`timeline.ts`). */
+  readonly every: PointEvery;
 }
 
 /**
  * A card's style, resolved: its own keys first, the house's settings next, the style's own defaults last. A fine key
  * the style does not act on (or the card cannot draw) is ignored, as the editor never offers it, and a style the card
- * cannot draw (bars over several sensors) is drawn `classic`. `classic` reads nothing of the house's but motion: it is
- * the chart every card drew before 1.11.
+ * cannot draw (bars over several sensors) is drawn `classic`. `classic` reads nothing of the house's but motion and
+ * how far apart a line's points stand: it is the chart every card drew before 1.11.
  */
 export function resolveStyle(
   preset: ChartPreset | undefined,
@@ -414,6 +426,7 @@ export function resolveStyle(
     caps: classic ? 'top' : house.caps,
     bars: spec.bars,
     animate: fine.animate ?? house.animate,
+    every: own('points') ?? house.points,
   };
 }
 

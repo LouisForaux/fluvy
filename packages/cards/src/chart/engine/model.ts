@@ -32,6 +32,8 @@ export type SeriesColour =
 /** One series of a chart: its readings evenly spaced across the plot, and how it is drawn apart from the others. */
 export interface ChartSeries {
   readonly values: ReadonlyArray<number | null>;
+  /** Where each reading stands where they are not evenly spaced (a line through time): a fraction of what it covers. */
+  readonly at?: readonly number[];
   /** Its colour; none: the chart's own (the tone its wrapper carries). */
   readonly colour?: SeriesColour;
   /** A colour of the person's, as the card's accent sheet keys it (`data-accent`): it wins over `colour`. */
@@ -59,41 +61,6 @@ export interface Stretch {
   readonly from: number;
   readonly to: number;
   readonly colour: SeriesColour;
-}
-
-/**
- * Readings evenly spaced across a window: each slot ends on `count` equal steps from `start` to `end` and reads the
- * last reading at or before its end — a recorder's reading holds until the next one. A slot before the first reading
- * is a gap, and so is a reading that is itself a gap.
- */
-export function evenly(
-  points: readonly ChartPoint[],
-  window: Pick<Window, 'start' | 'end'>,
-  count: number,
-): (number | null)[] {
-  const out: (number | null)[] = [];
-  if (!(count > 0)) return out;
-  let index = 0;
-  let last: number | null = null;
-  for (let i = 0; i < count; i++) {
-    const t = window.start + ((i + 1) / count) * (window.end - window.start);
-    while (index < points.length && (points[index] as ChartPoint).t <= t) {
-      last = (points[index] as ChartPoint).v;
-      index++;
-    }
-    out.push(last !== null && Number.isFinite(last) ? last : null);
-  }
-  return out;
-}
-
-/** The series' value at a fraction of its length, interpolated between the two nearest readings — what the dot at that x stands on. */
-export function sampleAt(values: readonly number[], fraction: number): number | null {
-  if (values.length === 0) return null;
-  if (values.length === 1) return values[0] ?? null;
-  const at = Math.min(1, Math.max(0, fraction)) * (values.length - 1);
-  const i = Math.min(Math.floor(at), values.length - 2);
-  const t = at - i;
-  return (values[i] as number) + ((values[i + 1] as number) - (values[i] as number)) * t;
 }
 
 /** How a slot's readings make one bar: their mean (a measurement), or what a counter gained (`change`; `increase` for

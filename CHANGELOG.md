@@ -10,10 +10,16 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 - The Thermostat card's fan speeds and presets, the Fan card's presets and the Vacuum card's suction speak a page in
   another language than English in Home Assistant's own words for them, as its own cards do ("Niedrig", "Ventilation
   naturelle", "Équilibré"), where they said the word the integration sent ("Low", "Natural wind", "Balanced").
-- The Energy card's curve shows its sensor's every five minutes, so a cloudy day is as jagged as in Home Assistant's
-  history where it was a smooth hill.
-- The Sensor card's curve is the mean of each half hour, and its Min and Max the window's own extremes, where both
-  were the sensor's readings at 48 moments of the day.
+- Every chart of the past shows the last 12 hours where its card names no window of its own, where it showed 24: the
+  Sensor card's chart, its several sensors and its tile, the Energy card's line and the Chart card. The house's window
+  is Fluvy's settings › Charts › Time shown (4 h, 12 h, 24 h, 48 h or 7 d); `hours: 24` on one card (`span: 24h` on a
+  Chart card) brings its 24 hours back, the Energy card's day on its 00:00 to 24:00 axis.
+- The Sensor card's line, the Energy card's and a Chart card's line of a sensor's history are drawn calmly, a point on
+  each of the house's round times (12:00, 12:30) as far apart as the card's width holds them, each the mean of the
+  readings around it, where they were the sensor's readings at 48 moments of the window; read with a finger, each says
+  Home Assistant's own reading at that time, so a cloudy noon reads 2.61 kW at 12:00 as in Home Assistant's history.
+- The Sensor card's Min and Max are the window's own extremes, where both were the sensor's readings at 48 moments of
+  the day.
 - A house whose Energy dashboard names several arrays or batteries finds every one on the automatic dashboards: in
   the flow, the balance and the Batteries card, and a gauge and a solar curve for each array.
 
@@ -25,6 +31,10 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   meter, so a water heater's thermostat leaves the Climate view to the air conditioners and an inverter's MPPT
   readings leave the solar power to its total. An entry may be a pattern of ids (`sensor.debug_*`), a device or a
   domain, as a room's `exclude` takes them (#141).
+- Fluvy's settings › Charts › Time chooses how much of the past every chart shows and how far apart a line's points
+  stand (Automatic, or a point every 5, 15 or 30 minutes or every hour, each then Home Assistant's reading at that
+  time, so the line passes through what Home Assistant says at 12:00); a card's own `hours` (a Chart card's `span`)
+  and `points` win, and both travel with a backup and with Export and Import.
 
 ### Fixed
 
@@ -34,8 +44,9 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   Assistant's words too. Where a person chose a language of their own for Fluvy, Fluvy's words come first, Home
   Assistant's being the page's language. Thanks to @waphbs, who brought the standard speeds to every language (#142).
 - The Energy card drew one in six of its sensor's five-minute means, each half an hour late, so on a cloudy day it
-  read 1.27 kW at 12:00 on a smooth hill where Home Assistant's history read 2.61 kW: it draws every bucket where Home
-  Assistant does now, and where the column is narrower each point is the mean of the ones it stands for (#138).
+  read 1.27 kW at 12:00 on a smooth hill where Home Assistant's history read 2.61 kW: read with a finger it says Home
+  Assistant's own five minutes now, and its line is the mean of each half hour on a phone, or every bucket with
+  `points: 5m` (#138).
 - The Energy card following a date picker on today squeezed the whole day into the hours so far, and drew nothing new
   until the range changed.
 - The Sensor, Readouts, Humidity and Gauge cards read a sensor's history at one moment of each step, so a peak between

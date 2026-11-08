@@ -1,6 +1,12 @@
 // @vitest-environment happy-dom
-import { clearHistoryCache, type HaFormSchemaItem, type HomeAssistant } from '@fluvy/core';
-import { afterEach, describe, expect, it } from 'vitest';
+import {
+  CHART_DEFAULTS,
+  clearHistoryCache,
+  setChartDefaults,
+  type HaFormSchemaItem,
+  type HomeAssistant,
+} from '@fluvy/core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import fixtures from '../chart/engine/__fixtures__/classic-1.10.json' with { type: 'json' };
 import { familiesDefined } from '../index.js';
 import { FluvyEnergyCard, type EnergyCardConfig } from './energy-card.js';
@@ -117,19 +123,24 @@ afterEach(() => document.body.replaceChildren());
 
 /** The points a line's path goes through: its start and the end of each of its curves. */
 const pointsOf = (d: string): number => d.split(' C').length;
+/** Where they stand across the plot. */
+const placesOf = (d: string): number[] =>
+  [...d.matchAll(/(?:^M| )(-?[\d.]+),[\d.]+(?= C|$)/g)].map((m) => Number(m[1]));
 
 describe('the energy card’s line, drawn by the engine', () => {
-  it('draws the classic curve (1.10’s geometry, `classic.test.ts`) through a point a pixel at most', async () => {
-    // a 320 column: the window's 288 means, every one
+  it('draws the classic curve (1.10’s geometry, `classic.test.ts`) calmly: its points on round times, 5 px apart at least', async () => {
+    // a 320 column over six hours: a point every ten minutes, each the mean of the readings around it
     const card = await mount({});
     const [line] = ds(card, '.ef-chart .curve-line');
-    expect(pointsOf(line ?? '')).toBe(288);
+    const places = placesOf(line ?? '');
+    const gaps = places.slice(2, -1).map((x, i) => x - (places[i + 1] as number));
+    expect(Math.min(...gaps)).toBeCloseTo((320 * 10) / 360, 1);
     expect(ds(card, '.ef-chart .curve-area')).toHaveLength(1);
     expect(card.shadowRoot!.querySelectorAll('.ef-chart .curve-dot').length).toBe(1);
-    // a 112 column: one point a pixel, each the mean of the means it stands for
+    // a 112 column: a point every half hour
     card.width = 152;
     await settle(card);
-    expect(pointsOf(ds(card, '.ef-chart .curve-line')[0] ?? '')).toBe(112);
+    expect(pointsOf(ds(card, '.ef-chart .curve-line')[0] ?? '')).toBeLessThanOrEqual(14);
   });
 
   it('keeps a classic thin line at 1.10’s one pixel, the card’s own rule', async () => {
@@ -193,8 +204,36 @@ describe('the energy card’s tone: what its line shows', () => {
   });
 });
 
+describe('the energy card’s window', () => {
+  const sub = (card: FluvyEnergyCard): string | undefined =>
+    card.shadowRoot!.querySelector('.fv-card__sub')?.textContent?.trim();
+  /** A card that names no window, or the one given. */
+  const bare = async (config: Partial<EnergyCardConfig> = {}): Promise<FluvyEnergyCard> => {
+    const card = document.createElement('fluvy-energy-card') as FluvyEnergyCard;
+    card.setConfig({ type: 'custom:fluvy-energy-card', entity: 'sensor.power', ...config });
+    card.hass = house();
+    document.body.append(card);
+    await settle(card);
+    return card;
+  };
+
+  it('is the house’s where it names none (the last 12 hours), the day on its axis with `hours: 24`', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.parse('2026-09-17T15:00:00Z') });
+    clearHistoryCache();
+    expect(sub(await bare())).toBe('Last 12 h');
+    setChartDefaults({ settings: { ...CHART_DEFAULTS, window: 4 }, sets: [] });
+    expect(sub(await bare())).toBe('Last 4 h');
+    expect(sub(await bare({ hours: 24 }))).toMatch(/· today$/);
+    setChartDefaults({ settings: CHART_DEFAULTS, sets: [] });
+    vi.useRealTimers();
+  });
+});
+
 describe('the energy card read the other way round (`invert`)', () => {
   it('reads a grid meter that is negative while importing as what comes in, its curve above the line', async () => {
+    // one moment for both cards: their windows and their readings' times are the same
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.parse('2026-09-17T15:00:00Z') });
+    clearHistoryCache();
     const negative = POWER.map((v) => -v);
     const plain = await mount({}, house(POWER));
     clearHistoryCache(); // the same sensor and window: its history is asked again of the other house
@@ -202,6 +241,7 @@ describe('the energy card read the other way round (`invert`)', () => {
     expect(readouts(card, '.ef-top')).toEqual(readouts(plain, '.ef-top'));
     expect(readouts(card, '.ef-top')[0]).not.toContain('−');
     expect(ds(card, '.ef-chart .curve-line')).toEqual(ds(plain, '.ef-chart .curve-line'));
+    vi.useRealTimers();
   });
 });
 

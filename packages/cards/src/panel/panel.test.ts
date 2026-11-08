@@ -1091,8 +1091,12 @@ describe('the settings panel', () => {
       [...root.querySelectorAll<HTMLButtonElement>('.pn-tile')].find(
         (b) => b.querySelector('.pn-swatch__label')?.textContent?.trim() === name,
       )!;
+    // the Details card's rows (the Time card's are every style's)
     const labels = () =>
-      [...root.querySelectorAll('.pn-card .pn-label')].map((p) => p.textContent?.trim());
+      [...root.querySelectorAll('.pn-card')]
+        .filter((card) => card.querySelector('.fv-card__title')?.textContent?.trim() === 'Details')
+        .flatMap((card) => [...card.querySelectorAll('.pn-label')])
+        .map((p) => p.textContent?.trim());
     // eight styles and eleven gauges (Fluvy's four controls, the seven that move, each on a reading of its kind), each
     // drawn by the engine; classic and ticks from the factory
     expect(root.querySelectorAll('.pn-art--style svg.fc-chart').length).toBe(8);
@@ -1191,6 +1195,51 @@ describe('the settings panel', () => {
     );
     expect(guest.row('New set…')).toBeUndefined();
     guest.panel.remove();
+  });
+
+  it('chooses how much of the past every chart shows and how far apart its points stand, in every style (1.18)', async () => {
+    const { panel, root, chip, button, handle, previews, settle } = await mount();
+    panel.tab = 'charts';
+    (panel as unknown as { content: number }).content = 288;
+    await settle();
+    const card = [...root.querySelectorAll('.pn-card')].find(
+      (c) => c.querySelector('.fv-card__title')?.textContent?.trim() === 'Time',
+    )!;
+    const chips = () =>
+      [...card.querySelectorAll('.fv-chip')].map(
+        (c) => `${c.textContent?.trim()}${c.getAttribute('aria-pressed') === 'true' ? ' ✓' : ''}`,
+      );
+    expect([...card.querySelectorAll('.pn-label')].map((p) => p.textContent?.trim())).toEqual([
+      'Time shown',
+      'A point every',
+    ]);
+    // the last 12 hours, the points as each card's width draws them calmly: from the factory, classic or not
+    expect(chips()).toEqual([
+      '4 h',
+      '12 h ✓',
+      '24 h',
+      '48 h',
+      '7 d',
+      'Automatic ✓',
+      '5 min',
+      '15 min',
+      '30 min',
+      '1 h',
+    ]);
+    expect(card.querySelector('.pn-hint')?.textContent).toContain('Home Assistant’s reading');
+    chip('24 h')!.click();
+    await settle();
+    expect(previews.at(-1)).toEqual({ charts: { ...handle.settings().charts, window: 24 } });
+    expect(root.querySelector('.pn-bar__text')?.textContent?.trim()).toBe(
+      'Charts · Time shown · 24 h',
+    );
+    chip('30 min')!.click();
+    await settle();
+    expect(root.querySelector('.pn-bar__text')?.textContent?.trim()).toBe('2 changes');
+    button('Save')!.click();
+    await settle();
+    expect(handle.settings().charts).toMatchObject({ window: 24, points: '30m' });
+    panel.remove();
   });
 
   it('makes, checks, keeps, renames and lets go of the house’s own series colours (1.11)', async () => {
@@ -1594,6 +1643,9 @@ describe('the settings panel', () => {
       bubble: 'tone',
       series: 'sea',
       animate: false,
+      // how much of the past, and how far apart a line's points (1.18)
+      window: 4,
+      points: '30m',
     } as const;
     expect(
       Object.entries(charts).filter(

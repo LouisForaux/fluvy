@@ -28,7 +28,7 @@ import {
   setInks,
   type FittedSet,
 } from '../chart/engine/index.js';
-import { FINE_ROWS } from './chart-words.js';
+import { FINE_ROWS, TIME_ROWS, type FineRow } from './chart-words.js';
 import type { PanelContext, StringKey } from './model.js';
 import { choice, gap, hexField, inkOn, swatches } from './sections.js';
 import { chosenSet, roomForSet, SET_NAME_MAX, type SeriesDraft } from './series.js';
@@ -179,6 +179,21 @@ function gaugeCard(ctx: PanelContext): TemplateResult {
 
 /* ---------- the fine settings ---------- */
 
+/** A fine setting: its label and its row of chips, the chosen one lit; shown to someone who may not change it, still. */
+function fineRow(ctx: PanelContext, row: FineRow<string>): TemplateResult {
+  const charts = ctx.shown.charts;
+  return html`<p class="fv-label pn-label">${ctx.t(row.label)}</p>
+    ${choice(
+      ctx,
+      row.choices.map((c) => ({
+        key: c.key,
+        label: c.word(ctx),
+        active: row.chosen(charts) === c.key,
+      })),
+      ctx.admin ? (key) => ctx.editCharts(row.patch(charts, key)) : null,
+    )}`;
+}
+
 /**
  * What the chosen style lets the house tune, a row of chips each (the engine's `HOUSE_ACTS`: a setting the style does
  * not draw with is not offered), the waves where the gauge moves, and motion, which every chart has.
@@ -193,19 +208,7 @@ function detailsCard(ctx: PanelContext): TemplateResult {
   return html`<section class="fv-card pn-card">
     ${head({ icon: 'sliders', title: ctx.t('charts.details'), sub: ctx.t(admin ? 'charts.details_sub' : 'scope.admin_only') })}
     ${acts.length ? nothing : html`<p class="pn-note">${ctx.t('charts.classic_hint')}</p>`}
-    ${rows.map(
-      (row) =>
-        html`<p class="fv-label pn-label">${ctx.t(row.label)}</p>
-          ${choice(
-            ctx,
-            row.choices.map((c) => ({
-              key: c.key,
-              label: c.word(ctx),
-              active: row.chosen(charts) === c.key,
-            })),
-            admin ? (key) => ctx.editCharts(row.patch(charts, key)) : null,
-          )}`,
-    )}
+    ${rows.map((row) => fineRow(ctx, row))}
     <div class="pn-rows">
       ${listRow({
         icon: 'motion',
@@ -217,6 +220,20 @@ function detailsCard(ctx: PanelContext): TemplateResult {
         onToggle: (on) => ctx.editCharts({ animate: on }),
       })}
     </div>
+  </section>`;
+}
+
+/* ---------- the time ---------- */
+
+/**
+ * How much of the past every chart shows (its `hours`, a Chart card's `span`, where a card says none) and how far apart
+ * a line's points stand (its `points`): every style's, a row of chips each, and what the two kinds of points draw.
+ */
+function timeCard(ctx: PanelContext): TemplateResult {
+  return html`<section class="fv-card pn-card">
+    ${head({ icon: 'clock', title: ctx.t('charts.time'), sub: ctx.t(ctx.admin ? 'charts.time_sub' : 'scope.admin_only') })}
+    ${TIME_ROWS.map((row) => fineRow(ctx, row))}
+    <p class="pn-hint pn-hint--after">${ctx.t('charts.points_hint')}</p>
   </section>`;
 }
 
@@ -552,8 +569,8 @@ function setEditor(ctx: PanelContext, draft: SeriesDraft, actions: ChartActions)
 
 /** The Charts tab's cards (its preview apart: it goes under them, or beside them in the side column). */
 export function charts(ctx: PanelContext, actions: ChartActions): TemplateResult {
-  return html`${styleCard(ctx)} ${gaugeCard(ctx)} ${detailsCard(ctx)} ${seriesCard(ctx)}
-  ${ctx.seriesDraft ? setEditor(ctx, ctx.seriesDraft, actions) : nothing}`;
+  return html`${styleCard(ctx)} ${gaugeCard(ctx)} ${detailsCard(ctx)} ${timeCard(ctx)}
+  ${seriesCard(ctx)} ${ctx.seriesDraft ? setEditor(ctx, ctx.seriesDraft, actions) : nothing}`;
 }
 
 /**

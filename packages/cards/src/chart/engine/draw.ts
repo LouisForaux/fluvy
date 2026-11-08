@@ -130,6 +130,9 @@ const curveOf = (spec: ChartSpec, index: number): Curve =>
   spec.series[index]?.curve ?? spec.style.curve;
 const fillOf = (spec: ChartSpec, index: number): NonNullable<ChartSeries['fill']> =>
   spec.series[index]?.fill ?? spec.style.fill;
+/** Whether a series holds each reading across an even slot: a step, where its readings do not stand at their own times. */
+const slotted = (spec: ChartSpec, index: number): boolean =>
+  curveOf(spec, index) === 'step' && !spec.series[index]?.at;
 
 /** The lows and highs of every band the chart draws: a band is in the scale only where it is drawn. */
 const bandsOf = (spec: ChartSpec, bars: boolean): number[][] =>
@@ -209,12 +212,17 @@ function layout(spec: ChartSpec, cursor: number | null | undefined): Laid {
     : all.map((values, index) => {
         const scale = scales[index] as Scale;
         const last = Math.max(1, values.length - 1);
-        const stepped = curveOf(spec, index) === 'step';
+        const at = spec.series[index]?.at;
+        // a step holds each reading across its slot, or until the next one where they stand at their own times
+        const stepped = slotted(spec, index);
         const held = heldOf(index);
         const pts: Array<Pt | null> = values.map((v, i) =>
           v === null || !Number.isFinite(v)
             ? null
-            : [left + (stepped ? i * held : (i / last) * span), yOf(v, scale, box)],
+            : [
+                left + (stepped ? i * held : (at ? (at[i] ?? 1) : i / last) * span),
+                yOf(v, scale, box),
+              ],
         );
         // a step holds its last reading across its slot: the line runs on to the slot's end
         if (stepped && pts.length) {
@@ -272,7 +280,7 @@ export function plotOf(spec: ChartSpec): {
 /**
  * What a chart reads at a fraction of its plot's width (none: where it rests, at the end of what has happened): the x,
  * where each line is there (null off a line, and for bars), and the reading's index there — a bar's or a step's slot,
- * a line's nearest reading.
+ * an evenly spaced line's nearest reading (a line at its own times is read by its card, `timeLine`'s `read`).
  */
 export function readAt(
   spec: ChartSpec,
@@ -280,12 +288,12 @@ export function readAt(
 ): { readonly x: number; readonly ys: ReadonlyArray<number | null>; readonly index: number } {
   const laid = layout(spec, fraction);
   // bars are read whole: the cursor snaps to its slot's middle
-  const slotted = laid.bars || spec.style.curve === 'step';
+  const whole = laid.bars || slotted(spec, 0);
   const index = Math.min(
     Math.max(0, laid.count - 1),
     Math.max(
       0,
-      slotted
+      whole
         ? Math.floor((laid.cursorX - laid.left) / laid.slot)
         : Math.round((laid.cursorX - laid.left) / laid.slot),
     ),
@@ -580,7 +588,7 @@ function lineBody(spec: ChartSpec, laid: Laid, index: number): SVGTemplateResult
     style.points === 'all'
       ? past.flatMap((p, i) =>
           p && i < series.values.length
-            ? [point(curve === 'step' ? p[0] + laid.heldOf(index) / 2 : p[0], p[1])]
+            ? [point(slotted(spec, index) ? p[0] + laid.heldOf(index) / 2 : p[0], p[1])]
             : [],
         )
       : nothing
@@ -646,7 +654,7 @@ export function drawChart(spec: ChartSpec): TemplateResult {
         if (p)
           dots.push(
             dot(
-              curveOf(spec, index) === 'step' ? p[0] + laid.heldOf(index) / 2 : p[0],
+              slotted(spec, index) ? p[0] + laid.heldOf(index) / 2 : p[0],
               p[1],
               pick === 'min' ? 'ok' : 'danger',
             ),

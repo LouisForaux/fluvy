@@ -90,9 +90,11 @@ const NOW_AT = 2 / 3;
 
 const MEASURE = { state_class: 'measurement' };
 
+/** A sensor card over the design page's day (its 24 hours, where the house shows 12). */
 const sensor = (more: Record<string, unknown> = {}) => ({
   type: 'custom:fluvy-sensor-card',
   entity: 'sensor.cs_temperature',
+  hours: 24,
   _now: NOW,
   ...more,
 });

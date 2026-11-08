@@ -1,4 +1,11 @@
-import { plural, strings, type EntityName, type HaFormSchemaItem } from '@fluvy/core';
+import {
+  chartDefaults,
+  plural,
+  strings,
+  type EntityName,
+  type HaFormSchemaItem,
+  type HomeAssistant,
+} from '@fluvy/core';
 import type { Tone } from '@fluvy/ui';
 import type { ChartCaps, ChartPreset, Curve, FillKind } from '../shared/chart-config.js';
 import {
@@ -19,6 +26,8 @@ import type { EditorChoices, FormHelper, RowsListSpec } from '../shared/rows-edi
 import { ladderOf, type NumberKeys } from '../shared/units.js';
 import { timedAttributes, type Day } from './data/attribute.js';
 import {
+  PERIOD_MS,
+  periodOf,
   PERIODS,
   SOURCES,
   sourceOf,
@@ -129,8 +138,8 @@ export function windowAt(
 
 /* ---------- what the card can draw ---------- */
 
-/** All a Chart card may draw: a window that runs past now, columns, a band, several series, a scale. */
-export const CHART_CAPS: ChartCaps = { now: true, bars: true, band: true, axis: true };
+/** All a Chart card may draw: a window that runs past now, columns, a band, several series, a scale, a line through time. */
+export const CHART_CAPS: ChartCaps = { now: true, bars: true, band: true, axis: true, time: true };
 
 /** What a card draws with its series: now where its window runs past it, a style's highlight only alone. */
 export const capsFor = (count: number, ahead: boolean): ChartCaps => ({
@@ -139,13 +148,31 @@ export const capsFor = (count: number, ahead: boolean): ChartCaps => ({
   several: count > 1,
 });
 
-/** What a config lets the card draw, as its editor reads it: a calendar window, a list or a forecast run past now. */
-export function capsIn(data: Readonly<Record<string, unknown>>): ChartCaps {
+/**
+ * What a config lets the card draw, as its editor reads it (with the house it shows: a sensor that holds a list reads
+ * it): a calendar window, a list or a forecast run past now; a line through time where a series reads the recorder,
+ * its points never finer than its finest series comes (an hour's statistics).
+ */
+export function capsIn(data: Readonly<Record<string, unknown>>, hass?: HomeAssistant): ChartCaps {
   const items = seriesOf(data);
+  const span = spanOf(data['span']);
+  const sources = items.map((item) => sourceOf(item, hass?.states[item.entity]?.attributes));
   const ahead =
-    spanOf(data['span']).kind !== 'rolling' ||
-    items.some((item) => sourceOf(item) === 'attribute' || sourceOf(item) === 'forecast');
-  return capsFor(items.length, ahead);
+    span.kind !== 'rolling' ||
+    sources.some((source) => source === 'attribute' || source === 'forecast');
+  const grains = items.flatMap((item, index) => {
+    const source = sources[index];
+    return source === 'history'
+      ? [0]
+      : source === 'statistics'
+        ? [PERIOD_MS[item.period ?? periodOf(span.hours)]]
+        : [];
+  });
+  return {
+    ...capsFor(items.length, ahead),
+    time: grains.length > 0,
+    ...(grains.length ? { finest: Math.min(...grains) } : {}),
+  };
 }
 
 /** The windows a card marks where it says none: those its style marks (step's lowest and highest), else none. */
@@ -159,7 +186,13 @@ export const defaultWindows = (chart: unknown): Windows =>
 
 const capitalise = (text: string): string => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
-/** The span's choices: the usual windows by their words; any other typed (`12h`, `3d`). */
+/** The house's window as a span (`12h`, a week as `7d`): what the card reads, and its editor shows, while it names none. */
+export function houseSpanValue(): string {
+  const hours = chartDefaults().settings.window;
+  return hours > 48 && hours % 24 === 0 ? `${hours / 24}d` : `${hours}h`;
+}
+
+/** The span's choices: the house's windows and the calendar's by their words; any other typed (`6h`, `3d`). */
 export function spanField(): HaFormSchemaItem {
   const windows = (count: number, key: 'sensor.window_hours' | 'sensor.window_days'): string =>
     capitalise(plural(editorLanguage(), key, count, { count }));
@@ -170,6 +203,8 @@ export function spanField(): HaFormSchemaItem {
         mode: 'dropdown',
         custom_value: true,
         options: [
+          { value: '4h', label: windows(4, 'sensor.window_hours') },
+          { value: '12h', label: windows(12, 'sensor.window_hours') },
           { value: '24h', label: windows(24, 'sensor.window_hours') },
           { value: 'today', label: editorWord('common.today') },
           { value: 'today+tomorrow', label: s(editorLanguage(), 'today_tomorrow') },

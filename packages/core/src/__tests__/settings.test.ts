@@ -193,6 +193,9 @@ describe('parsing stored settings', () => {
       bubble: 'dark',
       series: 'palette',
       animate: true,
+      // 1.18: the last 12 hours where a card names none (24 before), the points as each card draws them calmly
+      window: 12,
+      points: 'auto',
     });
     expect(resolveSettings(upgraded, PERSONAL_DEFAULTS).charts).toEqual(CHART_DEFAULTS);
   });
@@ -231,6 +234,15 @@ describe('parsing stored settings', () => {
       gauge: 'ruler',
       series: 'set-1',
     });
+  });
+
+  it('reads how much of the past every chart shows and how far apart its points stand: the windows and steps it offers, else the default (1.18)', () => {
+    const read = (charts: unknown) => parseHouse({ charts }).charts;
+    expect(read({ window: 48, points: '15m' })).toMatchObject({ window: 48, points: '15m' });
+    expect(read({ window: 168, points: '1h' })).toMatchObject({ window: 168, points: '1h' });
+    // a window or a step it does not offer is the default: a card's own `hours` is where any other lives
+    expect(read({ window: 6, points: '10m' })).toMatchObject({ window: 12, points: 'auto' });
+    expect(read({ window: '24', points: 30 })).toMatchObject({ window: 12, points: 'auto' });
   });
 
   it('keeps the well-formed saved series sets: six colours each, the first of each id, twelve at most', () => {

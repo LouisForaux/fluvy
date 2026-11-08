@@ -1,5 +1,6 @@
 import { energyHeight } from '../energy-family.js';
 import {
+  chartDefaults,
   clock12,
   dateFormat,
   fetchHistory,
@@ -24,7 +25,6 @@ import { axis, emptyState, head, readout, round, type Tone } from '@fluvy/ui';
 import { energyStyles } from '@fluvy/ui/styles/energy';
 import {
   AXIS_GAP,
-  bucket,
   chartKeysOf,
   chartStyles,
   drawRead,
@@ -33,16 +33,17 @@ import {
   plotOf,
   readingsOf,
   resolveStyle,
-  sampleAt,
   styleOf,
   scrub,
   ScrubController,
   tickLabels,
   tickText,
+  timeLine,
   UNIT_COLUMN,
   unitLabel,
   type ChartSpec,
   type ResolvedStyle,
+  type TimeLine,
 } from '../chart/engine/index.js';
 import type { ChartCaps, ChartKeys, GridChoice, LineWidth } from '../shared/chart-config.js';
 
@@ -152,7 +153,10 @@ export interface EnergyLegendItem extends NumberKeys {
  */
 export interface EnergyCardConfig extends FluvyCardConfig, NumberKeys, Omit<ChartKeys, 'show_now'> {
   subtitle?: string;
-  /** Window of the curve. 24 (the default) draws today on a 00:00 … 24:00 axis; anything else rolls. */
+  /**
+   * Window of the curve: 24 draws today on a 00:00 … 24:00 axis, anything else rolls; none: the house's (Charts, 12 by
+   * default, where it was 24 before 1.18).
+   */
   hours?: number;
   /** The sensor read the other way round: a grid meter that reads negative while it imports reads "1.4 kW" now. */
   invert?: boolean;
@@ -206,6 +210,7 @@ const DAY = 86_400_000;
 export const LINE_CAPS: ChartCaps = {
   axis: true,
   styles: ['classic', 'soft', 'glow', 'minimal', 'step'],
+  time: true,
 };
 export const STACK_CAPS: ChartCaps = {
   axis: true,
@@ -652,7 +657,8 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
         range,
       };
     }
-    const asked = clamp(Math.round(Number(this.config?.hours ?? 24)) || 24, 1, 168);
+    const house = chartDefaults().settings.window;
+    const asked = clamp(Math.round(Number(this.config?.hours ?? house)) || house, 1, 168);
     const minutes = minutesIntoDay(this.hass, now);
     // the first hours of a day are a few pixels of curve blown up to full height: until there is a day to draw, the last 24 h roll
     if (asked !== 24 || minutes < DAY_FROM * 60) return { day: false, hours: asked, extent: 1 };
@@ -715,7 +721,7 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     this.asked = key;
     const series = await (range
       ? fetchMeanSeries(hass, id, range, now)
-      : fetchHistory(hass, id, hours, FINE));
+      : fetchHistory(hass, id, hours, FINE, false, this.config?._now));
     if (key !== this.asked) return; // a newer request owns the chart
     // read the other way round, the curve is too: its least is its greatest
     this.series_ =
@@ -723,6 +729,9 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
         ? {
             ...series,
             values: series.values.map((v) => -v),
+            ...(series.readings
+              ? { readings: series.readings.map((r) => ({ t: r.t, v: -r.v })) }
+              : {}),
             min: -series.max,
             max: -series.min,
             average: -series.average,
@@ -1208,8 +1217,8 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
   }
 
   /**
-   * The stacked charts' own line ("Today · the whole house") lets go where not even "Aujourd'hui" holds beside the
-   * round (half a column): the chart's day axis says today. A line the person typed is theirs.
+   * The chart's own line ("Today · the whole house", "Last 12 h") lets go where not even "Aujourd'hui" holds beside the
+   * round (half a column): the chart's axis says the day, or how far back it reaches. A line the person typed is theirs.
    */
   private daySubShorter(): string[] {
     return this.config?.subtitle === undefined ? [''] : [];
@@ -1268,48 +1277,66 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     return axisHolds(this.head.ruler, width, three) ? three : [three[0], three[2]];
   }
 
-  /** The point under the pointer: where the cursor goes, what it reads and when that was. */
+  /**
+   * The reading under the pointer, as Home Assistant has it then (the line's `read`: the bucket or the state at the
+   * round time the pointer is nearest): where the cursor goes, what it reads and when that was.
+   */
   private scrubbed(
-    values: readonly number[],
+    line: TimeLine<ResolvedStyle> | null,
+    extent: number,
     view: EntityView,
-    { extent, day, hours, range }: ChartWindow,
+    range: FollowedRange | undefined,
   ): { cursor: number; parts: { value: string; unit: string }; time: string } | null {
     const fraction = this.scrubber.value;
-    if (fraction === null || values.length < 2 || !(extent > 0)) return null;
-    const cursor = Math.min(fraction, extent);
-    const point = sampleAt(values, cursor / extent);
-    if (point === null) return null;
-    const now = this.now();
-    const at = range
-      ? new Date(range.start.getTime() + cursor * spanOf(range, now))
-      : day
-        ? new Date(new Date(now).setHours(0, 0, 0, 0) + cursor * DAY_MINUTES * 60_000)
-        : new Date(now.getTime() - hours * 3_600_000 * (1 - cursor));
-    const time = range
-      ? this.momentWords(range.start.getTime(), spanOf(range, now), cursor)
-      : formatTime(this.hass, at);
-    return { cursor, parts: readoutParts(this.hass, view, point, this.config), time };
+    const read = fraction === null || !line ? null : line.read(Math.min(fraction, extent) / extent);
+    if (!read) return null;
+    return {
+      cursor: read.fraction * extent,
+      parts: readoutParts(this.hass, view, read.v, this.config),
+      time: this.momentWords(read.t, range ? spanOf(range, this.now()) : 0, 0),
+    };
   }
 
   /**
-   * The line as drawn and where it ends: at most a point a pixel of the curve, each the mean of the readings it
-   * stands for, ending on the reading now where it is live (history is up to five minutes old) — a picker's range
-   * at its last bucket's start, history at now.
+   * The line through the window (the engine's `timeLine`) and how much of the axis it covers: a picker's range bucket
+   * by bucket to its last bucket's start, or the history from the window's start (the house's midnight on the day's
+   * axis) to now, ending on the reading now where it is live (history is up to five minutes old); none until there
+   * are readings to draw.
    */
-  private line(window: ChartWindow, live: number | null): { values: number[]; extent: number } {
-    const all = this.series_?.values ?? [];
-    const step = this.series_?.step;
-    const extent =
-      step && window.range
-        ? clamp(((all.length - 1) * step) / spanOf(window.range, this.now()), 0, 1)
-        : window.extent;
-    const values = bucket(all, Math.max(2, Math.round(this.contentWidth * extent)), 'mean');
-    if (live !== null && values.length) values[values.length - 1] = live;
-    return { values, extent };
+  private line(
+    window: ChartWindow,
+    live: number | null,
+  ): { line: TimeLine<ResolvedStyle> | null; extent: number } {
+    const series = this.series_;
+    const now = this.now();
+    const { range } = window;
+    const step = range ? series?.step : undefined;
+    const start = range
+      ? range.start.getTime()
+      : window.day
+        ? houseMidnight(this.hass, now).getTime()
+        : now.getTime() - window.hours * 3_600_000;
+    const end = step ? start + ((series?.values.length ?? 0) - 1) * step : now.getTime();
+    const readings = step
+      ? series?.values.map((v, i) => ({ t: start + i * step, v }))
+      : series?.readings;
+    const extent = range && step ? clamp((end - start) / spanOf(range, now), 0, 1) : window.extent;
+    if (!readings?.length || !(end > start)) return { line: null, extent };
+    const line = timeLine({
+      readings,
+      start,
+      end,
+      width: this.contentWidth * extent,
+      style: this.lineStyle(),
+      hass: this.hass,
+      ...(step ? { finest: step } : {}),
+    });
+    if (live !== null) line.values[line.values.length - 1] = live;
+    return { line, extent };
   }
 
   private renderChart(
-    values: readonly number[],
+    line: TimeLine<ResolvedStyle> | null,
     extent: number,
     live: number | null,
     value: string,
@@ -1321,10 +1348,10 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     // a sensor that is not there has no history to wait for: the chart's room says so, not a shimmer
     if (!this.loaded_ && !missing)
       return html`<div class="ef-chart"><div class="fv-skeleton"></div></div>`;
-    if (missing || values.length < 2) {
+    if (missing || !line) {
       return html`<div class="ef-chart">${this.noHistory()}</div>`;
     }
-    const spec = this.lineSpec(values, extent, at?.cursor);
+    const spec = this.lineSpec(line, extent, at?.cursor);
     const thin = spec.style.preset === 'classic' && this.config?.line_width === 'thin';
     // the chart wears the card's tone: its curve is drawn in the same ink as the head; its bubble says what is read,
     // else now (a reading that is not there says nothing)
@@ -1360,21 +1387,28 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
    * day's extent drawn so far, read at `cursor` (a fraction of the plot).
    */
   private lineSpec(
-    values: readonly number[],
+    line: TimeLine<ResolvedStyle>,
     extent: number,
     cursor: number | undefined,
   ): ChartSpec {
     const view = this.entity();
-    const style = this.lineStyle();
+    // a step asked closer than the style's line reads is drawn thinner (`timeLine`)
+    const style = line.style;
     const base = toBase(1, view.unit);
-    const peak = Math.max(0, ...values.map(Math.abs)) * base.value;
+    const values = line.values;
+    const peak = Math.max(0, ...values.map((v) => Math.abs(v ?? 0))) * base.value;
     const factor =
       style.scale === 'nice'
         ? base.value / figuresOf(this.hass, this.config, base.unit, peak, view).divisor
         : 1;
     const spec: ChartSpec = {
       frame: { width: this.contentWidth, height: CHART_HEIGHT, headroom: HEADROOM },
-      series: [{ values: factor === 1 ? values : values.map((v) => v * factor) }],
+      series: [
+        {
+          values: factor === 1 ? values : values.map((v) => (v === null ? v : v * factor)),
+          at: line.at,
+        },
+      ],
       style,
       extent,
       cursor,
@@ -1409,8 +1443,7 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
     const { day, hours, range } = window;
     // a picker on a past range: the reading now is not the range's, and the readout says the range's last value
     const live = view.status === 'ok' && this.live() ? this.signed(view) : null;
-    const line = this.line(window, live);
-    const extent = line.extent;
+    const { line, extent } = this.line(window, live);
     const last = this.series_?.values[this.series_.values.length - 1];
     const parts =
       live === null && range && last !== undefined
@@ -1438,9 +1471,13 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
       title,
       sub,
       trailing: 44,
-      shorter: missing ? [stateWord(this.hass, view), ''] : [],
+      shorter: missing
+        ? [stateWord(this.hass, view), '']
+        : range || day
+          ? []
+          : this.daySubShorter(),
     });
-    const at = this.loaded_ ? this.scrubbed(line.values, view, { ...window, extent }) : null;
+    const at = this.loaded_ ? this.scrubbed(line, extent, view, range) : null;
     // the cost beside the reading, or under it where the two do not hold the column: measured on what the reading
     // says now and while the curve is read (a time), at the curve's widest figures, so reading it never moves the row;
     // with no curve (a sensor that is not there), at the widest a house says, as an unavailable one keeps its curve's
@@ -1465,7 +1502,7 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
       );
     // the chart, then its clock under the plot: after a style's scale where it draws one
     const chart = this.renderChart(
-      line.values,
+      line,
       extent,
       live,
       parts.value,

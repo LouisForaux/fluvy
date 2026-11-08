@@ -6,7 +6,7 @@ everyone else reads it, and changes their own (a palette of their own, their pre
 | Tab | What it holds | Whose |
 | --- | --- | --- |
 | **Appearance** | palette (fifteen presets, the house's saved palettes, the community's, or a custom accent — shared as a file), shape (soft, round, crisp), button style, the dashboards' tabs (Fluvy, pills, original or hidden; names, icons or both; the dashboard's name), the sidebar and header (Home Assistant's logo, dividers, the header on the page), lines in the sidebar after the items chosen; the cards (how opaque, and the blur behind a see-through one), the lights, where a card says nothing, and the status colours (see below); a live preview on real cards (its little house answers a tap itself: nothing at home changes) | the house; a person may keep their own palette and shape |
-| **Charts** | the style every chart is drawn in and the gauge every gauge reads in, each a tile the chart engine draws; what the style lets the house tune; motion; the series colours (the palette's six, or a set of the house's own, made and checked here); a preview of a chart, its bars and a gauge in both modes side by side — see [Charts](#charts) | the house |
+| **Charts** | the style every chart is drawn in and the gauge every gauge reads in, each a tile the chart engine draws; what the style lets the house tune; motion; how much of the past every chart shows and how far apart a line's points stand; the series colours (the palette's six, or a set of the house's own, made and checked here); a preview of a chart, its bars and a gauge in both modes side by side — see [Charts](#charts) | the house |
 | **Scope** | dashboards only or everywhere; which dashboards when "only"; the frame, the icons, the Activity page, the History page | the house |
 | **Dashboards** | the five automatic dashboards: create any with one tap, open it, its options, its sidebar entry, recreate it | the house |
 | **Wall** | what this device is (a wall panel, its address to open on the tablet), which dashboards are walls, the screensaver (with a preview of it), the way out (a × in the corner, or a long press), the way back from a subview (a button with its name, or Home Assistant's header), day and night, the background; the preview shows the wall as it would be now, in its night when it is night — see [wall mode](wall.md) | the house; *this device* is the tablet's own |
@@ -125,8 +125,14 @@ style is **Classic**, the chart every card drew before 1.11: nothing changes on 
 | **Series colours** | From the palette · a saved set | the six colours of a chart's several series: the palette's (`--fluvy-graph-1…6`) or a set of six of the house's own, each colour one of the palette's (it follows the palette and the mode) or a hex of its own (fixed: its hue kept and each mode wearing it fitted to its card as the palette's are built); two still closer than ΔE 8 are said |
 | **Waves** | Medium · Low · High | how tall a moving gauge's waves stand (4, 7 or 10 px); offered once a gauge that moves is chosen |
 | **Motion** | On · Off | whether a chart draws itself in; a card's `animate` wins, and the system's reduced motion always holds |
+| **Time shown** | 12 h · 4 h · 24 h · 48 h · 7 d | how much of the past a chart shows where a card names none (1.18; 24 hours before): the sensor's chart and tile, the energy card's line, a Chart card's `span`; a card's `hours` (the Chart card's `span`) wins — `hours: 24` is the energy card's day |
+| **A point every** | Automatic · 5 min · 15 min · 30 min · 1 h | how far apart a line through time draws its points (1.18); a card's `points` wins. **Automatic** is a calm line for each card's width and style: its points on the house's round times (12:00, 12:30 …), the finest step that keeps them 5 px apart (4 for a thin line, 6 under a glow), each the mean of the readings around its time. A **fixed** step draws Home Assistant's reading at each of its times, so the line passes through what Home Assistant says at 12:00; down to a pixel apart, the line drawn thinner (to Home Assistant's own 1 px) where its points stand closer than its stroke reads, and no finer than the readings come (an hour's statistics by the hour) |
 
-Classic takes none of these but motion. The rule is one, everywhere: a card's own key wins over the house's setting,
+Wherever a line through time is read — a finger or a mouse on it — it says the reading itself, never the line: the time
+snapped to the round one nearest (a statistic's five minutes, or what a pixel of the plot holds) and the reading Home
+Assistant has then, so 12:00 says Home Assistant's 12:00 whatever the line draws there; the dot stands on the line.
+
+Classic takes none of these but motion, the time shown and the points. The rule is one, everywhere: a card's own key wins over the house's setting,
 which wins over the style's own default.
 
 ### The Charts tab
@@ -140,6 +146,8 @@ Soft"); Discard puts the saved ones back.
   and the gauge on 62 %, in the fine settings chosen; the chosen one in the accent's fill with its check.
 - **Details**: the fine settings the chosen style draws with, a row of chips each — no other is offered (the engine's
   `HOUSE_ACTS`). Classic takes none, and says so; then **Motion**, which every chart has.
+- **Time**: **Time shown** and **A point every**, a row of chips each, every style's ("Charts · Time shown · 24 h"),
+  and a line under them on what the two kinds of points draw.
 
   | Style | Line | Soft shadow | Fill | Gridlines | Line's end | Now | Bars' ends | Bubble |
   | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -193,7 +201,8 @@ answers.
 
 **Backups.** Because both live in Home Assistant's frontend data, a Home Assistant backup keeps every setting of
 Fluvy's and a restore brings them back: the look and the saved palettes, the cards' opacity and blur, the statuses' colours, the lights' defaults,
-the wall, the Charts tab (the style, the gauge, every detail, motion) and the house's own series colours. The panel's
+the wall, the Charts tab (the style, the gauge, every detail, motion, the time shown and the points) and the house's
+own series colours. The panel's
 *Preferences › Fluvy › Export* writes the same to a file — the house, the person and the options of every automatic
 dashboard — and *Import* (an administrator's) reads it back on another house; a file from an earlier version brings
 what it holds and leaves the rest at its defaults. What a screen keeps for itself (*This device · Size*, a device's

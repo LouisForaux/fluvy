@@ -15,6 +15,8 @@ export interface Series {
   readonly min: number;
   readonly max: number;
   readonly average: number;
+  /** What the recorder read, each from its moment until the next (`fetchHistory`): what a chart draws and reads. */
+  readonly readings?: readonly { readonly t: number; readonly v: number }[];
 }
 
 const TTL = 5 * 60_000;
@@ -83,7 +85,8 @@ export function resample(
 
 /**
  * A sensor's history over the last `hours` as `count` points (`resample`: means, or a meter's readings, `last`), its
- * extremes the window's own: a peak between two points is still the window's peak.
+ * extremes the window's own: a peak between two points is still the window's peak; and its readings as they were.
+ * `at` ends it at a card's frozen now (its `_now`, a test's), where it ends now.
  */
 export function fetchHistory(
   hass: HomeAssistant,
@@ -91,11 +94,12 @@ export function fetchHistory(
   hours = 24,
   count = 48,
   last = false,
+  at?: string,
 ): Promise<Series | null> {
-  const key = `${entityId}|${hours}|${count}|${last}`;
+  const key = `${entityId}|${hours}|${count}|${last}|${at}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.promise;
-  const end = new Date();
+  const end = at ? new Date(at) : new Date();
   const start = new Date(end.getTime() - hours * 3_600_000);
   const promise = hass
     .callWS<Record<string, RawState[]>>({
@@ -113,7 +117,7 @@ export function fetchHistory(
         .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.v));
       const series = summarise(resample(points, start.getTime(), end.getTime(), count, last));
       const read = summarise(points.map((p) => p.v));
-      return series && read && { ...series, min: read.min, max: read.max };
+      return series && read && { ...series, min: read.min, max: read.max, readings: points };
     })
     .catch(() => null);
   return remember(key, promise);

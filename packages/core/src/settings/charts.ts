@@ -63,6 +63,12 @@ export const WAVE_HEIGHTS = ['low', 'mid', 'high'] as const;
 export type WaveHeight = (typeof WAVE_HEIGHTS)[number];
 export const BUBBLE_LOOKS = ['dark', 'tone'] as const;
 export type BubbleLook = (typeof BUBBLE_LOOKS)[number];
+/** How many hours of the past a chart shows (1.18): four, twelve, a day, two, a week. */
+export const CHART_WINDOWS = [4, 12, 24, 48, 168] as const;
+export type ChartWindow = (typeof CHART_WINDOWS)[number];
+/** How far apart a line's points stand: as its width draws it calmly (`auto`), or every 5, 15 or 30 minutes or hour. */
+export const POINT_EVERY = ['auto', '5m', '15m', '30m', '1h'] as const;
+export type PointEvery = (typeof POINT_EVERY)[number];
 /** The series colours: the palette's six derived ones, or one of the house's saved sets by its id. */
 export const PALETTE_SERIES = 'palette';
 
@@ -89,6 +95,10 @@ export interface ChartSettings {
   readonly series: string;
   /** Whether charts draw themselves in and the gauges that move do; off, every chart is its resting frame. */
   readonly animate: boolean;
+  /** The hours a chart of the past shows where a card says none (`hours`, a Chart card's `span`). */
+  readonly window: ChartWindow;
+  /** How far apart a line's points stand where a card says nothing (`points`). */
+  readonly points: PointEvery;
 }
 
 /**
@@ -112,7 +122,10 @@ export const isPaletteRef = (colour: string): boolean => REF.test(colour);
 export const SERIES_COUNT = 6;
 export const MAX_SAVED_SERIES = 12;
 
-/** The factory settings: `classic` everywhere, so nobody's charts change on upgrade; the design page's knobs otherwise. */
+/**
+ * The factory settings: `classic` everywhere, so nobody's charts change style on upgrade; the design page's knobs
+ * otherwise; the last 12 hours (24 before 1.18), the points as the width draws them calmly.
+ */
 export const CHART_DEFAULTS: ChartSettings = {
   style: 'classic',
   gauge: 'ticks',
@@ -127,6 +140,8 @@ export const CHART_DEFAULTS: ChartSettings = {
   bubble: 'dark',
   series: PALETTE_SERIES,
   animate: true,
+  window: 12,
+  points: 'auto',
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -161,6 +176,8 @@ export function parseChartSettings(raw: unknown): ChartSettings {
     series:
       typeof value['series'] === 'string' && ID.test(value['series']) ? value['series'] : d.series,
     animate: typeof value['animate'] === 'boolean' ? value['animate'] : d.animate,
+    window: oneOfNumbers(value['window'], CHART_WINDOWS) ? value['window'] : d.window,
+    points: oneOf(value['points'], POINT_EVERY) ? value['points'] : d.points,
   };
 }
 

@@ -5,7 +5,6 @@ import { RING, ringRadius } from '../../score/rings.js';
 import fixtures from './__fixtures__/classic-1.10.json' with { type: 'json' };
 import { barGeometry, barPath } from './bars.js';
 import { drawChart, type ChartSpec } from './draw.js';
-import { sampleAt } from './model.js';
 import { areaPath, bandPath, linePath, yAt, type Pt } from './path.js';
 import { resolveStyle } from './presets.js';
 import { arcDash, signedTicks } from './ring.js';
@@ -153,7 +152,6 @@ describe('the History page’s plot, drawn from the engine’s paths', () => {
     [0, 37, 160, 320].forEach((x, i) =>
       expect(yAt(points, 'step', x)).toBeCloseTo(fixtures.seriesY.historyStep[i] as number, 9),
     );
-    [0, 0.37, 0.5, 1].forEach((f, i) => expect(sampleAt(TEMP, f)).toBe(fixtures.sampleAt[i]));
   });
 
   it('keeps a reading past the scale on its edge, and the floor at zero for power', () => {

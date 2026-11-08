@@ -1,4 +1,4 @@
-import { strings, type LovelaceConfigForm } from '@fluvy/core';
+import { chartDefaults, strings, type LovelaceConfigForm } from '@fluvy/core';
 import { chartDefaultsFor, chartSection } from '../chart/engine/index.js';
 import { HEAD_BASE } from '../shared/base.js';
 import type { ChartCaps } from '../shared/chart-config.js';
@@ -86,6 +86,7 @@ export const keys = configKeys<EnergyCardConfig>()([
   'show_points',
   'highlight',
   'animate',
+  'points',
 ]);
 
 export const lists: readonly RowsListSpec[] = [
@@ -110,6 +111,7 @@ export const lists: readonly RowsListSpec[] = [
 /** What the editor shows where the config says nothing: what the card does then. */
 export const defaults: EditorDefaults = (config) => ({
   variant: 'full',
+  hours: chartDefaults().settings.window,
   invert: false,
   show_cost: true,
   show_soc: true,
@@ -137,10 +139,13 @@ export function getConfigForm(): LovelaceConfigForm {
       fieldRow(nameField(), textField('subtitle')),
       fieldRow(iconField(), showIconField()),
       ...colourFields(),
-      // a date picker's range stands in for the window
+      // a date picker's range stands in for the window; a stacked chart draws today
       fieldRow(
         selectField('variant', ['full', 'compact', 'sources', 'overview']),
-        onlyWhen((data) => !following(data), numberField('hours', 1, 168)),
+        onlyWhen(
+          (data) => !following(data) && capsIn(data) === LINE_CAPS,
+          numberField('hours', 1, 168),
+        ),
       ),
       collectionField(),
       fieldRow(boolField('show_soc'), boolField('show_house')),

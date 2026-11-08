@@ -4,9 +4,10 @@
  * Exit code 1 on any failure.
  *   PLAYGROUND=http://127.0.0.1:5199/ node interactions-chart.mjs     (the bundle's check needs `pnpm build` first)
  * What it proves:
- * - classic unchanged: the sensor's curve and area, and two sensors' curves, are 1.10's paths byte for byte (the
- *   strings recorded before the engine, `chart/engine/__fixtures__/classic-1.10.json`, on the same day), and their
- *   fills 1.10's paint (one sensor's at 28 %, two sharing the plot at 16 %);
+ * - classic's look: the sensor's curve and area drawn by 1.10's maths (`classic.test.ts` holds them byte for byte to
+ *   `chart/engine/__fixtures__/classic-1.10.json`) through its line through time (1.18): calm, its points 5 px apart at
+ *   least, two sensors' at the same places; and their fills 1.10's paint (one sensor's at 28 %, two sharing the plot
+ *   at 16 %);
  * - nothing leaves the plot, in every style and both modes: every line, area, copy and bar inside the chart's clip box,
  *   the dot, the knob and the bubble whole inside the chart's room and the card;
  * - text placement, in every style and both modes: the axis's first label flush with the plot's start and its last
@@ -57,29 +58,29 @@ const paths = (locator, selector) =>
     selector,
   );
 
-/* ---------- classic unchanged ---------- */
+/** Where a path's points stand across the plot: its start and the end of each of its curves. */
+const places = (d) =>
+  [...(d ?? '').matchAll(/(?:^M| )(-?[\d.]+),[\d.]+(?= C|$)/g)].map((m) => +m[1]);
+/** The least distance between two of its points, its two ends aside (the window's ends stand where they fall). */
+const closest = (xs) => Math.min(...xs.slice(2, -1).map((x, i) => x - xs[i + 1]));
+
+/* ---------- classic's look ---------- */
 {
   const page = await suite.sheet('chart-styles');
   const one = frame(page, 'Style · classic').locator('fluvy-sensor-card').first();
+  const [line] = await paths(one, '.am-chart .curve-line');
   check(
-    'classic, one sensor: its curve is 1.10’s, byte for byte',
-    JSON.stringify(await paths(one, '.am-chart .curve-line')) ===
-      JSON.stringify([fixtures.curveGeometry.sensor.line]),
-  );
-  check(
-    'classic, one sensor: its area is 1.10’s, byte for byte',
-    JSON.stringify(await paths(one, '.am-chart .curve-area')) ===
-      JSON.stringify([fixtures.curveGeometry.sensor.area]),
+    'classic, one sensor: one curve and its area, its points 5 px apart at least (the house’s 2.5 line)',
+    (await paths(one, '.am-chart .curve-area')).length === 1 && closest(places(line)) >= 5 - 1e-6,
+    JSON.stringify(places(line).slice(0, 6)),
   );
   const two = frame(page, 'Several · classic').locator('fluvy-sensor-card').first();
+  const lines = await paths(two, '.am-chart .curve-line');
   check(
-    'classic, two sensors: each curve is 1.10’s, byte for byte',
-    JSON.stringify(await paths(two, '.am-chart .curve-line')) ===
-      JSON.stringify([fixtures.seriesPath.sensorSmooth, fixtures.seriesPath.humSmooth]),
-  );
-  check(
-    'classic, two sensors: the first one’s area is 1.10’s, byte for byte',
-    (await paths(two, '.am-chart .curve-area'))[0] === fixtures.areaUnder.sensor,
+    'classic, two sensors: a curve each, their points at the same places, an area under each',
+    lines.length === 2 &&
+      JSON.stringify(places(lines[0])) === JSON.stringify(places(lines[1])) &&
+      (await paths(two, '.am-chart .curve-area')).length === 2,
   );
   // the paint as 1.10 drew it, not the paths alone: one sensor's fill at 28 %, two sharing the plot at 16 %
   const fills = (card) =>

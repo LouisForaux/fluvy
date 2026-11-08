@@ -1,5 +1,11 @@
 // @vitest-environment happy-dom
-import type { HaFormSchemaItem, HomeAssistant } from '@fluvy/core';
+import {
+  CHART_DEFAULTS,
+  clearHistoryCache,
+  setChartDefaults,
+  type HaFormSchemaItem,
+  type HomeAssistant,
+} from '@fluvy/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import fixtures from '../chart/engine/__fixtures__/classic-1.10.json' with { type: 'json' };
 import { familiesDefined } from '../index.js';
@@ -12,6 +18,9 @@ await familiesDefined;
 const { TEMP, HUM } = fixtures.inputs;
 /** A day of an energy meter (kWh, counting up): what it gained each half hour, added up. */
 const METER = TEMP.reduce<number[]>((sums, v, i) => [...sums, (sums[i - 1] ?? 1000) + v / 40], []);
+
+/** The windows the recorder was asked for, in hours. */
+const asked: number[] = [];
 
 /** A house whose recorder answers every window with the readings, one at the start of each of its 48 slots. */
 const house = (): HomeAssistant => {
@@ -55,6 +64,7 @@ const house = (): HomeAssistant => {
     callWS: async (message: Record<string, unknown>) => {
       const start = Date.parse(String(message['start_time']));
       const end = Date.parse(String(message['end_time']));
+      asked.push(Math.round((end - start) / 3_600_000));
       const id = (message['entity_ids'] as string[])[0] as string;
       const values = readings[id] ?? [];
       return {
@@ -87,13 +97,28 @@ async function mount(config: Partial<SensorCardConfig>): Promise<FluvySensorCard
 const ds = (card: FluvySensorCard, selector: string): string[] =>
   [...card.shadowRoot!.querySelectorAll(selector)].map((el) => el.getAttribute('d') ?? '');
 
-afterEach(() => document.body.replaceChildren());
+afterEach(() => {
+  document.body.replaceChildren();
+  setChartDefaults({ settings: CHART_DEFAULTS, sets: [] });
+});
+
+/** The places a line's path goes through: its start and the end of each of its curves. */
+const placesOf = (d: string): number[] =>
+  [...d.matchAll(/(?:^M| )(-?[\d.]+),[\d.]+(?= C|$)/g)].map((m) => Number(m[1]));
 
 describe('the sensor’s chart, drawn by the engine', () => {
-  it('draws one sensor classic, as 1.10 did, path for path, while the house keeps its factory style', async () => {
+  it('draws one sensor classic through its line, calmly: never two points closer than its stroke needs', async () => {
     const card = await mount({});
-    expect(ds(card, '.am-chart .curve-line')).toEqual([fixtures.curveGeometry.sensor.line]);
-    expect(ds(card, '.am-chart .curve-area')).toEqual([fixtures.curveGeometry.sensor.area]);
+    const [line] = ds(card, '.am-chart .curve-line');
+    const places = placesOf(line ?? '');
+    const gaps = places.slice(2, -1).map((x, i) => x - (places[i + 1] as number));
+    // 5 px apart at least for the house's 2.5 line (`leastGap`), the ends aside
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(5 - 1e-6);
+    expect(places.length).toBeLessThanOrEqual(
+      (card as unknown as { contentWidth: number }).contentWidth / 5 + 2,
+    );
+    expect(places.length).toBeGreaterThan(10);
+    expect(ds(card, '.am-chart .curve-area')).toHaveLength(1);
     expect(card.shadowRoot!.querySelectorAll('.am-chart .curve-dot').length).toBe(1);
     expect(card.shadowRoot!.querySelector('.am-chart svg')?.getAttribute('data-measure')).toBe(
       'drawn',
@@ -104,14 +129,43 @@ describe('the sensor’s chart, drawn by the engine', () => {
     );
   });
 
-  it('draws several sensors classic, each on its own scale, as 1.10 did', async () => {
+  it('draws several sensors classic, each through its line on its own scale, their points at the same times', async () => {
     const card = await mount({ entities: ['sensor.hum'] });
-    expect(ds(card, '.am-chart--several .curve-line')).toEqual([
-      fixtures.seriesPath.sensorSmooth,
-      fixtures.seriesPath.humSmooth,
-    ]);
-    expect(ds(card, '.am-chart--several .curve-area')[0]).toBe(fixtures.areaUnder.sensor);
+    const lines = ds(card, '.am-chart--several .curve-line');
+    expect(lines).toHaveLength(2);
+    expect(placesOf(lines[0] ?? '')).toEqual(placesOf(lines[1] ?? ''));
+    expect(ds(card, '.am-chart--several .curve-area')).toHaveLength(2);
     expect(card.shadowRoot!.querySelector('.am-multi')).not.toBeNull();
+  });
+
+  it('shows the house’s window where it names none (12 hours from the factory), and its own where it does', async () => {
+    clearHistoryCache();
+    asked.length = 0;
+    const house12 = await mount({});
+    expect(asked).toContain(12);
+    expect(house12.shadowRoot!.querySelector('.fv-card__sub')?.textContent).toContain('12 h');
+    setChartDefaults({ settings: { ...CHART_DEFAULTS, window: 48 }, sets: [] });
+    asked.length = 0;
+    await mount({});
+    expect(asked).toContain(48);
+    asked.length = 0;
+    await mount({ hours: 4 });
+    expect(asked).toEqual([4]);
+  });
+
+  it('reads, where it is pointed at, the reading in force at the round time it snaps to — its dot on the line there', async () => {
+    const card = await mount({ hours: 24 });
+    (card as unknown as { scrubber: { set(value: number): void } }).scrubber.set(0.5);
+    await card.updateComplete;
+    const bubble = card.shadowRoot!.querySelector('.am-chart .fv-bubble');
+    const [value, time] = [...(bubble?.querySelectorAll('b, span') ?? [])].map((el) =>
+      el.textContent?.trim(),
+    );
+    // a day on a column: five minutes a pixel's worth at most, so the time is a round five minutes
+    expect(bubble?.textContent).toMatch(/\d\d:\d[05]/);
+    // the day's readings are TEMP, each held a half hour: what it says is one of them, never a mean between two
+    expect(TEMP).toContain(Number(value));
+    expect(time).toBeDefined();
   });
 
   it('draws the style the card names: the soft line, its copy and Fluvy’s knob at its end', async () => {
@@ -139,7 +193,7 @@ describe('the sensor’s chart, drawn by the engine', () => {
   });
 
   it('draws a meter’s day as 24 bars, each what it gained in its hour, on a scale from zero', async () => {
-    const card = await mount({ entity: 'sensor.meter', chart: 'bars' });
+    const card = await mount({ entity: 'sensor.meter', chart: 'bars', hours: 24 });
     const root = card.shadowRoot!;
     expect(root.querySelectorAll('.am-chart .fc-bar').length).toBe(24);
     expect(Number(root.querySelector('.fc-tick')?.textContent)).toBe(0);
@@ -201,6 +255,7 @@ describe('the sensor’s editor', () => {
         'show_axis',
         'highlight',
         'animate',
+        'points',
       ]),
     );
   });

@@ -1,10 +1,12 @@
 import {
   chartDefaults,
+  POINT_EVERY,
   strings,
   type GaugePreset,
   type HaFormSchemaItem,
   type HomeAssistant,
   type MessageKey,
+  type PointEvery,
 } from '@fluvy/core';
 import type { ChoosableTone } from '@fluvy/ui';
 import {
@@ -24,6 +26,7 @@ import {
 } from '../../shared/form.js';
 import { PALETTE_REFS } from './palette.js';
 import { acts, CHART_KEYS, presetsFor, resolveStyle } from './presets.js';
+import { EVERY, everyWord } from './timeline.js';
 
 const s = strings('chart');
 
@@ -60,9 +63,24 @@ const isList = (caps: ChartCaps | readonly ChartCaps[]): caps is readonly ChartC
 const same = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && a.every((value, index) => value === b[index]);
 
+/** The steps a line's points can be asked for over readings `finest` apart: none finer than they come. */
+const everyFor = (finest = 0): PointEvery[] =>
+  POINT_EVERY.filter((every) => every === 'auto' || EVERY[every] >= finest);
+
+/** How far apart a line's points stand, among the steps its readings allow, each in its words ("5 min"). */
+const pointsField = (options: readonly PointEvery[]): HaFormSchemaItem => ({
+  name: 'points',
+  selector: {
+    select: {
+      mode: 'dropdown',
+      options: options.map((value) => ({ value, label: everyWord(editorLanguage(), value) })),
+    },
+  },
+});
+
 /**
- * The Chart section: the style, the curve and the fill, the line and its soft shadow, the points and the grid, the
- * scale and now, the highlight and the motion. `caps` is all a card may draw — or, for a card whose variants draw
+ * The Chart section: the style, how far apart a line through time draws its points, the curve and the fill, the line
+ * and its soft shadow, the points and the grid, the scale and now, the highlight and the motion. `caps` is all a card may draw — or, for a card whose variants draw
  * apart (the energy card's line and its stacked charts), what each of them may; `capsOf`, what a config allows.
  * Where the styles offered differ with it (bars, a band, a variant), the style is one select for each list, shown in
  * turn.
@@ -110,8 +128,19 @@ export function chartSection(
           ),
         )
       : lists.map((list) => selectField('chart', list));
+  // the steps the readings allow (an hour's statistics: automatic or an hour), one select for each list; none where
+  // automatic is all there is
+  const steps = offered.has('points')
+    ? [everyFor(), everyFor(EVERY['1h'])].map((list) =>
+        onlyWhen((data, hass) => {
+          const can = allowed(data, hass);
+          return acts('points', styleOf(data, can), can) && same(everyFor(can.finest), list);
+        }, pointsField(list)),
+      )
+    : [];
   return sectionField('editor.chart', [
     ...styles,
+    ...steps,
     ...row(
       fine('curve', selectField('curve', ['smooth', 'straight', 'step'])),
       fine('fill', selectField('fill', ['gradient', 'flat', 'none'])),
@@ -163,6 +192,7 @@ export function chartDefaultsFor(config: Data, caps: ChartCaps): Record<string, 
     show_now: style.now !== 'none',
     highlight: style.highlight,
     animate: style.animate,
+    points: style.every,
   };
   return Object.fromEntries(Object.entries(all).filter(([key]) => offered.has(key)));
 }

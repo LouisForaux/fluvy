@@ -47,7 +47,7 @@ const noise = (i: number): number => (((Math.sin(i * 12.9898) * 43758.5453) % 1)
  * A cloudy day of an array's power (#138), as Home Assistant keeps it: its five-minute means (kW) — a hill from 07:00
  * to 17:00 that clouds cut into, 2.61 at 12:00 between two dips, its peak 2.94 at 11:35.
  */
-const CLOUDY = Array.from({ length: 288 }, (_, i) => {
+export const CLOUDY = Array.from({ length: 288 }, (_, i) => {
   if (i === 139) return 2.94;
   if (i === 144) return 2.61;
   const sun = Math.max(0, Math.sin(((i - 84) / 120) * Math.PI)) ** 1.5 * 2.3;
@@ -94,11 +94,14 @@ class MeansLine extends HTMLElement implements LovelaceCard {
 }
 if (!customElements.get('pg-means-line')) customElements.define('pg-means-line', MeansLine);
 
-/** The cloudy array as the recorder answers for it: its statistics' buckets compiled so far, its minutes' history. */
-const cloudyWs = {
+/**
+ * A cloudy array as the recorder answers for it (`id`): its statistics' buckets compiled so far, its minutes' history —
+ * the window sheet's too.
+ */
+export const cloudyWs = (id: string) => ({
   'recorder/statistics_during_period': (message: Record<string, unknown>) => {
     const ids = message['statistic_ids'] as readonly string[];
-    if (!ids.includes('sensor.ef_cloudy_pv')) return undefined;
+    if (!ids.includes(id)) return undefined;
     const from = Math.floor(Date.parse(String(message['start_time'])) / FIVE) * FIVE;
     const to = Math.min(
       Date.parse(String(message['end_time'] ?? new Date().toISOString())),
@@ -107,19 +110,19 @@ const cloudyWs = {
     const rows = [];
     for (let start = from; start + FIVE <= to; start += FIVE)
       rows.push({ start, end: start + FIVE, mean: CLOUDY[bucketOf(start)] });
-    return { 'sensor.ef_cloudy_pv': rows };
+    return { [id]: rows };
   },
   'history/history_during_period': (message: Record<string, unknown>) => {
     const ids = message['entity_ids'] as readonly string[];
-    if (!ids.includes('sensor.ef_cloudy_pv')) return undefined;
+    if (!ids.includes(id)) return undefined;
     const from = Math.floor(Date.parse(String(message['start_time'])) / 60_000) * 60_000;
     const to = Date.parse(String(message['end_time']));
     const states = [];
     for (let t = from; t <= to; t += 60_000)
       states.push({ s: minuteOf(t).toFixed(3), lu: Math.max(t, from) / 1000 });
-    return { 'sensor.ef_cloudy_pv': states };
+    return { [id]: states };
   },
-};
+});
 
 type Attributes = Record<string, unknown>;
 const power = (name: string, unit: 'W' | 'kW' = 'W'): Attributes => ({
@@ -266,7 +269,7 @@ export const sheet: SheetSpec = {
    * reads as the grid's, the sun's or the house's.
    */
   ws: {
-    ...cloudyWs,
+    ...cloudyWs('sensor.ef_cloudy_pv'),
     'energy/get_prefs': () => ({
       energy_sources: [
         {

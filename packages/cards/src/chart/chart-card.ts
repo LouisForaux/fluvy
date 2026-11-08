@@ -93,6 +93,7 @@ import {
   capsIn,
   CHART_CAPS,
   defaultWindows,
+  houseSpanValue,
   isPrice,
   SERIES_LIST,
   seriesOf,
@@ -125,9 +126,11 @@ import {
   ScrubController,
   seriesPaint,
   tickText,
+  timeLine,
   type ChartFrame,
   type ChartSeries,
   type ChartSpec,
+  type TimeLine,
   type Reading as Said,
   type ResolvedStyle,
   type SeriesColour,
@@ -245,6 +248,12 @@ interface Drawn {
   /** Its readings on the window's slots, in its unit: the slots' (steps, bars) and the points between them (lines). */
   readonly slots: ReadonlyArray<number | null>;
   readonly points: ReadonlyArray<number | null>;
+  /**
+   * A line of the recorder's through time (`timeLine`, the points in its place): drawn on the house's round times and
+   * read at them; `cover` the part of the window it runs (to now on a calendar day).
+   */
+  readonly line: TimeLine | null;
+  readonly cover: number;
   readonly band: ChartSeries['band'];
   /** Its reading now, in its unit; null where it has none. */
   readonly now: number | null;
@@ -266,8 +275,9 @@ interface Specs {
   readonly over: ChartSpec | null;
 }
 
-/** Where the chart is read: the cursor's x, the moment, and each series' value there. */
+/** Where the chart is read: the cursor (a line through time's snaps to its round time), its x, the moment, each value. */
 interface Read {
+  readonly cursor: number;
   readonly x: number;
   readonly time: string;
   readonly values: ReadonlyArray<number | null>;
@@ -579,18 +589,20 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     'show_axis',
     'show_now',
     'animate',
+    'points',
   ]);
   static override lists: readonly RowsListSpec[] = [SERIES_LIST, THRESHOLDS_LIST];
   /** What the editor shows where the config says nothing: what the card does then. */
-  static override defaults: EditorDefaults = (config) => {
+  static override defaults: EditorDefaults = (config, hass) => {
     // the Chart section's, the engine's — but the highlight, which marks this card's windows
     const { highlight: _style, ...chart } = chartDefaultsFor(config, {
-      ...capsIn(config),
+      ...capsIn(config, hass),
       now: true,
+      time: true,
     });
     void _style;
     return {
-      span: '24h',
+      span: houseSpanValue(),
       variant: 'full',
       show_head: true,
       show_legend: true,
@@ -910,6 +922,25 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
         readings && source === 'history' && rule !== 'mean' && (bars || kind === 'columns')
           ? shown(gains(readings, window, count, holding, rule === 'increase'))
           : null;
+      // a line of the recorder's runs through time: on the house's round times, as calmly as the card draws it (or
+      // every `points`), read where Home Assistant reads it
+      const timed =
+        recorded &&
+        !bars &&
+        kind !== 'columns' &&
+        kind !== 'band' &&
+        (item.curve ?? style.curve) !== 'step';
+      const line =
+        timed && readings
+          ? this.lineOf(
+              readings,
+              window,
+              style,
+              source === 'statistics'
+                ? PERIOD_MS[item.period ?? periodOf(this.span.hours)]
+                : undefined,
+            )
+          : null;
       const lows = kind === 'band' ? lay(edges, count + 1, (r) => r.low) : [];
       const highs = kind === 'band' ? lay(edges, count + 1, (r) => r.high) : [];
       const banded = lows.length > 1 && lows.every((v, i) => v !== null && highs[i] !== null);
@@ -934,11 +965,36 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
         readings,
         holding,
         slots: gained ?? lay(window, count),
-        points: kind === 'columns' ? [] : lay(edges, count + 1),
+        points: kind === 'columns' ? [] : line ? shown(line.values) : lay(edges, count + 1),
+        line,
+        cover: (Math.min(window.end, window.now) - window.start) / (window.end - window.start),
         band: banded ? { low: lows as number[], high: highs as number[] } : undefined,
         now: live === null || live === undefined ? null : live / scale.divisor,
         price: isPrice(scale.unit, view.deviceClass),
       };
+    });
+  }
+
+  /**
+   * A series' line through the window as far as it has happened (`timeLine`, as calmly as the card's width draws it in
+   * its style, or every `points`; never finer than its statistics' bucket, `finest`); none where nothing has.
+   */
+  private lineOf(
+    readings: readonly Reading[],
+    window: Window,
+    style: ResolvedStyle,
+    finest: number | undefined,
+  ): TimeLine | null {
+    const end = Math.min(window.end, window.now);
+    if (!(end > window.start) || !readings.length) return null;
+    return timeLine({
+      readings,
+      start: window.start,
+      end,
+      width: (this.contentWidth * (end - window.start)) / (window.end - window.start),
+      style,
+      hass: this.hass,
+      ...(finest ? { finest } : {}),
     });
   }
 
@@ -1283,11 +1339,16 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
   private specs(
     drawn: readonly Drawn[],
     window: Window,
-    style: ResolvedStyle,
+    resolved: ResolvedStyle,
     marks: readonly Marked[],
     frame: ChartFrame,
   ): Specs {
     const lead = drawn[0] as Drawn;
+    // a step asked closer than the style's line reads draws every line thinner (`timeLine`)
+    const style = {
+      ...resolved,
+      line: Math.min(resolved.line, ...drawn.map((d) => d.line?.style.line ?? resolved.line)),
+    };
     const bars = isBars(style.preset);
     const own = new Set(drawn.map((d) => d.scale.unit)).size > 1 ? ('own' as const) : undefined;
     const zero = drawn.some(
@@ -1297,6 +1358,7 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     const stretches: Stretch[] = marks.map((m) => ({ from: m.from, to: m.to, colour: m.tone }));
     const asSeries = (d: Drawn, slots: boolean): ChartSeries => ({
       values: slots || d.curve === 'step' ? d.slots : d.points,
+      ...(d.line && !slots ? { at: d.line.at.map((f) => f * d.cover) } : {}),
       colour: d.colour,
       name: d.name,
       ...(d.accent ? { accent: d.accent } : {}),
@@ -1363,22 +1425,30 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     count: number,
     fraction: number,
   ): Read {
-    const read = readAt(specs.main, fraction);
+    // a stepped series and columns are read by their slot, which began then; a line where the cursor is — a line
+    // through time at the round time nearest it, as Home Assistant reads it (each line there, every reading its own)
+    const slotwise = specs.main.kind === 'bars' || drawn.every((d) => d.curve === 'step');
+    const timed = slotwise ? undefined : drawn.find((d) => d.line);
+    // what has happened, that is: past now on a calendar day a list or a forecast is read where it is pointed at
+    const hit = timed && fraction <= timed.cover ? timed.line?.read(fraction / timed.cover) : null;
+    const cursor = hit && timed ? hit.fraction * timed.cover : fraction;
+    const read = readAt(specs.main, cursor);
     const plot = plotOf(specs.main);
     const f = Math.min(1, Math.max(0, (read.x - plot.left) / plot.width));
     // a key's step lands on a slot's start: a hair of rounding must not leave it in the slot before
     const slot = Math.min(count - 1, Math.floor(f * count + 1e-6));
-    // a stepped series and columns are read by their slot, which began then; a line where the cursor is
-    const slotwise = specs.main.kind === 'bars' || drawn.every((d) => d.curve === 'step');
     const length = window.end - window.start;
     return {
+      cursor,
       x: read.x,
-      time: this.when(window.start + (slotwise ? slot / count : f) * length, window),
-      values: drawn.map((d) =>
-        d.kind === 'columns' || d.curve === 'step' || !d.points.length
-          ? (d.slots[slot] ?? null)
-          : between(d.points, f),
-      ),
+      time: this.when(hit ? hit.t : window.start + (slotwise ? slot / count : f) * length, window),
+      values: drawn.map((d) => {
+        if (d.kind === 'columns' || d.curve === 'step' || !d.points.length)
+          return d.slots[slot] ?? null;
+        if (!d.line) return between(d.points, f);
+        const v = cursor > d.cover ? undefined : d.line.read(cursor / d.cover)?.v;
+        return v === undefined ? null : v / d.scale.divisor;
+      }),
     };
   }
 
@@ -1395,7 +1465,7 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     values: ReadonlyArray<number | null>,
     rowReads: boolean,
   ): TemplateResult {
-    const cursor = read ? this.scrubber.value : null;
+    const cursor = read?.cursor ?? null;
     const main = { ...specs.main, cursor };
     const over = specs.over ? { ...specs.over, cursor } : null;
     const several = drawn.length > 1;
@@ -1603,7 +1673,12 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
       d.slots.some((v) => v !== null)
         ? [
             {
-              values: d.curve === 'step' || !d.points.length ? d.slots : d.points,
+              ...(d.curve === 'step' || !d.points.length
+                ? { values: d.slots }
+                : {
+                    values: d.points,
+                    ...(d.line ? { at: d.line.at.map((f) => f * d.cover) } : {}),
+                  }),
               colour: d.colour,
               ...(d.accent ? { accent: d.accent } : {}),
               ...(d.item.curve ? { curve: d.item.curve } : {}),

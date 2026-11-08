@@ -121,7 +121,7 @@ const CATALOGUE: readonly CatalogueEntry[] = [
     'fluvy-sensor-card',
     FluvySensorCard,
     'Fluvy · Sensor',
-    'A sensor with its 24 h curve, trend, min, max and average, or up to three sensors on one chart.',
+    'A sensor with its curve, trend, min, max and average, or up to three sensors on one chart.',
   ],
   [
     'fluvy-readouts-card',

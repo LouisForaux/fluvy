@@ -1,10 +1,10 @@
-import { houseZone, wallClock, type HomeAssistant } from '@fluvy/core';
+import { chartDefaults, houseZone, wallClock, type HomeAssistant } from '@fluvy/core';
 import type { Window } from '../engine/model.js';
 import type { Reading } from './attribute.js';
 
 /*
- * The time a Chart card covers (`span`): a rolling window ending at now — the last 24 hours, 7 days, any `<N>h` or
- * `<N>d` — or the house's calendar day, alone or with the next one, which runs past now: what has happened, now, and
+ * The time a Chart card covers (`span`): a rolling window ending at now — the house's (12 hours from the factory), the
+ * last 24 hours, 7 days, any `<N>h` or `<N>d` — or the house's calendar day, alone or with the next one, which runs past now: what has happened, now, and
  * what is forecast or already published (tomorrow's prices) — and how readings in time lie on its equal slots, which
  * the chart engine draws. Pure, so the card and its tests share it.
  */
@@ -22,23 +22,23 @@ export interface Span {
   readonly hours: number;
 }
 
-/** The span every card reads where its config names none or one it cannot read. */
-export const DEFAULT_SPAN: Span = { kind: 'rolling', hours: 24 };
+/** The span every card reads where its config names none or one it cannot read: the house's window (Charts). */
+export const houseSpan = (): Span => ({ kind: 'rolling', hours: chartDefaults().settings.window });
 
 const ROLLING = /^\s*(\d+(?:\.\d+)?)\s*([hd])\s*$/i;
 
-/** A config's `span` read: `today`, `today+tomorrow`, `<N>h` or `<N>d` (`24h`, `7d`); anything else the default. */
+/** A config's `span` read: `today`, `today+tomorrow`, `<N>h` or `<N>d` (`24h`, `7d`); anything else the house's. */
 export function spanOf(raw: unknown): Span {
-  if (typeof raw !== 'string') return DEFAULT_SPAN;
+  if (typeof raw !== 'string') return houseSpan();
   const word = raw.trim().toLowerCase().replace(/\s+/g, '');
   if (word === 'today') return { kind: 'today', hours: 24 };
   if (word === 'today+tomorrow') return { kind: 'today+tomorrow', hours: 48 };
   const match = ROLLING.exec(word);
-  if (!match) return DEFAULT_SPAN;
+  if (!match) return houseSpan();
   const hours = Number(match[1]) * ((match[2] ?? 'h').toLowerCase() === 'd' ? 24 : 1);
   return Number.isFinite(hours) && hours > 0
     ? { kind: 'rolling', hours: Math.min(LONGEST, Math.max(1, Math.round(hours))) }
-    : DEFAULT_SPAN;
+    : houseSpan();
 }
 
 /** The house's midnight on the day of `at` (the clock Home Assistant shows), `days` later (or earlier). */

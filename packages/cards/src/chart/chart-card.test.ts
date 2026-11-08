@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import type { HassEntity, HomeAssistant } from '@fluvy/core';
+import { CHART_DEFAULTS, setChartDefaults, type HassEntity, type HomeAssistant } from '@fluvy/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { chartHeight } from '../chart-family.js';
 import { familiesDefined } from '../index.js';
@@ -204,13 +204,17 @@ describe('the window', () => {
   const now = new Date(NOW);
   const hass = house();
 
-  it('reads a span as the card says it, else the last 24 hours', () => {
+  it('reads a span as the card says it, else the house’s window (the last 12 hours from the factory)', () => {
     expect(spanOf('today')).toEqual({ kind: 'today', hours: 24 });
     expect(spanOf('today + tomorrow')).toEqual({ kind: 'today+tomorrow', hours: 48 });
     expect(spanOf('7d')).toEqual({ kind: 'rolling', hours: 168 });
-    expect(spanOf('12h')).toEqual({ kind: 'rolling', hours: 12 });
-    expect(spanOf('nonsense')).toEqual({ kind: 'rolling', hours: 24 });
+    expect(spanOf('4h')).toEqual({ kind: 'rolling', hours: 4 });
+    expect(spanOf(undefined)).toEqual({ kind: 'rolling', hours: 12 });
+    expect(spanOf('nonsense')).toEqual({ kind: 'rolling', hours: 12 });
     expect(spanOf('5000d').hours).toBe(90 * 24);
+    setChartDefaults({ settings: { ...CHART_DEFAULTS, window: 168 }, sets: [] });
+    expect(spanOf(undefined)).toEqual({ kind: 'rolling', hours: 168 });
+    setChartDefaults({ settings: CHART_DEFAULTS, sets: [] });
   });
 
   it('rolls up to now, or runs over the house’s day — today and tomorrow once tomorrow is published', () => {
@@ -483,11 +487,26 @@ describe('a sensor’s history', () => {
     const asked: Asked = { messages: [], subscriptions: [] };
     // a moment of its own: the page's one cache has the sheets' evening already
     const at = '2026-09-18T09:00:00Z';
-    const card = await draw({ series: ['sensor.temperature'], _now: at }, house(asked));
+    const card = await draw(
+      { series: ['sensor.temperature'], span: '24h', _now: at },
+      house(asked),
+    );
     const history = asked.messages.find((m) => m['type'] === 'history/history_during_period');
     expect(Date.parse(String(history?.['start_time']))).toBe(Date.parse(at) - 48 * HOUR);
     expect(texts(card, '.ch-delta')).toEqual(['+5 %']);
     expect(root(card).querySelector('.curve-line')).not.toBeNull();
+  });
+
+  it('is a line through time: calm on a phone, and read at the round time nearest the pointer, its reading then (1.18)', async () => {
+    const card = await draw({ series: ['sensor.temperature'], span: '24h', chart: 'soft' });
+    const line = root(card).querySelector('.fc-line')?.getAttribute('d') ?? '';
+    // a day on a 360 card: a point every half hour at most, never closer than the soft line's 5 px
+    expect(line.split(' C').length).toBeLessThanOrEqual(52);
+    (card as unknown as { scrubber: { set(value: number): void } }).scrubber.set(0.5);
+    await card.updateComplete;
+    // 09:47 is half way through the day to 21:47: a pixel holds five minutes, so 09:45 and its reading then
+    expect(texts(card, '.ch-now .fv-readout__label')).toEqual(['09:45']);
+    expect(texts(card, '.ch-now .fv-readout__value')[0]?.replace(/\s+/g, '')).toBe('21.0°C');
   });
 
   it('with nothing in its window: the empty panel in the chart’s room', async () => {
@@ -555,6 +574,28 @@ describe('the Chart card’s editor', () => {
     expect(defaults['highlight']).toBe('both');
     const names = JSON.stringify(FluvyChartCard.getConfigForm().schema);
     expect(names.match(/"name":"highlight"/g)).toHaveLength(1);
+  });
+
+  it('offers how far apart a line’s points stand only where a series reads the recorder, and no step finer than its statistics come', () => {
+    const steps = (config: Record<string, unknown>): string[] =>
+      (
+        visibleFields(FluvyChartCard.getConfigForm().schema, config, house()).find(
+          (field) => field.name === 'points',
+        )?.selector as { select: { options: { value: string }[] } } | undefined
+      )?.select.options.map((o) => o.value) ?? [];
+    expect(steps({ series: ['sensor.temperature'] })).toEqual(['auto', '5m', '15m', '30m', '1h']);
+    expect(steps({ series: [{ entity: 'sensor.temperature', source: 'statistics' }] })).toEqual([
+      'auto',
+      '1h',
+    ]);
+    // a day's statistics come by the day: automatic is all there is, and no field asks
+    expect(
+      steps({ series: [{ entity: 'sensor.temperature', source: 'statistics', period: 'day' }] }),
+    ).toEqual([]);
+    expect(steps({ series: ['sensor.nordpool'] })).toEqual([]);
+    expect(steps({ series: ['sensor.temperature'], chart: 'bars' })).toEqual([]);
+    // the house's window where the card names none
+    expect(FluvyChartCard.defaults?.({ type: 'x' }, undefined)?.['span']).toBe('12h');
   });
 
   it('offers the legend only where one is drawn: several series on the full card', () => {
