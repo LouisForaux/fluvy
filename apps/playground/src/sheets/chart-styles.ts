@@ -37,6 +37,35 @@ const TEMPERATURE = day(
     1.4 * t,
 );
 const HUMIDITY = day((t) => 58 - 18 * Math.exp(-((t - 0.6) ** 2) / 0.08) + 2.5 * Math.sin(t * 7));
+
+/**
+ * The design page's day as the recorder answers it: a reading at the start of each of the window's 48 slots, so a card
+ * that asks 48 points reads it back whole, each slot's mean its one reading — 1.10's strings (`classic-1.10.json`).
+ */
+const DESIGN_DAY: Readonly<Record<string, readonly number[]>> = {
+  'sensor.cs_temperature': TEMPERATURE,
+  'sensor.cs_humidity': HUMIDITY,
+};
+const designDay = (message: Record<string, unknown>): Record<string, unknown> => {
+  const start = Date.parse(String(message['start_time']));
+  const end = Date.parse(String(message['end_time']));
+  return Object.fromEntries(
+    (message['entity_ids'] as readonly string[]).flatMap((id) => {
+      const series = DESIGN_DAY[id] ?? [];
+      return series.length
+        ? [
+            [
+              id,
+              series.map((v, i) => ({
+                s: String(v),
+                lu: (start + (i / series.length) * (end - start)) / 1000,
+              })),
+            ],
+          ]
+        : [];
+    }),
+  );
+};
 /** The house's day of energy, an hour a slot (kWh): a quiet night, the morning, the evening's peak. */
 const USAGE = Array.from(
   { length: 24 },
@@ -422,15 +451,11 @@ export const sheet: SheetSpec = {
     ...HOUSES.flatMap((house) => house.states),
   ],
   history: Object.assign(
-    {
-      'sensor.cs_temperature': TEMPERATURE,
-      'sensor.cs_humidity': HUMIDITY,
-      'sensor.cs_energy': METER,
-    },
+    { 'sensor.cs_energy': METER },
     ...HOUSES.map((house) => house.history ?? {}),
   ),
   statistics: Object.assign({}, ...HOUSES.map((house) => house.statistics ?? {})),
-  ws: mergeWs(HOUSES.map((house) => house.ws)),
+  ws: mergeWs([{ 'history/history_during_period': designDay }, ...HOUSES.map((house) => house.ws)]),
   frames: [
     // the lines on the day's temperature; the bars on the house's meter, whose readings add up
     ...STYLES.map((chart) => ({
