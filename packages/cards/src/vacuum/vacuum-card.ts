@@ -35,11 +35,11 @@ import {
   headSub,
   Hold,
   motionStyles,
-  pretty,
   shownStateText,
 } from '../cover/common.js';
 import type { RowStyle } from '../shared/config.js';
 import { chipRow } from '../shared/chips.js';
+import { modeWord, pretty } from '../shared/mode-words.js';
 import { HeadFit } from '../energy/head.js';
 import { chipBlock, chipRows, COMPACT, drawnAs } from '../shared/heights.js';
 import { statsRow, type StatText } from '../shared/readouts.js';
@@ -346,7 +346,7 @@ export class FluvyVacuumCard extends Card<VacuumCardConfig> {
     const speed = this.suctionHold.read(view.attr<string | null>('fan_speed') ?? null);
     const chipItems: ChipItem[] = speeds.map((item) => ({
       key: item,
-      label: pretty(item),
+      label: modeWord(this.rawHass, view, 'fan_speed', item),
       active: !unusable && item === speed,
     }));
 

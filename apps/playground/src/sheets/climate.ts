@@ -1,3 +1,4 @@
+import { CLIMATE, speakingAttributes } from '../attribute-words.js';
 import type { SheetSpec } from '../scenes.js';
 
 const THERMO = {
@@ -144,6 +145,23 @@ export const sheet: SheetSpec = {
       },
     ],
     ['image.living_ac', '2026-11-04T08:00:00+00:00', { entity_picture: AIR_CONDITIONER }],
+    // #142: an air conditioner sending Home Assistant's standard fan speeds and presets, and a quiet speed of its own
+    [
+      'climate.bedroom_ac',
+      'cool',
+      {
+        friendly_name: 'Bedroom AC',
+        ...THERMO,
+        hvac_modes: ['off', 'cool', 'heat', 'dry', 'fan_only'],
+        temperature: 24,
+        current_temperature: 26.2,
+        hvac_action: 'cooling',
+        fan_modes: ['auto', 'quiet', 'low', 'medium', 'high'],
+        fan_mode: 'medium',
+        preset_modes: ['none', 'eco', 'comfort', 'boost', 'sleep'],
+        preset_mode: 'none',
+      },
+    ],
     // the thermostats of #46: HomeMatic radiator valves, whose modes come as Auto, Heat, Off, from 5 to 30.5 by 0.5
     [
       'climate.garderobe',
@@ -340,6 +358,37 @@ export const sheet: SheetSpec = {
           name: 'AC',
           cols: 6,
         },
+      ],
+    },
+    // #142: the fan speeds and presets in Home Assistant's own words, in every language
+    {
+      title: 'Fan speeds and presets in Home Assistant’s words',
+      hass: speakingAttributes(CLIMATE),
+      cards: [{ type: 'custom:fluvy-thermostat-card', entity: 'climate.bedroom_ac' }],
+    },
+    {
+      title: 'Fan speeds and presets as chips, in Home Assistant’s words',
+      hass: speakingAttributes(CLIMATE),
+      cards: [
+        {
+          type: 'custom:fluvy-thermostat-card',
+          entity: 'climate.bedroom_ac',
+          variant: 'compact',
+          fan_style: 'chips',
+          preset_style: 'chips',
+        },
+      ],
+    },
+    {
+      title: 'Fan speeds · compact, half a section, in Home Assistant’s words',
+      hass: speakingAttributes(CLIMATE),
+      cards: [
+        half('climate.bedroom_ac', { modes: ['off', 'cool'], show_presets: false }),
+        half('climate.bedroom_ac', {
+          modes: ['off', 'cool'],
+          show_presets: false,
+          fan_style: 'chips',
+        }),
       ],
     },
   ],

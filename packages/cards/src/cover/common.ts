@@ -129,11 +129,6 @@ export function shownStateText(
 export const headSub = (sub: string, contentWidth: number): string =>
   contentWidth < 300 ? (sub.split(' · ')[0] ?? sub) : sub;
 
-export const pretty = (raw: string): string => {
-  const text = raw.replace(/_/g, ' ');
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
-
 /**
  * An action row is equal cells that fill the content column — never a left-hugging strip. For the
  * cells to land on the 4 px grid at any card width the gap gives way before the cells do: 16 at the

@@ -3,6 +3,10 @@
 Fluvy speaks the languages below in every card, page, dialog and editor form. Home Assistant's own words — entity
 states, attribute values, its dialogs — come from Home Assistant's translations; Fluvy's words come from one
 catalogue per language, and a person may choose theirs in the panel's *Preferences* whatever Home Assistant speaks.
+What an entity lists to choose from (a thermostat's fan speeds and presets, a fan's presets, a vacuum's suction) is
+said in Home Assistant's words for it, its integration's own included, then in Fluvy's for low, mid and high, then as
+the integration sends it; where a person chose a language of their own, Home Assistant's words are the page's
+language, so the card starts from Fluvy's.
 
 | Code | Language | Catalogue | Maintainer |
 | --- | --- | --- | --- |

@@ -4,7 +4,20 @@ All notable changes to Fluvy are recorded here. The format follows [Keep a Chang
 and the versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
-- Localize the standard fan speeds (low, mid, high) in the thermostat card.
+
+### Visible on upgrade
+
+- The Thermostat card's fan speeds and presets, the Fan card's presets and the Vacuum card's suction speak a page in
+  another language than English in Home Assistant's own words for them, as its own cards do ("Niedrig", "Ventilation
+  naturelle", "Équilibré"), where they said the word the integration sent ("Low", "Natural wind", "Balanced").
+
+### Fixed
+
+- The Thermostat card says its fan speeds and presets in the page's language: Home Assistant's own word for each, the
+  standard speeds and an integration's own, then Fluvy's for low, mid and high, then the word as sent, where every
+  language read them as the integration sent them; the Fan card's presets and the Vacuum card's suction say Home
+  Assistant's words too. Where a person chose a language of their own for Fluvy, Fluvy's words come first, Home
+  Assistant's being the page's language. Thanks to @waphbs, who brought the standard speeds to every language (#142).
 
 ## [1.17.0] — 2026-11-07
 

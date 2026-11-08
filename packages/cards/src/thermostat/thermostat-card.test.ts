@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import {
+  ensureLanguage,
   resolveEntity,
+  setLanguageOverride,
   type HassEntity,
   type HomeAssistant,
   type LovelaceCardConfig,
@@ -347,5 +349,55 @@ describe('a picture of the person’s own in the head (#99)', () => {
       vi.unstubAllGlobals();
       vi.useRealTimers();
     }
+  });
+});
+
+describe('the fan speeds and presets, in the page’s words (#142)', () => {
+  /** An air conditioner whose integration sends Home Assistant's standard speeds, Fluvy's `mid` and one of its own. */
+  const aircon = entity('climate.living_ac', 'cool', {
+    hvac_modes: ['off', 'cool'],
+    temperature: 23,
+    fan_modes: ['auto', 'low', 'mid', 'high', 'quiet'],
+    fan_mode: 'auto',
+    preset_modes: ['eco', 'boost'],
+    preset_mode: 'eco',
+  });
+  /** Home Assistant's own German, as its formatter says an attribute's value (else the value as it is). */
+  const GERMAN: Record<string, string> = {
+    'fan_mode.low': 'Niedrig',
+    'fan_mode.high': 'Hoch',
+    'preset_mode.boost': 'Boost',
+    'preset_mode.eco': 'Eco',
+  };
+  const chips = async (): Promise<string[]> => {
+    const card = document.createElement('fluvy-thermostat-card') as FluvyThermostatCard;
+    card.setConfig(config({ entity: aircon.entity_id }) as LovelaceCardConfig);
+    card.hass = {
+      ...house(aircon),
+      language: 'de',
+      locale: { language: 'de', number_format: 'language', time_format: '24' },
+      formatEntityAttributeValue: (_: HassEntity, attribute: string, value: unknown) =>
+        GERMAN[`${attribute}.${String(value)}`] ?? String(value),
+    } as unknown as HomeAssistant;
+    document.body.append(card);
+    await card.updateComplete;
+    const words = [...card.renderRoot.querySelectorAll('.fv-chip')].map(
+      (chip) => chip.textContent?.trim() ?? '',
+    );
+    card.remove();
+    return words;
+  };
+
+  afterAll(() => setLanguageOverride(undefined));
+
+  it('says Home Assistant’s word first, then Fluvy’s for a standard speed, then the word as sent', async () => {
+    await ensureLanguage('de');
+    // the presets, then the speeds: Home Assistant has no word for `mid`, nor for the integration's `quiet`
+    expect(await chips()).toEqual(['Eco', 'Boost', 'Auto', 'Niedrig', 'Mittel', 'Hoch', 'Quiet']);
+  });
+
+  it('says Fluvy’s own where a person chose a language of their own, Home Assistant’s being the page’s', async () => {
+    setLanguageOverride('en');
+    expect(await chips()).toEqual(['Eco', 'Boost', 'Auto', 'Low', 'Mid', 'High', 'Quiet']);
   });
 });

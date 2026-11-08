@@ -1,3 +1,4 @@
+import { MATTER_FAN, ROBOROCK, speakingAttributes } from '../attribute-words.js';
 import type { SheetSpec } from '../scenes.js';
 import { FluvyCoverCard } from '../../../../packages/cards/src/cover/cover-card.js';
 import { FluvyFanCard } from '../../../../packages/cards/src/fan/fan-card.js';
@@ -159,6 +160,31 @@ export const sheet: SheetSpec = {
       },
     ],
 
+    // #142: a Matter fan and a Roborock, whose presets and suction Home Assistant words in the page's language
+    [
+      'fan.matter',
+      'on',
+      {
+        friendly_name: 'Bedroom fan',
+        supported_features: 1 + 2 + 8 + FAN_POWER,
+        percentage: 40,
+        percentage_step: 10,
+        oscillating: false,
+        preset_modes: ['auto', 'low', 'medium', 'high', 'natural_wind', 'sleep_wind'],
+        preset_mode: 'natural_wind',
+      },
+    ],
+    [
+      'vacuum.roborock',
+      'docked',
+      {
+        friendly_name: 'Roborock',
+        supported_features: VACUUM_ALL,
+        battery_level: 92,
+        fan_speed: 'balanced',
+        fan_speed_list: ['quiet', 'balanced', 'turbo', 'max', 'max_plus'],
+      },
+    ],
     [
       'vacuum.robot',
       'cleaning',
@@ -401,6 +427,22 @@ export const sheet: SheetSpec = {
         { type: 'custom:fluvy-fan-card', entity: 'fan.ceiling', variant: 'compact', cols: 6 },
         { type: 'custom:fluvy-fan-card', entity: 'fan.bedroom', variant: 'compact', cols: 6 },
       ],
+    },
+    // #142: a preset and a suction in Home Assistant's own words, in every language: its integration's translation
+    {
+      title: 'Fan · presets in Home Assistant’s words',
+      hass: speakingAttributes(MATTER_FAN),
+      cards: [{ type: 'custom:fluvy-fan-card', entity: 'fan.matter' }],
+    },
+    {
+      title: 'Fan · presets as chips, in Home Assistant’s words',
+      hass: speakingAttributes(MATTER_FAN),
+      cards: [{ type: 'custom:fluvy-fan-card', entity: 'fan.matter', preset_style: 'chips' }],
+    },
+    {
+      title: 'Vacuum · suction in Home Assistant’s words',
+      hass: speakingAttributes(ROBOROCK),
+      cards: [{ type: 'custom:fluvy-vacuum-card', entity: 'vacuum.roborock' }],
     },
   ],
 };

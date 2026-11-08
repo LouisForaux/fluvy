@@ -41,6 +41,7 @@ import { optionCell, optionColumnsFor, optionsHold, valuesHeld } from '../shared
 import { BrokenPictures, imageEntity, imageOf } from '../shared/picture.js';
 import type { WhenOff } from '../shared/config.js';
 import { chipRow } from '../shared/chips.js';
+import { haWord, modeWord, pretty } from '../shared/mode-words.js';
 import { chipBlock, chipRows, optionBlock, optionRows } from '../shared/heights.js';
 import { fitValueRow, STEPPER, STEPPER_HALVES, valueRowClass } from '../shared/value-row.js';
 
@@ -143,10 +144,13 @@ const DEFAULT_MODES = ['off', 'heat', 'cool'];
 /** A climate's `supported_features` bit for a low and a high end. */
 const TARGET_RANGE = 2;
 
-const pretty = (raw: string): string => {
-  const t = raw.replace(/_/g, ' ');
-  return t.charAt(0).toUpperCase() + t.slice(1);
-};
+/** The fan speeds Fluvy names in every language (the core catalogue's `fan` words), by the words integrations send. */
+const SPEEDS = new Map<string, MessageKey>([
+  ['low', 'fan.low'],
+  ['mid', 'fan.mid'],
+  ['medium', 'fan.mid'],
+  ['high', 'fan.high'],
+]);
 
 /**
  * Every mode a thermostat card's entity offers, in the order the card draws them and its editor lists them: a
@@ -228,24 +232,18 @@ export function thermostatHeight(
 
 /**
  * A mode's word, the same on the card and in its editor: Fluvy's for a climate's seven and for Off; else Home
- * Assistant's own, in the house's language (a water heater's "eco", a humidifier's "sleep"); else the mode, tidied.
+ * Assistant's own where Fluvy speaks the page's language (a water heater's "eco", a humidifier's "sleep": `haWord`,
+ * `hass` the page's); else the mode, tidied.
  */
 export function modeLabel(hass: HomeAssistant | undefined, view: EntityView, mode: string): string {
   if (mode === 'off' || (view.domain === 'climate' && MODE_ORDER.includes(mode)))
     return localize(hass, `climate.mode.${mode}` as MessageKey);
+  if (view.domain === 'humidifier') return modeWord(hass, view, 'mode', mode);
   const stateObj = view.stateObj;
-  try {
-    const text = !stateObj
-      ? undefined
-      : view.domain === 'humidifier'
-        ? hass?.formatEntityAttributeValue?.(stateObj, 'mode', mode)
-        : hass?.formatEntityState?.({ ...stateObj, state: mode });
-    // a mode Home Assistant has no word for comes back as it is
-    if (text && text.toLocaleLowerCase() !== mode.toLocaleLowerCase()) return text;
-  } catch {
-    /* the mode itself, below */
-  }
-  return pretty(mode);
+  return (
+    (stateObj && haWord(hass, mode, (h) => h.formatEntityState?.({ ...stateObj, state: mode }))) ||
+    pretty(mode)
+  );
 }
 
 /**
@@ -369,7 +367,7 @@ export class FluvyThermostatCard extends Card<ThermostatCardConfig> {
       offered.length || view.stateObj || view.domain !== 'climate'
         ? offered
         : (this.config?.modes ?? ['off', 'heat', 'cool']);
-    const word = (m: string): string => modeLabel(this.hass, view, m);
+    const word = (m: string): string => modeLabel(this.rawHass, view, m);
     // a mode's setpoint from when it last ran ("Cool · 24°"), while the device can be read
     const recall = (m: string): string => (view.status === 'ok' ? this.recall(view.id, m) : '');
     if (view.domain === 'humidifier') {
@@ -763,22 +761,6 @@ export class FluvyThermostatCard extends Card<ThermostatCardConfig> {
       .filter((o): o is OptionItem => o !== undefined);
   }
 
-  /**
-   * The fan speed's word. The three speeds every language already names are translated (the words live in the core
-   * catalogue's `fan` table, so every locale carries them); anything else the integrations send — "quiet", "auto", a
-   * vendor's own — keeps the word it sent, as before.
-   */
-  private fanWord(raw: string): string {
-    const known: Record<string, 'fan.low' | 'fan.mid' | 'fan.high'> = {
-      low: 'fan.low',
-      mid: 'fan.mid',
-      medium: 'fan.mid',
-      high: 'fan.high',
-    };
-    const message = known[raw.toLowerCase()];
-    return message ? this.t(message) : pretty(raw);
-  }
-
   private renderModes(view: EntityView, m: Model, modes: readonly OptionItem[]): TemplateResult {
     const style = this.config?.modes_style ?? 'tiles';
     const select = (key: string): void => this.setMode(view, m, key);
@@ -909,7 +891,7 @@ export class FluvyThermostatCard extends Card<ThermostatCardConfig> {
           ? html`${label(this.t('climate.preset'))}${chipRow(
               m.presets.map((p) => ({
                 key: p,
-                label: pretty(p),
+                label: modeWord(this.rawHass, view, 'preset_mode', p),
                 active: p === m.preset,
                 unavailable: unusable,
               })),
@@ -924,7 +906,7 @@ export class FluvyThermostatCard extends Card<ThermostatCardConfig> {
           ? html`${label(this.t('climate.fan'))}${chipRow(
               m.fans.map((f) => ({
                 key: f,
-                label: this.fanWord(f),
+                label: modeWord(this.rawHass, view, 'fan_mode', f, SPEEDS.get(f.toLowerCase())),
                 active: f === m.fan,
                 unavailable: unusable,
               })),

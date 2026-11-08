@@ -77,12 +77,19 @@ export function languageOverride(): LanguageCode | undefined {
 }
 
 /**
+ * The language a person chose for Fluvy where it is not the page's (`page`: Home Assistant's); null where Fluvy
+ * speaks the page's language, the one Home Assistant's own formatters speak.
+ */
+export const ownLanguage = (page: string | undefined): LanguageCode | null =>
+  override && !(speaks(page) && resolveLanguage(page) === override) ? override : null;
+
+/**
  * Marks what says Fluvy's words (a card, the panel, a page of ours) with their language, where the person chose one
  * that is not the page's (`page`: Home Assistant's), so the browser draws them as that language — a kanji in its
  * Japanese form, a word hyphenated by its own rules; and takes the mark off where they are the page's language again.
  */
 export function markLanguage(host: Element, page: string | undefined): void {
-  const lang = override && !(speaks(page) && resolveLanguage(page) === override) ? override : null;
+  const lang = ownLanguage(page);
   if (host.getAttribute('lang') === lang) return;
   if (lang) host.setAttribute('lang', lang);
   else host.removeAttribute('lang');
