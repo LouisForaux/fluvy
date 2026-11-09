@@ -386,6 +386,26 @@ describe('the TV remote card (#143)', () => {
       expect(listTitles(padOnly)).toEqual([]);
     });
   });
+  it('draws a picture of the person’s own in place of the logo, and the logo again where it will not load', async () => {
+    const { hass } = house(LIVING, ANDROID);
+    const root = await draw(
+      {
+        entity: 'media_player.tv',
+        remote: 'remote.tv',
+        groups: ['apps'],
+        apps: [{ app: 'disneyplus', image: '/local/disney.svg' }, { app: 'netflix' }],
+      },
+      hass,
+    );
+    const circles = root.querySelectorAll('.rm-app__circle');
+    const picture = circles[0]?.querySelector('img');
+    expect(picture?.getAttribute('src')).toBe('/local/disney.svg');
+    expect(circles[1]?.querySelector('img')).toBeNull();
+    picture?.dispatchEvent(new Event('error'));
+    await (root.host as FluvyRemoteCard).updateComplete;
+    expect(root.querySelector('.rm-app__circle img')).toBeNull();
+  });
+
   it('leaves no app alone on the last row: the same rows, shared evenly', () => {
     const names = (count: number): string[] => Array.from({ length: count }, () => 'Abc');
     expect(appsLayout(names(5), 300, () => 20).perRow).toBe(5);

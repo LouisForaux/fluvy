@@ -3018,6 +3018,8 @@
     "editor.controls": "Okrągłe przyciski wiersza",
     "editor.apps": "Aplikacje",
     "editor.apps_helper": "Platforma wnosi swoje logo; puste: pokazują się źródła odtwarzacza nazywające platformę",
+    "editor.image": "Obraz",
+    "editor.image_helper": "Własne logo zamiast logo platformy: ścieżka, np. /local/logo.svg, lub adres internetowy",
     "editor.custom": "Własne przyciski",
     "editor.custom_helper": "Przycisk, który urządzenie przyjmuje, albo dowolna własna akcja",
     "editor.app": "Platforma",

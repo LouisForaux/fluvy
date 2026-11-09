@@ -6,6 +6,9 @@ if (!customElements.get('fluvy-remote-card'))
   customElements.define('fluvy-remote-card', FluvyRemoteCard);
 
 const REMOTE = 'custom:fluvy-remote-card';
+/** A person's own picture in place of a logo, as `/local/…` would give it. */
+const OWN_PICTURE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23113ccf'/%3E%3Cpath d='M6 12h12M12 6v12' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
 
 /* media_player supported_features */
 const PAUSE = 1;
@@ -371,6 +374,23 @@ export const sheet: SheetSpec = {
           remote: 'remote.rm_tv',
           apps_style: 'chips',
           groups: ['apps'],
+        },
+      ],
+    },
+    {
+      title: 'Apps · own pictures',
+      cards: [
+        {
+          type: REMOTE,
+          entity: 'media_player.rm_tv',
+          remote: 'remote.rm_tv',
+          groups: ['apps'],
+          apps: [
+            { app: 'netflix' },
+            { app: 'disneyplus', image: OWN_PICTURE },
+            // an address that will not load: the platform's own mark again
+            { app: 'primevideo', image: '/local/nowhere.svg' },
+          ],
         },
       ],
     },

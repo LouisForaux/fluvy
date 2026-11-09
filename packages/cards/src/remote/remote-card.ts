@@ -58,6 +58,8 @@ export interface RemoteApp {
   app?: string;
   name?: string;
   icon?: string;
+  /** A picture of the person's own in place of the logo: `/local/…`, a web address or a data image. */
+  image?: string;
   color?: string;
   source?: string;
   key?: string;
@@ -397,6 +399,22 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
         );
         box-shadow: inset 0 0 0 1px var(--fluvy-accent-fill-border);
       }
+      .rm-app__circle img,
+      .fv-chip__pill img {
+        display: block;
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        border-radius: 4px;
+      }
+      .fv-chip__pill img {
+        width: 16px;
+        height: 16px;
+      }
+      :is(.rm-app__circle, .fv-chip__pill)[disabled] img {
+        filter: grayscale(1);
+        opacity: 0.5;
+      }
       .rm-app__circle[disabled] {
         opacity: 0.4;
         pointer-events: none;
@@ -448,11 +466,14 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
     ...Card.properties,
     pressed_: { state: true },
     logos_: { state: true },
+    broken_: { state: true },
   };
   /** The arrow whose quadrant lights (180 ms after a press). */
   declare pressed_: string;
   /** The logos' chunk has landed: the apps draw their marks. */
   declare logos_: boolean;
+  /** The pictures that would not load: those apps wear their logo, or their glyph, instead of a broken image. */
+  declare broken_: ReadonlySet<string>;
 
   static override editor(): Promise<CardEditor> {
     return import('./remote-editor.js');
@@ -477,10 +498,20 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
   /** A held key has repeated: the click that follows the release runs nothing. */
   private repeated = false;
 
+  /** A picture's error does not bubble: heard on its way down, once for each address. */
+  private readonly pictureFailed = {
+    capture: true,
+    handleEvent: ({ target }: Event): void => {
+      const src = target instanceof HTMLImageElement ? target.getAttribute('src') : null;
+      if (src && !this.broken_.has(src)) this.broken_ = new Set([...this.broken_, src]);
+    },
+  };
+
   constructor() {
     super();
     this.pressed_ = '';
     this.logos_ = false;
+    this.broken_ = new Set();
   }
 
   protected override prepare(config: RemoteCardConfig): RemoteCardConfig {
@@ -1189,7 +1220,10 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
         id,
         name: shortTitle(name, pf),
         title: name,
-        icon: own.icon ?? (pf ? `app:${pf.id}` : 'grid'),
+        icon:
+          (own.image && !this.broken_.has(own.image) ? own.image : undefined) ??
+          own.icon ??
+          (pf ? `app:${pf.id}` : 'grid'),
         colour: own.color ?? (pf?.hex || undefined),
         active: Boolean(
           this.usable() && ((pf && pf === currentPlatform) || (source && source === current)),
@@ -1393,7 +1427,11 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
             break;
         }
     }
-    return html`<article class="fv-card rm-card ${usable ? '' : 'is-unavailable is-off'}" data-card>
+    return html`<article
+      class="fv-card rm-card ${usable ? '' : 'is-unavailable is-off'}"
+      data-card
+      @error=${this.pictureFailed}
+    >
       ${head({
         icon: fitted.icon ? (usable || this.looksQuiet ? this.headIcon(p) : 'ban') : null,
         small: fitted.small,

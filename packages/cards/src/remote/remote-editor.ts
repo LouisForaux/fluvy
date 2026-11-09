@@ -127,11 +127,12 @@ export const lists: readonly RowsListSpec[] = [
     schema: [
       platformField(),
       fieldRow(textField('name'), iconField()),
+      textField('image'),
       accentField('color', { item: 'own' }),
       fieldRow(textField('source'), choiceField('key', keyChoices())),
       actionField('tap_action'),
     ],
-    keys: ['app', 'name', 'icon', 'color', 'source', 'key', 'tap_action'],
+    keys: ['app', 'name', 'icon', 'image', 'color', 'source', 'key', 'tap_action'],
     when: draws('apps'),
     rowIcon: (item) => {
       const own = item['icon'];
@@ -254,6 +255,7 @@ export function getConfigForm(): LovelaceConfigForm {
       controls: 'editor.controls',
       commands: 'editor.commands',
       app: 'editor.app',
+      image: 'editor.image',
       source: 'editor.source',
       key: 'editor.key',
     }),
@@ -265,6 +267,7 @@ export function getConfigForm(): LovelaceConfigForm {
         off_keys: 'editor.off_keys_helper',
         volume: 'editor.volume_helper',
         commands: 'editor.commands_helper',
+        image: 'editor.image_helper',
       };
       const key = helpers[schema.name];
       return key ? s(editorLanguage(), key) : undefined;

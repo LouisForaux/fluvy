@@ -71,6 +71,8 @@
     "editor.controls": "Rounds of the row",
     "editor.apps": "Apps",
     "editor.apps_helper": "A platform brings its logo; left empty, the player’s sources that name a platform are shown",
+    "editor.image": "Picture",
+    "editor.image_helper": "Your own logo in place of the platform’s: a path such as /local/logo.svg, or a web address",
     "editor.custom": "Custom keys",
     "editor.custom_helper": "A key the device takes, or any action of your own",
     "editor.app": "Platform",

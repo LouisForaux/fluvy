@@ -2899,6 +2899,8 @@
     "editor.controls": "Satırın yuvarlak tuşları",
     "editor.apps": "Uygulamalar",
     "editor.apps_helper": "Bir platform logosunu getirir; boş bırakılırsa oynatıcının bir platform adını taşıyan kaynakları gösterilir",
+    "editor.image": "Resim",
+    "editor.image_helper": "Platformun logosu yerine kendi logonuz: /local/logo.svg gibi bir yol veya bir web adresi",
     "editor.custom": "Özel tuşlar",
     "editor.custom_helper": "Cihazın kabul ettiği bir tuş ya da kendi eyleminiz",
     "editor.app": "Platform",

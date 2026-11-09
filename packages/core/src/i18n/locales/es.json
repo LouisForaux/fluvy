@@ -2899,6 +2899,8 @@
     "editor.controls": "Redondos de la fila",
     "editor.apps": "Apps",
     "editor.apps_helper": "Una plataforma trae su logo; vacío, se muestran las fuentes del reproductor que nombran una plataforma",
+    "editor.image": "Imagen",
+    "editor.image_helper": "Tu propio logo en lugar del de la plataforma: una ruta como /local/logo.svg o una dirección web",
     "editor.custom": "Teclas propias",
     "editor.custom_helper": "Una tecla que el dispositivo acepta, o cualquier acción propia",
     "editor.app": "Plataforma",

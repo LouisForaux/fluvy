@@ -2899,6 +2899,8 @@
     "editor.controls": "行的圆形按钮",
     "editor.apps": "应用",
     "editor.apps_helper": "选择平台即带有其标志；留空时，显示播放器中以平台命名的输入源",
+    "editor.image": "图片",
+    "editor.image_helper": "用你自己的徽标代替平台徽标:填写 /local/logo.svg 这样的路径或网址",
     "editor.custom": "自定义按键",
     "editor.custom_helper": "设备接受的按键，或任意自定义动作",
     "editor.app": "平台",

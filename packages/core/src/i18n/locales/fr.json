@@ -2899,6 +2899,8 @@
     "editor.controls": "Ronds de la ligne",
     "editor.apps": "Applis",
     "editor.apps_helper": "Une plateforme apporte son logo ; vide, les sources du lecteur qui nomment une plateforme s’affichent",
+    "editor.image": "Image",
+    "editor.image_helper": "Votre propre logo à la place de celui de la plateforme : un chemin comme /local/logo.svg ou une adresse web",
     "editor.custom": "Touches personnalisées",
     "editor.custom_helper": "Une touche que l’appareil accepte, ou toute action à vous",
     "editor.app": "Plateforme",

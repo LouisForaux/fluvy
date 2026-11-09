@@ -2899,6 +2899,8 @@
     "editor.controls": "A sor kerek gombjai",
     "editor.apps": "Alkalmazások",
     "editor.apps_helper": "Egy platform hozza a logóját; üresen a lejátszó platformot nevező forrásai jelennek meg",
+    "editor.image": "Kép",
+    "editor.image_helper": "Saját logó a platformé helyett: egy útvonal, például /local/logo.svg, vagy egy webcím",
     "editor.custom": "Saját gombok",
     "editor.custom_helper": "Egy gomb, amit az eszköz elfogad, vagy bármilyen saját művelet",
     "editor.app": "Platform",

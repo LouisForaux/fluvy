@@ -2899,6 +2899,8 @@
     "editor.controls": "Ronde knoppen van de rij",
     "editor.apps": "Apps",
     "editor.apps_helper": "Een platform brengt zijn logo mee; leeg gelaten verschijnen de bronnen van de speler die een platform noemen",
+    "editor.image": "Afbeelding",
+    "editor.image_helper": "Je eigen logo in plaats van dat van het platform: een pad zoals /local/logo.svg of een webadres",
     "editor.custom": "Eigen toetsen",
     "editor.custom_helper": "Een toets die het apparaat kent, of een eigen actie",
     "editor.app": "Platform",

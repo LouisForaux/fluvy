@@ -2899,6 +2899,8 @@
     "editor.controls": "Runde Tasten der Zeile",
     "editor.apps": "Apps",
     "editor.apps_helper": "Eine Plattform bringt ihr Logo mit; leer gelassen, erscheinen die Quellen des Players, die eine Plattform nennen",
+    "editor.image": "Bild",
+    "editor.image_helper": "Dein eigenes Logo statt dem der Plattform: ein Pfad wie /local/logo.svg oder eine Webadresse",
     "editor.custom": "Eigene Tasten",
     "editor.custom_helper": "Eine Taste, die das Gerät kennt, oder eine beliebige eigene Aktion",
     "editor.app": "Plattform",

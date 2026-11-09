@@ -38,8 +38,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   power round, the player's sources as chips, a D-pad (a ring of four arrows round OK between its four keys, or a
   grid), rewind · play/pause · forward, the volume (the ruler where the device reports a level, keys or a stepper
   where not) routed to a receiver if asked, the channel, the apps with their logos (the player's sources that name a
-  platform get theirs without configuring anything; Netflix, Disney+, Prime Video, YouTube, Spotify and fifty more)
-  and keys of your own; full, compact, pad and row; every key going to the player's own service where it has one,
+  platform get theirs without configuring anything; Netflix, Disney+, Prime Video, YouTube, Spotify and fifty more;
+  a picture of your own in place of any logo) and keys of your own; full, compact, pad and row; every key going to the player's own service where it has one,
   else to the remote as Android TV Remote, Apple TV, Roku, LG webOS, Samsung and Fire TV take it, else to a command
   of your own. Off, the power round takes the primary fill and every key stays alive (or power alone); out of reach
   the card keeps its size and anatomy.

@@ -2899,6 +2899,8 @@
     "editor.controls": "Botões redondos da linha",
     "editor.apps": "Apps",
     "editor.apps_helper": "Uma plataforma traz o seu logótipo; vazio, aparecem as fontes do leitor que nomeiam uma plataforma",
+    "editor.image": "Imagem",
+    "editor.image_helper": "O teu próprio logótipo em vez do da plataforma: um caminho como /local/logo.svg ou um endereço web",
     "editor.custom": "Teclas próprias",
     "editor.custom_helper": "Uma tecla que o dispositivo aceita, ou qualquer ação sua",
     "editor.app": "Plataforma",

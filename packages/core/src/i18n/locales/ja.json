@@ -2899,6 +2899,8 @@
     "editor.controls": "行の丸ボタン",
     "editor.apps": "アプリ",
     "editor.apps_helper": "プラットフォームを選ぶとロゴが付きます。空のままなら、プレーヤーの入力のうちプラットフォーム名のものを表示します",
+    "editor.image": "画像",
+    "editor.image_helper": "プラットフォームのロゴの代わりに使う独自のロゴ:/local/logo.svg のようなパスまたはウェブアドレス",
     "editor.custom": "カスタムキー",
     "editor.custom_helper": "デバイスが受け付けるキー、または任意のアクション",
     "editor.app": "プラットフォーム",

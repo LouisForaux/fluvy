@@ -2955,6 +2955,8 @@
     "editor.controls": "Okrúhle tlačidlá riadku",
     "editor.apps": "Aplikácie",
     "editor.apps_helper": "Platforma prináša svoje logo; prázdne: zobrazia sa zdroje prehrávača, ktoré pomenúvajú platformu",
+    "editor.image": "Obrázok",
+    "editor.image_helper": "Vlastné logo namiesto loga platformy: cesta ako /local/logo.svg alebo webová adresa",
     "editor.custom": "Vlastné tlačidlá",
     "editor.custom_helper": "Tlačidlo, ktoré zariadenie prijíma, alebo ľubovoľná vlastná akcia",
     "editor.app": "Platforma",

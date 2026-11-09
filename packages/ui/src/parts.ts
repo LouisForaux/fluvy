@@ -29,6 +29,8 @@ export type IconRef = GlyphName | `${string}:${string}`;
 const HA_STATE = 'ha-state:';
 /** A platform's logo by its id (`app:netflix`), from the chunk that holds them. */
 const APP = 'app:';
+/** A picture of the person's own where a glyph stands: a path of Home Assistant's, a web address or a data image. */
+const IMAGE = /^(?:\/|https?:\/\/|data:image\/)/;
 
 /**
  * Home Assistant's own icon for an entity in a state — its device class, the state, its integration's icons — drawn
@@ -82,6 +84,7 @@ export function icon(
       class="fv-haicon"
       ${stateOf(ref.slice(HA_STATE.length))}
     ></ha-state-icon>`;
+  if (ref && IMAGE.test(ref)) return html`<img src=${ref} alt="" decoding="async" />`;
   if (ref && ref.includes(':')) return html`<ha-icon class="fv-haicon" .icon=${ref}></ha-icon>`;
   return glyph(isGlyph(ref) ? ref : fallback);
 }

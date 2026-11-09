@@ -2899,6 +2899,8 @@
     "editor.controls": "Tondi della riga",
     "editor.apps": "App",
     "editor.apps_helper": "Una piattaforma porta il suo logo; vuoto, si mostrano le sorgenti del lettore che nominano una piattaforma",
+    "editor.image": "Immagine",
+    "editor.image_helper": "Il tuo logo al posto di quello della piattaforma: un percorso come /local/logo.svg o un indirizzo web",
     "editor.custom": "Tasti personali",
     "editor.custom_helper": "Un tasto che il dispositivo accetta, o qualsiasi azione tua",
     "editor.app": "Piattaforma",
