@@ -77,7 +77,8 @@ class MeansLine extends HTMLElement implements LovelaceCard {
     const top = Math.max(...CLOUDY);
     const at = (i: number): string =>
       `${((i / 288) * w).toFixed(1)},${(h - ((CLOUDY[i] ?? 0) / top) * (h - 8)).toFixed(1)}`;
-    this.style.cssText = 'display:block;padding:12px 20px;font:500 11px system-ui;color:#888';
+    // its own line height: a system font's own would set the line under it off the grid on one machine and not another
+    this.style.cssText = 'display:block;padding:12px 20px;font:500 11px/16px system-ui;color:#888';
     this.innerHTML = `<div>Home Assistant · 12:00 ${CLOUDY[144]} kW · peak ${top} kW</div>
       <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="display:block">
         <line x1="${w / 2}" x2="${w / 2}" y1="0" y2="${h}" stroke="#bbb" stroke-dasharray="2 3" />
