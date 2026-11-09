@@ -253,6 +253,7 @@ check(
       ['automations/One lamp · guest', '1 of 2 on', 'a guest’s view of the house'],
     ],
     charts: [['chart/Chart · statistics', 'Lowest', 'the statistics: the Chart card']],
+    media: [['remote/Full', 'Netflix', 'the registry and the player’s sources: the remote’s apps']],
     energy: [
       ['usage/A day', 'Solar', 'another Energy dashboard: Energy usage'],
       ['period/Followers', 'Today', 'the Energy date pickers’ collections'],
@@ -264,6 +265,28 @@ check(
     for (const [name, word, what] of list) {
       const said = await words(page, name);
       check(`${what}: "${name}" says "${word}"`, said.includes(word), said.slice(0, 160));
+    }
+    if (family === 'media') {
+      // a key of the remote reaches the stand-in: the mute goes to the receiver, which says so a moment later
+      const mute = frame(page, 'remote/Full')
+        .locator('fluvy-remote-card [aria-label="Mute"]')
+        .first();
+      await mute.click();
+      await page.waitForTimeout(600);
+      check(
+        'a key of the remote reaches the stand-in (the mute flips to Unmute)',
+        (await frame(page, 'remote/Full')
+          .locator('fluvy-remote-card [aria-label="Unmute"]')
+          .count()) === 1,
+      );
+      // the power round of a television that is off wakes it through the stand-in: its line no longer says Off
+      const off = frame(page, 'remote/Off').locator('fluvy-remote-card');
+      await off.locator('[aria-label="Turn on"]').first().click();
+      await page.waitForTimeout(600);
+      check(
+        'the power round wakes a television that is off',
+        (await off.locator('[aria-label="Turn off"]').count()) === 1,
+      );
     }
     if (family === 'energy') {
       check(

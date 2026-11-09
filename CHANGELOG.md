@@ -25,6 +25,15 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A TV remote card (`fluvy-remote-card`, #143), for televisions, receivers, consoles and players: the head with the
+  power round, the player's sources as chips, a D-pad (a ring of four arrows round OK between its four keys, or a
+  grid), rewind · play/pause · forward, the volume (the ruler where the device reports a level, keys or a stepper
+  where not) routed to a receiver if asked, the channel, the apps with their logos (the player's sources that name a
+  platform get theirs without configuring anything; Netflix, Disney+, Prime Video, YouTube, Spotify and fifty more)
+  and keys of your own; full, compact, pad and row; every key going to the player's own service where it has one,
+  else to the remote as Android TV Remote, Apple TV, Roku, LG webOS, Samsung and Fire TV take it, else to a command
+  of your own. Off, the power round takes the primary fill and every key stays alive (or power alone); out of reach
+  the card keeps its size and anatomy.
 - An automatic dashboard leaves out the entities it is told to (`exclude`, or Fluvy's settings › Dashboards ›
   Entities left out, in Home Assistant's entity picker), as if the house had none of them, without hiding them
   anywhere else in Home Assistant: no view shows one, no room counts one and the energy roles never take one for a

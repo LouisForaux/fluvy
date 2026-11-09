@@ -1,6 +1,6 @@
 # The cards
 
-Sixty-four cards, listed as **Fluvy · …** in the card picker, each with a live preview and an editor form. The form is
+Sixty-five cards, listed as **Fluvy · …** in the card picker, each with a live preview and an editor form. The form is
 the reference for a card's options: it shows what the card does by default, and a default you leave as it is is never
 written into the configuration. It shows an option only where it acts — in the style chosen, with the card's other
 options as they are — and an option it hides keeps its value for when it acts again. In YAML, a card is
@@ -360,6 +360,76 @@ type: custom:fluvy-media-card
 entity: media_player.lounge_tv
 variant: mini
 secondary: sensor.lounge_tv_status # or "{{ state_attr(entity, 'source') }} · {{ states('sensor.soundbar_volume') }}"
+```
+
+## TV remote
+
+The remote card (#143) is a remote in Fluvy's hand for a television, a receiver, a console or a player: the head with
+the power round; the player's sources as chips that fill their row; the D-pad, a ring of four arrows round OK between
+its four keys (`dpad: ring`, the default) or the familiar grid of nine (`grid`); rewind · play/pause · forward; the
+volume; the channel; the apps; keys of your own. `entity` is the player (`media_player`), `remote` the remote entity
+that takes the keys (`remote.send_command`); either alone will do. Each key goes to the player's own service where it
+has one (power, volume, mute, play and pause, previous and next, a source), else to the remote as its integration
+takes it — the table knows Android TV Remote, Apple TV, Roku, LG webOS (its buttons on the player itself), Samsung and
+Fire TV, read from their sources and not tried on a device — else to a command of your own (`commands: { back:
+KEY_RETURN }`, a word or an action). A key no part of the device takes is drawn disabled; the D-pad and the channel
+are drawn where a remote is named (or the television is an LG). Held, an arrow, a volume or a channel key repeats.
+
+`groups` names what is drawn and in what order: `source`, `dpad`, `transport`, `volume`, `apps` by default, `channel`
+and `custom` by name; a group the device cannot take is not offered. `nav` names the four keys round the pad (back,
+menu, subtitles, home by default), `transport` the playback rounds, `side_keys` puts the four beside the ring where the
+column holds them (`auto`), always (`sides`) or in a row under it (`row`); `ok_label` writes the word on OK (`word`) or
+leaves it plain. `volume: auto` draws the house's ruler where the device reports a level it can set and keys (down ·
+mute · up) where it does not; `ruler`, `keys` and `stepper` (the 96 pill with a mute round) ask for one. `volume_entity`
+routes the volume to a receiver or a soundbar: the row names it, says its level, and shows it off ("Off", the ruler
+asleep) or out of reach ("—", the row still) while the television stays live.
+
+The apps row shows the player's sources that name a platform — Netflix, Disney+, Prime Video, YouTube, Spotify and
+some fifty more, matched whatever their case and spacing — each with its logo and its brand colour, the open one
+coloured; `apps` lists your own instead (`app: netflix`, or a `source`, a `key`, a `tap_action`, with a `name`, an
+`icon` and a `color` of your own), the editor offering the platforms with their logos. `apps_style: circles` draws 44
+circles in equal cells with their names under them (names all or none, as many as hold a finger's 50, wrapping by
+count), `chips` filled chips; `apps_tint: always` colours every app at rest, not only the open one. `custom` lists keys
+of your own, a key of the table or an action, as cells that fill the column. `variant: compact` is the head and one row
+of `keys` (back, home, play/pause, volume down and up by default); `pad` the head and the D-pad alone; `row` the media
+card's mini row with its `controls` (back, home, power). Off, the power round takes the primary fill and every key
+stays alive (`off_keys: live`: the integrations that wake on any key do) or power alone (`power`, the rest faded); out
+of reach the card keeps its size and anatomy in the dashed skin. Heights at a 360 column: full 572 with the default
+groups, compact 144, pad 276, row 76.
+
+```yaml
+type: custom:fluvy-remote-card
+entity: media_player.living_room_tv
+remote: remote.living_room_tv
+volume_entity: media_player.receiver
+groups: [source, dpad, transport, volume, apps]
+apps:
+  - app: netflix
+  - app: disneyplus
+  - name: Radio
+    icon: mdi:radio
+    source: Live TV
+custom:
+  - name: Guide
+    key: guide
+  - name: Sleep
+    icon: moon
+    tap_action:
+      action: perform-action
+      perform_action: media_player.turn_off
+      target: { entity_id: media_player.living_room_tv }
+```
+
+A Samsung television whose back key the table names otherwise:
+
+```yaml
+type: custom:fluvy-remote-card
+entity: media_player.bedroom_tv
+remote: remote.bedroom_tv
+variant: compact
+keys: [back, home, play_pause, volume_down, volume_up]
+commands:
+  back: KEY_RETURN
 ```
 
 ## Chips
@@ -1118,6 +1188,7 @@ roles:
 | **Items** | `custom:fluvy-items-card` | The items of a sensor’s list attribute, a row each — flights overhead, departures, deliveries — with a flights preset for FlightRadar24. | `title`, `subtitle`, `attribute` (`auto`), `preset` (`auto`, `none`, `flights`), `item_name`, `item_secondary`, `item_value`, `item_unit`, `item_icon`, `item_image`, `item_url`, `items_template`, `sort`, `sort_order` (`ascending`, `descending`), `variant` (`rows`, `compact`, `tiles`), `max_rows`, `show_count`, `show_image`, `item_tap` (`sheet`, `none`), `empty_text`, `hide_empty` | — |
 | **Media** | `custom:fluvy-media-card` | A media player: artwork, seek bar, transport and volume — full, compact row or hero. | `secondary`, `image`, `image_mode` (`fallback`, `always`), `variant` (`full`, `mini`, `hero`), `source_style` (`full`, `chips`), `show_source`, `show_volume`, `show_power`, `controls` (`power`, `previous`, `play`, `next`, `volume`) | — |
 | **Now playing** | `custom:fluvy-now-playing-card` | The compact player of the home screen: artwork, thin progress, transport and volume. | `show_volume`, `show_power`, `controls` (`power`, `previous`, `play`, `next`, `volume`) | — |
+| **Remote** | `custom:fluvy-remote-card` | A TV remote in Fluvy’s hand: power, sources, a D-pad with OK, playback, volume routed where you like, channels, the apps with their logos, keys of your own. | `remote`, `volume_entity`, `variant` (`full`, `compact`, `pad`, `row`), `off_keys` (`live`, `power`), `groups` (`source`, `dpad`, `transport`, `volume`, `channel`, `apps`, `custom`), `dpad` (`ring`, `grid`), `ok_label` (`word`, `plain`), `side_keys` (`auto`, `sides`, `row`), `nav` (`power`, `up`, `down`, `left`, `right`, `ok`, `back`, `home`, `menu`, `info`, `guide`, `captions`, `settings`, `input`, `assistant`, `exit`, `play_pause`, `play`, `pause`, `stop`, `rewind`, `forward`, `previous`, `next`, `record`, `volume_up`, `volume_down`, `mute`, `channel_up`, `channel_down`), `transport` (`power`, `up`, `down`, `left`, `right`, `ok`, `back`, `home`, `menu`, `info`, `guide`, `captions`, `settings`, `input`, `assistant`, `exit`, `play_pause`, `play`, `pause`, `stop`, `rewind`, `forward`, `previous`, `next`, `record`, `volume_up`, `volume_down`, `mute`, `channel_up`, `channel_down`), `volume` (`auto`, `ruler`, `keys`, `stepper`), `apps_style` (`circles`, `chips`), `apps_tint` (`open`, `always`), `keys` (`power`, `up`, `down`, `left`, `right`, `ok`, `back`, `home`, `menu`, `info`, `guide`, `captions`, `settings`, `input`, `assistant`, `exit`, `play_pause`, `play`, `pause`, `stop`, `rewind`, `forward`, `previous`, `next`, `record`, `volume_up`, `volume_down`, `mute`, `channel_up`, `channel_down`), `controls` (`power`, `up`, `down`, `left`, `right`, `ok`, `back`, `home`, `menu`, `info`, `guide`, `captions`, `settings`, `input`, `assistant`, `exit`, `play_pause`, `play`, `pause`, `stop`, `rewind`, `forward`, `previous`, `next`, `record`, `volume_up`, `volume_down`, `mute`, `channel_up`, `channel_down`), `commands`, `apps` (a list: `app`, `name`, `icon`, `color`, `source`, `key`, `tap_action`), `custom` (a list: `name`, `icon`, `key`, `tap_action`) | — |
 | **Cover** | `custom:fluvy-cover-card` | Blinds, shutters, garage doors and valves: vertical position ruler, tilt, open · stop · close, favourites. | `subtitle`, `tilt_angle`, `variant` (`full`, `compact`), `favorites_style` (`full`, `chips`), `show_tilt`, `show_favorites`, `favorites` (a list: `name`, `position`, `tilt`) | — |
 | **Fan** | `custom:fluvy-fan-card` | Speed ruler with steps, oscillation, direction and presets. | `subtitle`, `variant` (`full`, `compact`), `show_stepper`, `show_presets`, `preset_style` (`full`, `chips`), `show_oscillation`, `show_direction`, `when_off` (`all`, `essentials`) | — |
 | **Vacuum** | `custom:fluvy-vacuum-card` | Robot vacuum or mower: battery, start · stop · dock · locate, suction. | `subtitle`, `variant` (`full`, `compact`), `show_battery`, `battery_entity`, `area_entity`, `duration_entity`, `remaining_entity`, `suction_style` (`full`, `chips`) | — |

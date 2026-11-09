@@ -1,6 +1,6 @@
 /**
  * The facts guard: what the prose says in numbers is what the code says. A count spelled in the README, the docs,
- * the package description, the contributing guide or the design language — "sixty-four cards", "fifteen palettes",
+ * the package description, the contributing guide or the design language — "sixty-five cards", "fifteen palettes",
  * "five automatic dashboards", "eight languages", "six tabs" — is read back and held to the catalogue, the palette
  * registry, the strategy's templates, the language registry and the panel's tabs; the every-page budget the
  * development guide names is held to `finish.mjs`, and its table of scripts to `check.mjs`'s `BUDGETS`, name for name
@@ -250,7 +250,7 @@ export async function proseFiles(): Promise<string[]> {
 }
 
 /**
- * The hand-written sources, whose comments may count the library ("sixty-four cards share one parsed copy") and are
+ * The hand-written sources, whose comments may count the library ("sixty-five cards share one parsed copy") and are
  * held to that count alone: a comment's "two tabs" or "five languages" is a fixture, not a fact.
  */
 export async function sourceFiles(): Promise<string[]> {

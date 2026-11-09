@@ -174,6 +174,21 @@ const SLIDER =
   /\/packages\/(cards\/src\/(slider-cards\.ts|slider\/)|core\/src\/i18n\/locales\/en\/slider\.json)/;
 
 /**
+ * The platforms' logos (1.18, #143): the marks of Simple Icons and Material Design Icons adapted to the grid, and
+ * Fluvy's monograms for the rest, each registered as `app:<id>` as the chunk lands — fetched by the first remote card
+ * that draws an app, never at start, never by a dashboard without one.
+ */
+const APP_LOGOS = /\/packages\/cards\/src\/app-logos\//;
+
+/**
+ * The TV remote card (1.18, #143: its card, its keys and the integrations' commands for them, the platforms it
+ * knows by name, and its English; its editor goes with the forms): fetched as the bundle starts and defined as it
+ * lands, as the Slider card is (`remote-family.ts` stays in core: the name, the heights).
+ */
+const REMOTE =
+  /\/packages\/(cards\/src\/(remote-cards\.ts|remote\/)|core\/src\/i18n\/locales\/en\/remote\.json)/;
+
+/**
  * The Vehicle card (its card, what finds a car's entities and folds its integration's words, its glyphs and its
  * English): fetched as the bundle starts and defined as it lands, as the Slider card is (`vehicle-family.ts` stays in
  * core: the name, the height). It reads its charge on the car charger's marked ruler, with the energy family.
@@ -260,7 +275,7 @@ const FORMS =
  * every page carries, the weather card, the calendar card, the media, the chart engine, the Chart card, the Energy period card, energy
  * (the history bars' readings on their own), devices (the cameras' sheet on its own), appliances (their pictures on
  * their own), automations and alerts families (each sheet on its own), the template card, the web page card, the Slider
- * card, the Vehicle card, the items card (its sheet on its own), the light card's colours, a room's quick actions, the cards' editor, the
+ * card, the platforms' logos, the remote card, the Vehicle card, the items card (its sheet on its own), the light card's colours, a room's quick actions, the cards' editor, the
  * fields every editor is built of, the view icons, what a see-through card wears, what a quiet one wears, the slider
  * styles, the icon set's other part, and everything else (Fluvy's packages and Lit) in `core`. The bundle's own entry stays in `fluvy.js`. Rolldown processes the groups in this order; the priorities only say so out loud.
  * @type {readonly Group[]}
@@ -294,6 +309,8 @@ export const GROUPS = [
   { name: 'template', test: TEMPLATE },
   { name: 'web', test: WEB },
   { name: 'slider', test: SLIDER },
+  { name: 'app-logos', test: APP_LOGOS },
+  { name: 'remote', test: REMOTE },
   { name: 'vehicle', test: VEHICLE },
   { name: 'items-sheet', test: ITEMS_SHEET },
   { name: 'items', test: ITEMS },

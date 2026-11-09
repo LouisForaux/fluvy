@@ -205,6 +205,36 @@ export function simulate<E extends SimulatedEntity>(
       case 'media_player.turn_off':
         set(id, 'off');
         break;
+      case 'media_player.volume_up':
+      case 'media_player.volume_down':
+        set(id, undefined, {
+          volume_level: Math.min(
+            1,
+            Math.max(
+              0,
+              Number(a['volume_level'] ?? 0) + (call.service === 'volume_up' ? 0.05 : -0.05),
+            ),
+          ),
+        });
+        break;
+      case 'media_player.media_stop':
+        set(id, 'idle');
+        break;
+      // a remote: switched on or off, and the last key it was sent (the remote card's, read back by its tests)
+      case 'remote.turn_on':
+        set(id, 'on');
+        break;
+      case 'remote.turn_off':
+        set(id, 'off');
+        break;
+      case 'remote.send_command':
+        set(id, undefined, {
+          last_command: ([] as unknown[])
+            .concat(data['command'] as never)
+            .map(String)
+            .join(' '),
+        });
+        break;
       case 'vacuum.start':
         set(id, 'cleaning');
         break;

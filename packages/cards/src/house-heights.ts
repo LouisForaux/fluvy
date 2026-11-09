@@ -25,6 +25,8 @@ import { helpersHeight, type HelpersCardConfig } from './helpers/helpers-card.js
 import { lightHeight, type LightCardConfig } from './light/light-card.js';
 import { lightsHeight, type LightsCardConfig } from './lights/lights-card.js';
 import { mediaHeight } from './media-family.js';
+import { remoteHeight } from './remote-family.js';
+import { platformOf } from './remote/platforms.js';
 import { roomHeight, type RoomCardConfig } from './room/room-card.js';
 import { isWord, sensorHeight, type SensorCardConfig } from './sensor/sensor-card.js';
 import { normaliseExtras } from './sensor/series.js';
@@ -251,13 +253,25 @@ const cameras = (config: LovelaceCardConfig, hass: HomeAssistant): number =>
 const SELECT_SOURCE = 2048;
 
 /** The player's sources, where it takes one. */
+const sourcesOf = (hass: HomeAssistant, id: unknown): string[] =>
+  featuresOf(hass, id) & SELECT_SOURCE ? listAttr(hass, id, 'source_list') : [];
+
 const media = (config: LovelaceCardConfig, hass: HomeAssistant): number =>
-  mediaHeight(
-    config,
-    featuresOf(hass, config['entity']) & SELECT_SOURCE
-      ? listAttr(hass, config['entity'], 'source_list')
-      : [],
-  );
+  mediaHeight(config, sourcesOf(hass, config['entity']));
+
+/**
+ * The remote's sources as chips (the inputs: the platforms among them go to the apps row where the config lists no
+ * apps), and the apps that row shows by the names it says under them.
+ */
+const remote = (config: LovelaceCardConfig, hass: HomeAssistant): number => {
+  const sources = sourcesOf(hass, config['entity']);
+  const apps = sources.map(platformOf).filter((p) => p !== undefined);
+  const own = Array.isArray(config['apps']) && (config['apps'] as unknown[]).length > 0;
+  return remoteHeight(config, {
+    sources: own ? sources : sources.filter((source) => !platformOf(source)),
+    apps: apps.map((p) => p.short ?? p.title),
+  });
+};
 
 /** The forecasts the weather offers (its features; every one where it writes none). */
 function weather(config: LovelaceCardConfig, hass: HomeAssistant): number {
@@ -302,6 +316,7 @@ const HOUSE: ReadonlyMap<string, HouseHeight> = new Map<string, HouseHeight>([
   ['fluvy-alarm-card', alarm],
   ['fluvy-cameras-card', cameras],
   ['fluvy-media-card', media],
+  ['fluvy-remote-card', remote],
   ['fluvy-weather-card', weather],
   ['fluvy-energy-flow-card', flow],
   ['fluvy-grid-card', grid],

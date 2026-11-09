@@ -155,6 +155,15 @@ const GLYPHS = {
     '<path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/><path d="m10.8 10.8 1.8-1.2V14.4"/>',
   volumeOff:
     '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5Z"/><path d="m15.8 10 4.4 4"/><path d="m20.2 10-4.4 4"/>',
+  /* the TV remote's keys (1.18, #143): a screen on its stand; two filled triangles in the hand of prev and next;
+     subtitles, two unequal lines on the screen's foot */
+  tv: '<rect x="3" y="4.5" width="18" height="12.5" rx="2.5"/><path d="M8.5 20.5h7"/><path d="M12 17v3.5"/>',
+  rewind:
+    '<path d="M11.5 6 4 12l7.5 6Z" fill="currentColor" stroke="none"/><path d="M20 6l-7.5 6 7.5 6Z" fill="currentColor" stroke="none"/>',
+  forward:
+    '<path d="M12.5 6 20 12l-7.5 6Z" fill="currentColor" stroke="none"/><path d="M4 6l7.5 6L4 18Z" fill="currentColor" stroke="none"/>',
+  captions:
+    '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 15h6"/><path d="M15 15h2"/><path d="M7 11h2"/><path d="M11 11h6"/>',
   // fluvy's own settings (the panel)
   palette:
     '<path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.8-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5C21 6.3 17 3 12 3Z"/><circle cx="7.5" cy="11.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.8" cy="7.3" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.4" cy="7.3" r="1.1" fill="currentColor" stroke="none"/>',
@@ -257,6 +266,32 @@ export function addGlyphs(table: Readonly<Record<string, string>>): void {
 
 export const isGlyph = (name: string | undefined): name is GlyphName =>
   name !== undefined && (name in GLYPHS || Object.hasOwn(ADDED, name));
+
+/**
+ * The platforms' logos (`app:netflix`): filled marks on the 24 grid, drawn as the glyphs are and sized to sit with
+ * them, brought by the chunk that holds them (`addLogos`) the first time a card draws one. Nothing here until then.
+ */
+const LOGOS: Record<string, string> = {};
+
+/** Adds a chunk's logos (id → the SVG body) so `icon('app:<id>')` draws them. */
+export function addLogos(table: Readonly<Record<string, string>>): void {
+  Object.assign(LOGOS, table);
+}
+
+export const isLogo = (id: string): boolean => Object.hasOwn(LOGOS, id);
+
+/** A logo as an inline SVG in the current colour; templates are built once and reused. */
+export function logo(id: string): TemplateResult {
+  let template = logos.get(id);
+  if (!template) {
+    template = html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      ${unsafeSVG(LOGOS[id] ?? '')}
+    </svg>`;
+    logos.set(id, template);
+  }
+  return template;
+}
+const logos = new Map<string, TemplateResult>();
 
 export function glyphBody(name: GlyphName): { body: string; strokeWidth: number } {
   const entry: string | readonly [string, number] = Object.hasOwn(GLYPHS, name)

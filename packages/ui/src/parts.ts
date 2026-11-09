@@ -9,7 +9,7 @@ import {
   stopStepRepeat,
   type PressTarget,
 } from './controls/pointer.js';
-import { glyph, isGlyph, type GlyphName } from './glyphs.js';
+import { glyph, isGlyph, isLogo, logo, type GlyphName } from './glyphs.js';
 
 /**
  * Template functions for the fluvy primitives — the same markup and class names as the approved
@@ -27,6 +27,8 @@ import type { Tone } from './tones.js';
 export type IconRef = GlyphName | `${string}:${string}`;
 
 const HA_STATE = 'ha-state:';
+/** A platform's logo by its id (`app:netflix`), from the chunk that holds them. */
+const APP = 'app:';
 
 /**
  * Home Assistant's own icon for an entity in a state — its device class, the state, its integration's icons — drawn
@@ -72,6 +74,9 @@ export function icon(
     const name = glyphOf(ref);
     if (isGlyph(name)) return glyph(name);
   }
+  // a platform's logo (`app:netflix`), once its chunk has landed; the fallback glyph until then
+  if (ref && ref.startsWith(APP))
+    return isLogo(ref.slice(APP.length)) ? logo(ref.slice(APP.length)) : glyph(fallback);
   if (ref && ref.startsWith(HA_STATE))
     return html`<ha-state-icon
       class="fv-haicon"

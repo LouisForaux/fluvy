@@ -145,6 +145,45 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
+### Simple Icons 16.37.0 — CC0 1.0 Universal
+
+The marks of the streaming platforms the TV remote card draws (`chunks/app-logos-*.js`, fetched only by a remote card
+that shows an app) are taken from Simple Icons, release 16.37.0 (https://simpleicons.org, https://github.com/simple-icons/simple-icons),
+each one's path copied as it is and scaled to sit with Fluvy's glyphs: netflix, movistar (for Movistar Plus+), appletv,
+rakuten (for Rakuten TV), youtube, youtubemusic, youtubetv, youtubekids, hbomax, max, paramountplus, dazn, crunchyroll,
+tubi, twitch, plex, jellyfin, emby, kodi, spotify, applemusic, applepodcasts, deezer, tidal, steam, playstation, mubi,
+vimeo, dailymotion, soundcloud, audible, pocketcasts, viaplay, googletv, googleplay, channel4, itvx, zdf, starz,
+showtime, now, nebula, fubo, tiktok, roku, bilibili; the brand colours beside them are the release's data. Simple Icons
+is released under CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/): the set's authors waive
+their copyright, and no attribution is required; this notice is given for the record.
+
+The logos themselves are the trademarks of their owners, shown only to identify each service on the person's own
+television; Fluvy is not affiliated with or endorsed by any of them. Disney+, Prime Video, Peacock, Filmin,
+SkyShowtime, Pluto TV, Amazon Music, ATRESplayer, RTVE Play and Mitele have no mark in an open set: Fluvy draws its own
+two-letter monogram for them, no likeness of theirs.
+
+### Material Design Icons 7.4.47 — Pictogrammers Free License (Apache License 2.0)
+
+Three marks of the same chunk come from Material Design Icons 7.4.47 by the Pictogrammers (https://pictogrammers.com/library/mdi/,
+`@mdi/js`): `mdiHulu` (Hulu), `mdiMicrosoftXbox` (Xbox) and `mdiNintendoSwitch` (Nintendo Switch), each one's path
+copied as it is and scaled to the glyphs. The Pictogrammers Free License redistributes its icons under the Apache
+License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0): the paths are used under that licence, as is,
+without changes of substance.
+
+```
+Pictogrammers Free License
+--------------------------
+
+This icon collection is released as free, open source, and GPL friendly by
+the Pictogrammers icon group. You may use it for commercial projects, open
+source projects, or anything really.
+
+Icons: Apache 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+Some of the icons are redistributed under the Apache 2.0 license. All other
+icons are either redistributed under their respective licenses or are
+distributed under the Apache 2.0 license.
+```
+
 ## Used at build time only (not in the release)
 
 - **Home Assistant frontend** — Apache License 2.0, © the Home Assistant contributors. The type declarations of

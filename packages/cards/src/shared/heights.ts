@@ -73,11 +73,13 @@ export const drawnAs = (view: EntityView, usual: number): EntityView =>
 /* ---------- words, letter by letter ---------- */
 
 /** The kinds of text a row is laid out by: its size, its weight's extra width, its letter spacing. */
-export type TextKind = 'chip' | 'option' | 'label' | 'legend' | 'title';
+export type TextKind = 'chip' | 'option' | 'label' | 'legend' | 'title' | 'name';
 const KINDS: Readonly<Record<TextKind, readonly [size: number, weight: number, spacing: number]>> =
   {
     /** A chip's label, 13/500 (its letters run narrow: four of "Comfort" hold a row, four of "Standard" fold). */
     chip: [13, 0.93, 0],
+    /** A name under a circle (the remote's apps), 11/500. */
+    name: [11, 1, 0],
     /** An option tile's label, 12/500. */
     option: [12, 1, 0],
     /** A readout's label, 11/600 at 0.06 em. */

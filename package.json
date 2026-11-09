@@ -2,7 +2,7 @@
   "name": "fluvy",
   "version": "1.17.0",
   "private": true,
-  "description": "A premium theme and card library for Home Assistant: sixty-four cards, a light and dark theme in fifteen palettes, five automatic dashboards, a wall panel and kiosk mode for tablets, and a settings panel — one design for all of Home Assistant, installed through HACS",
+  "description": "A premium theme and card library for Home Assistant: sixty-five cards, a light and dark theme in fifteen palettes, five automatic dashboards, a wall panel and kiosk mode for tablets, and a settings panel — one design for all of Home Assistant, installed through HACS",
   "license": "GPL-3.0-only",
   "author": {
     "name": "acosta290",

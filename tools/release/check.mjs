@@ -92,6 +92,12 @@ const BUDGETS = {
   web: 8192,
   // the Slider card: its card on the tile's and its English, its editor with the forms (1.11.1, #77)
   slider: 8192,
+  // the TV remote card (1.18, #143): the card, its keys and the integrations' commands for them, the platforms it
+  // knows by name, its English; its editor goes with the forms. Measured at 11.2 KB
+  remote: 16_384,
+  // the platforms' logos (1.18, #143): Simple Icons' and Material Design Icons' marks on the grid and Fluvy's
+  // monograms, fetched by the first remote card that draws an app
+  'app-logos': 24_576,
   // the Vehicle card: the card (three layouts, its editor), what finds a car's entities on thirteen integrations and
   // folds their words, its glyphs and its English (1.13, #84); measured at 20.2 KB
   vehicle: 24_576,

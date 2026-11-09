@@ -54,6 +54,7 @@ const SECTIONS: ReadonlyArray<readonly [title: string, tags: readonly string[]]>
       'fluvy-items-card',
       'fluvy-media-card',
       'fluvy-now-playing-card',
+      'fluvy-remote-card',
       'fluvy-cover-card',
       'fluvy-fan-card',
       'fluvy-vacuum-card',

@@ -43,7 +43,7 @@ export const FAMILIES: readonly Family[] = [
     ],
   },
   { key: 'charts', label: 'family.charts', sheets: ['chart-styles', 'animated', 'chart'] },
-  { key: 'media', label: 'family.media', sheets: ['media'] },
+  { key: 'media', label: 'family.media', sheets: ['media', 'remote'] },
   { key: 'time', label: 'family.time', sheets: ['clocks', 'calendar'] },
   {
     key: 'helpers',

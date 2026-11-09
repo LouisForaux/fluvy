@@ -9,6 +9,7 @@ import {
   type LovelaceConfigForm,
   type MessageKey,
 } from '@fluvy/core';
+import { icon, type IconRef } from '@fluvy/ui';
 import { LitElement, css, html, nothing, type TemplateResult } from 'lit';
 import { normaliseConfig, type AliasSpec } from './config.js';
 import {
@@ -79,6 +80,10 @@ export interface RowsListSpec {
    * and its picker where it picks an entity; a switch at the head of its section, on by default, offers the house's.
    */
   readonly own?: OwnEntities;
+  /** A mark before each item's form (a platform's logo in the remote's apps): the item's, or none. */
+  readonly rowIcon?: (item: Readonly<Record<string, unknown>>) => IconRef | string | undefined;
+  /** What the marks wait on (the chunk that holds them): the list is drawn again as it lands. */
+  readonly ready?: () => Promise<unknown>;
 }
 
 /** The entities a list offers while its card names whose they are, and its switch's word. */
@@ -480,6 +485,23 @@ export class FluvyRowsEditor extends LitElement {
       margin-top: 4px;
       color: var(--secondary-text-color);
     }
+    /* an item's mark (a platform's logo): the cards' 44 circle on the page's ground, beside the form */
+    .item__icon {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      margin: 6px 4px 0 0;
+      border-radius: 50%;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+    }
+    .item__icon svg {
+      width: 20px;
+      height: 20px;
+    }
     .handle {
       flex: 0 0 auto;
       display: grid;
@@ -526,6 +548,8 @@ export class FluvyRowsEditor extends LitElement {
   private readonly ownSwitches = new WeakMap<RowsListSpec, readonly HaFormSchemaItem[]>();
   /** The lists whose switch offers the house's entities again, over those the card names whose they are. */
   private readonly everywhere = new Set<string>();
+  /** The lists whose marks' chunk has been asked for (`ready`). */
+  private readonly readied = new Set<string>();
   /** The words of each list's item forms, and the helpers under them: built once per list, for the same reason. */
   private readonly labelers = new WeakMap<RowsListSpec, Labeler>();
   /** The card's form as it stands (the fields that can act, the house's options), kept while it is the same, likewise. */
@@ -821,6 +845,11 @@ export class FluvyRowsEditor extends LitElement {
     const head = this.head(list, card.asked);
     const own = list.own && this.config ? list.own.entities(this.config, this.hass) : [];
     const scope = this.scope(list, items, own);
+    // the marks' chunk, asked for once: the list draws them as it lands
+    if (list.ready && !this.readied.has(list.key)) {
+      this.readied.add(list.key);
+      void list.ready().then(() => this.requestUpdate());
+    }
     return html`<div class="list">
       <p class="list__title">${this.t(list.title)}</p>
       ${list.helper ? html`<p class="list__helper">${this.t(list.helper)}</p>` : nothing}
@@ -861,6 +890,7 @@ export class FluvyRowsEditor extends LitElement {
               <div class="handle" aria-hidden="true">
                 <ha-svg-icon .path=${DRAG_HANDLE}></ha-svg-icon>
               </div>
+              ${list.rowIcon ? html`<span class="item__icon" aria-hidden="true">${icon(list.rowIcon(item), 'grid')}</span>` : nothing}
               <ha-form
                 .hass=${this.hass}
                 .data=${worded(item, selectsOf(schema))}

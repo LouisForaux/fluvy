@@ -227,9 +227,11 @@ describe('the dashboard templates', () => {
     // items card lists what a sensor's attribute holds, and only the person says what its items are (#66); a chart card
     // draws the series the person names, in a list or a forecast only they know of (#68); the Energy usage card (#62)
     // is the person's to place, the Energy dashboard's views keep the cards they had; so is the Slider card (#77), the
-    // dashboards setting a player's volume, a number and a fan on their own cards; and the Vehicle card (#84)
+    // dashboards setting a player's volume, a number and a fan on their own cards; and the Vehicle card (#84); and the
+    // remote card (#143), whose television, remote entity and receiver are the person's to say
     const byHand = new Set([
       'custom:fluvy-automations-card',
+      'custom:fluvy-remote-card',
       'custom:fluvy-appliance-card',
       'custom:fluvy-template-card',
       'custom:fluvy-web-card',

@@ -752,9 +752,12 @@ describe('custom:fluvy-home strategy', () => {
     // period strip leads the Energy dashboard's Today view (1.11), while the home's energy view keeps its cards' own
     // periods; a chart card draws the series the person names, in a list or a forecast only they know of (#68); the
     // Energy usage card (#62) is the person's to place; so is the Slider card (#77): the dashboards set a player's
-    // volume, a number and a fan on their own cards; and the Vehicle card (#84), a car being the person's to place
+    // volume, a number and a fan on their own cards; and the Vehicle card (#84), a car being the person's to place;
+    // and the remote card (#143): which television, which remote entity and which receiver its volume goes to are
+    // the person's to say, and a player's own card stands for a television on the dashboards
     const byHand = new Set([
       'custom:fluvy-automations-card',
+      'custom:fluvy-remote-card',
       'custom:fluvy-appliance-card',
       'custom:fluvy-template-card',
       'custom:fluvy-web-card',
