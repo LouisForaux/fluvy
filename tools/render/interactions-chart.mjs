@@ -132,11 +132,15 @@ const audit = (page) =>
             wrong.push(`${name}: a path outside the clipped layers`);
           const r = path.getBoundingClientRect();
           if (r.width === 0 && r.height === 0) continue;
+          // a soft copy hangs its offset under its line, and the clip trims it where the line nears the floor
+          const hangs = Number(
+            /^translate\(0 ([\d.]+)\)$/.exec(path.getAttribute('transform'))?.[1] ?? 0,
+          );
           if (
             r.left < cx - 0.5 ||
             r.right > cx + cw + 0.5 ||
             r.top < cy - 0.5 ||
-            r.bottom > cy + ch + 0.5
+            r.bottom > cy + ch + 0.5 + hangs
           )
             wrong.push(
               `${name}: ${path.getAttribute('class')} at ${r.left.toFixed(1)}…${r.right.toFixed(1)} × ${r.top.toFixed(1)}…${r.bottom.toFixed(1)} leaves ${cx.toFixed(1)}…${(cx + cw).toFixed(1)} × ${cy.toFixed(1)}…${(cy + ch).toFixed(1)}`,
