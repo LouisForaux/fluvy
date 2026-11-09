@@ -61,6 +61,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 - The Energy flow and Energy balance cards, and the Energy card's chart by source, said nothing of the house while one
   of two arrays or batteries could not be read: one that cannot counts as nothing while another of its kind reads.
 - The Readouts card just appeared when a dashboard loaded: it enters as the other cards do now (#148).
+- The media browser showed every photo and video in grey where Fluvy's look applies: only the sources' logos and icons
+  wear the neutral ink, and a picture of the media itself keeps its colours (#147).
 
 ## [1.17.0] — 2026-11-07
 

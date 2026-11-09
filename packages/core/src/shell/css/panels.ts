@@ -38,6 +38,9 @@ export const debugViewportCss = '.snapshot-editor { --code-mirror-max-height: no
 /** The media bar's progress line on the phone is not a slider to grab while nothing plays: no knob when disabled. */
 export const mediaBarCss = 'ha-slider[disabled] { --thumb-width: 0px; --thumb-height: 0px; }';
 
-/** The media browser's source tiles: brand logos in the neutral ink, not HA blue. */
+/**
+ * The media browser's source tiles (Home Assistant centres an app's or a folder's picture, or draws its icon): brand
+ * logos in the neutral ink, not HA blue. A photo or a video's own picture keeps its colours (#147).
+ */
 export const mediaBrowseCss =
-  '.child .image { filter: grayscale(1) contrast(0.9) brightness(0.8); }';
+  '.child :is(.centered-image, .icon-holder) { filter: grayscale(1) contrast(0.9) brightness(0.8); }';
