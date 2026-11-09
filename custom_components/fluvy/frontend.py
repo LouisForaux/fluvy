@@ -89,10 +89,16 @@ def _marks(frontend_dir: Path) -> dict[str, list[int]]:
     """
     marks: dict[str, list[int]] = {}
     for path in frontend_dir.rglob("*"):
-        if path.is_file():
-            stat = path.stat()
-            name = path.relative_to(frontend_dir).as_posix()
-            marks[name] = [stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns]
+        try:
+            if path.is_file():
+                stat = path.stat()
+                marks[path.relative_to(frontend_dir).as_posix()] = [
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                    stat.st_ctime_ns,
+                ]
+        except OSError as err:  # gone in the middle of the walk: it has no mark
+            _LOGGER.debug("Could not read %s: %s", path, err)
     return marks
 
 
@@ -148,18 +154,28 @@ def sweep_sidecars(frontend_dir: Path) -> int:
         proved = {}
     files = _marks(frontend_dir)
     count = 0
+    failed: set[str] = set()
     for name, mark in files.items():
         source, suffix = os.path.splitext(name)
-        if suffix in SIDECARS:
-            if source not in files or not _travels_compressed(source, files[source][0]):
-                (frontend_dir / name).unlink()
-                count += 1
-        elif _travels_compressed(name, mark[0]) and not _proved(name, files, proved):
-            count += _remake_sidecars(frontend_dir / name)
+        try:
+            if suffix in SIDECARS:
+                if source not in files or not _travels_compressed(source, files[source][0]):
+                    (frontend_dir / name).unlink()
+                    count += 1
+            elif _travels_compressed(name, mark[0]) and not _proved(name, files, proved):
+                count += _remake_sidecars(frontend_dir / name)
+        except OSError as err:  # a read-only folder, a file gone in the middle of the walk
+            _LOGGER.warning("Could not keep the compressed copies of %s: %s", name, err)
+            failed.add(name)
     # recorded as they stand now, but a file changed in the last moments: a change that quick could
-    # leave its times as they were (a coarse clock, a FAT card's two seconds), so it waits its turn
+    # leave its times as they were (a coarse clock, a FAT card's two seconds), so it waits its turn;
+    # one that could not be kept true is never recorded, so it is tried again at the next start
     settled = time.time_ns() - SETTLED_NS
-    now = {name: mark for name, mark in _marks(frontend_dir).items() if mark[2] < settled}
+    now = {
+        name: mark
+        for name, mark in _marks(frontend_dir).items()
+        if mark[2] < settled and name not in failed
+    }
     if now != proved:
         with contextlib.suppress(OSError):  # unrecorded, it is all proved again at the next start
             record.write_text(json.dumps(now), encoding="utf-8")

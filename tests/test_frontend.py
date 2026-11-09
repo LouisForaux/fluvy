@@ -128,6 +128,61 @@ class SidecarsTest(unittest.TestCase):
         self.assertEqual(sweep_sidecars(self.build), 2)
         self.assertEqual(sorted(p.name for p in self.build.rglob("*")), ["chunks", "inter.woff2"])
 
+    def test_a_sidecar_that_cannot_be_made_leaves_setup_going_and_is_tried_again(self) -> None:
+        """A read-only folder: nothing raises, the file is logged and not taken as proved."""
+        self.script.write_bytes(OLD)
+        real = Path.write_bytes
+
+        def refused(path: Path, data: bytes) -> int:
+            if path.name.endswith(".gz"):
+                raise PermissionError("read-only")
+            return real(path, data)
+
+        with (
+            self.settled(),
+            self.assertLogs(frontend._LOGGER, "WARNING") as logs,
+            mock.patch.object(Path, "write_bytes", refused),
+        ):
+            self.assertEqual(sweep_sidecars(self.build), 0)
+        self.assertIn("chunks/core-abcdefgh.js", logs.output[0])
+        self.assertNotIn("chunks/core-abcdefgh.js", json.loads(self.record.read_text()))
+        # writable again, the next start makes what the last could not
+        with self.settled():
+            self.assertEqual(sweep_sidecars(self.build), 1)
+        self.assertEqual(self.sidecars(self.script), (OLD, OLD))
+
+    def test_a_file_gone_in_the_middle_of_the_walk_does_not_stop_the_rest(self) -> None:
+        """A file that vanishes between the walk and its turn: the others are still kept."""
+        self.script.write_bytes(OLD)
+        other = self.build / "chunks" / "gone-12345678.js"
+        other.write_bytes(NEW)
+        real = frontend._remake_sidecars
+
+        def vanishing(source: Path) -> int:
+            if source == other:
+                other.unlink()
+            return real(source)
+
+        with (
+            mock.patch.object(frontend, "_remake_sidecars", vanishing),
+            self.assertLogs(frontend._LOGGER, "WARNING"),
+        ):
+            self.assertEqual(sweep_sidecars(self.build), 2)
+        self.assertEqual(self.sidecars(self.script), (OLD, OLD))
+
+    def test_a_file_gone_between_its_listing_and_its_stat_has_no_mark(self) -> None:
+        """The walk itself: a path it found that is gone when it is read."""
+        self.script.write_bytes(OLD)
+        real = Path.stat
+
+        def stat(path: Path, *args, **kwargs) -> os.stat_result:
+            if path == self.script:
+                raise FileNotFoundError(path)
+            return real(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "stat", stat):
+            self.assertEqual(frontend._marks(self.build), {})
+
     def test_without_brotli_a_br_that_cannot_be_proved_goes(self) -> None:
         """Brotli not importable: the `.gz` is made, a `.br` is deleted, never taken on trust."""
         self.script.write_bytes(OLD)

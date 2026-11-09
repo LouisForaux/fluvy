@@ -69,6 +69,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 - A wall left in its screensaver waited for a first touch before it reloaded for an update: its screensaver is nothing
   to lose, so it comes back on the new build by itself; and a change of the panels arriving while the page was asking
   which build the server serves is asked about again, where it waited for the next trigger.
+- Fluvy could fail to start on a read-only `custom_components`, or where a file went away while its compressed copies
+  were checked: each one that cannot be kept true is logged and tried again at the next start.
 
 ## [1.17.0] — 2026-11-07
 
