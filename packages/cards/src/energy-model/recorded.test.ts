@@ -89,6 +89,23 @@ describe('a sensor no longer in the house, as the recorder keeps it', () => {
     expect([asked.length, sensor.ready(other), drawn]).toEqual([2, true, 2]);
   });
 
+  it('tells an imported statistic from a sensor that is gone, until the recorder says it keeps nothing of it', async () => {
+    const { hass } = house();
+    const sensor = new RecordedSensors({ hass, requestUpdate: () => undefined });
+    const gone = resolveEntity(hass, 'sensor.solar_energy');
+    const imported = resolveEntity(hass, 'linky:typo');
+    sensor.view(gone);
+    sensor.view(imported);
+    expect([sensor.imported(gone), sensor.imported(imported)]).toEqual([false, true]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(sensor.imported(imported)).toBe(false);
+  });
+
+  it('names an imported statistic as the recorder does', () => {
+    const view = resolveEntity(house().hass, 'linky:consumption');
+    expect(recordedView(view, { statistic_id: 'x', name: 'Linky' }).name).toBe('Linky');
+  });
+
   it('hands back a sensor that is there, or one the recorder knows nothing of, as it is', () => {
     const { hass } = house({
       'sensor.solar_energy': {

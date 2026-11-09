@@ -14,7 +14,12 @@ export interface Recorded {
   readonly mean_type?: number;
   readonly display_unit_of_measurement?: string | null;
   readonly statistics_unit_of_measurement?: string | null;
+  /** An imported statistic's name; none for a sensor's. */
+  readonly name?: string | null;
 }
+
+/** A statistic an integration imports (`linky:consumption`): it has no entity behind it, whose id has a dot. */
+export const isImported = (id: string): boolean => id.includes(':');
 
 /** Asked once per connection and statistic, kept for five minutes (the cards of a view ask the same). */
 const cache = new WeakMap<object, Map<string, { at: number; promise: Promise<Recorded | null> }>>();
@@ -49,6 +54,7 @@ export function recordedView(view: EntityView, meta: Recorded | null | undefined
       : undefined;
   return {
     ...view,
+    name: meta.name || view.name,
     unit,
     attr: <T>(key: string) =>
       (key === 'state_class'
@@ -82,6 +88,11 @@ export class RecordedSensors {
       });
     }
     return recordedView(view, this.meta.get(view.id));
+  }
+
+  /** Whether this is an imported statistic the recorder has not said it lacks: with no entity behind it, it is not missing. */
+  imported(view: EntityView): boolean {
+    return isImported(view.id) && this.meta.get(view.id) !== null;
   }
 
   /** Whether the sensor's past can be asked: it has an id and, missing, the recorder has said what it keeps of it. */

@@ -63,6 +63,7 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The History bars card draws a statistic an integration imports, one with no entity behind it (`entity: linky:…`), in its own name and colour, where it drew the bars grey under "Entity not found" (#149).
 - The Thermostat card says its fan speeds and presets in the page's language: Home Assistant's own word for each, the
   standard speeds and an integration's own, then Fluvy's for low, mid and high, then the word as sent, where every
   language read them as the integration sent them; the Fan card's presets and the Vacuum card's suction say Home

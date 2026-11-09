@@ -245,6 +245,7 @@ show_compare: true              # Compare: the period before beside the span, on
   A counter that starts again on a cycle is read by its own readings (`reset: day`, `week`, `month`, `year`, or
   `never` for a lifetime meter) so a reset or a restart is never counted twice; a sensor with no state class reads
   the recorder's history; today is live and the average, highest and lowest are the finished bars'.
+  `entity` also takes a statistic an integration imports, one with no entity behind it (`linky:consumption`), in YAML.
 - **Gauge** — `variant: signed` for a meter that can be negative: zero at the top, "1.8 kW out".
 
 `chart` draws a card's chart in a style of its own, or in the house's where it names none (fluvy's settings → Charts,

@@ -884,6 +884,54 @@ describe('the history bars card', () => {
     expect(texts(card, '.fv-card__sub')).toEqual(['Entity not found · Last 7 days']);
   });
 
+  describe('an imported statistic, with no entity behind it (#149)', () => {
+    const id = 'linky:consumption';
+    const known = (message: Record<string, unknown>): unknown =>
+      message['type'] === 'recorder/get_statistics_metadata'
+        ? [
+            {
+              statistic_id: id,
+              has_sum: true,
+              name: 'Linky consumption',
+              statistics_unit_of_measurement: 'kWh',
+              display_unit_of_measurement: 'kWh',
+            },
+          ]
+        : { [id]: week()['sensor.solar'] ?? [] };
+
+    it('is drawn as any sensor: its name, its colour, and no word of an entity not found', async () => {
+      const card = await mount({ entity: id, color: 'green' }, house(known).hass);
+      await settle(card);
+      const root = card.shadowRoot!;
+      expect(root.querySelectorAll('.hb-bar').length).toBe(7);
+      expect(root.querySelector('.fv-card')!.classList.contains('is-off')).toBe(false);
+      expect(root.querySelector('.hb-chart')!.classList.contains('fv-tone--neutral')).toBe(false);
+      expect(texts(card, '.fv-card__title')).toEqual(['Linky consumption']);
+      expect(texts(card, '.fv-card__sub')).toEqual(['Last 7 days']);
+    });
+
+    it('is no button by default, having no entity for more-info to open, and keeps a tap of its own', async () => {
+      const bare = await mount({ entity: id, show_head: false }, house(known).hass);
+      await settle(bare);
+      expect(bare.shadowRoot!.querySelector('.hb-chart')!.getAttribute('role')).toBe('img');
+      const own = await mount(
+        { entity: id, show_head: false, tap_action: { action: 'navigate', navigation_path: '/x' } },
+        house(known).hass,
+      );
+      await settle(own);
+      expect(own.shadowRoot!.querySelector('.hb-chart')!.getAttribute('role')).toBe('button');
+    });
+
+    it('is not found where the recorder keeps nothing of it', async () => {
+      const none = (message: Record<string, unknown>): unknown =>
+        message['type'] === 'recorder/get_statistics_metadata' ? [] : {};
+      const card = await mount({ entity: 'linky:typo' }, house(none).hass);
+      await settle(card);
+      expect(card.shadowRoot!.querySelector('.fv-card')!.classList.contains('is-off')).toBe(true);
+      expect(texts(card, '.fv-card__sub')).toEqual(['Entity not found · Last 7 days']);
+    });
+  });
+
   it('draws classic as 1.10 did, bar for bar, while the house keeps its factory style', async () => {
     const card = await mount({ include_today: true }, house(week()).hass);
     const root = card.shadowRoot!;

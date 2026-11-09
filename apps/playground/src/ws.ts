@@ -70,6 +70,9 @@ export interface StatisticSeed {
   readonly kind: 'measurement' | 'counter';
   /** One value an hour, oldest first: a measurement's mean, a counter's reading at the hour's end. */
   readonly hourly: readonly number[];
+  /** What the recorder says of a statistic an integration imports, which has no entity to read them from. */
+  readonly unit?: string;
+  readonly name?: string;
 }
 
 /** A repair Home Assistant lists (`repairs/list_issues`), as its frontend reads it. */
@@ -390,7 +393,9 @@ export function houseWs(house: House): WsTable {
               ? 'counter'
               : undefined);
         if (!kind) return [];
-        const unit = (attributes['unit_of_measurement'] as string | undefined) ?? null;
+        const seed = house.statistics[id];
+        const unit =
+          (attributes['unit_of_measurement'] as string | undefined) ?? seed?.unit ?? null;
         return [
           {
             statistic_id: id,
@@ -399,6 +404,7 @@ export function houseWs(house: House): WsTable {
             mean_type: kind === 'measurement' ? 1 : 0,
             statistics_unit_of_measurement: unit,
             display_unit_of_measurement: unit,
+            ...(seed?.name ? { name: seed.name } : {}),
           },
         ];
       });

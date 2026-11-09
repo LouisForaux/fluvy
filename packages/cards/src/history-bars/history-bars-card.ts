@@ -1,5 +1,6 @@
 import { historyBarsHeight } from '../energy-family.js';
 import {
+  actionRuns,
   dateFormat,
   formatNumber,
   houseZone,
@@ -1298,7 +1299,7 @@ export class FluvyHistoryBarsCard extends Card<HistoryBarsCardConfig> {
     const name = this.nameFor(view, this.config?.name);
     // out of reach, the card is the live one in the off skin (the owner's rule, 1.9): its head opens its line with the
     // state, its bars are the recorder's and stay
-    const unusable = !isUsable(view);
+    const unusable = !isUsable(view) && !this.recorded.imported(view);
     const tone: Tone = unusable ? 'off' : toneOf(this.config, 'accent');
     const variant = this.variant;
     const width = this.contentWidth;
@@ -1408,7 +1409,7 @@ export class FluvyHistoryBarsCard extends Card<HistoryBarsCardConfig> {
                 ? this.renderReadouts(shownReadouts, readouts, 'head')
                 : fitted.badge,
               cut: fitted.cut,
-              ...this.headActions(view.id),
+              ...this.headActions(this.actsOn(view)),
               name: true,
             })
           : nothing
@@ -1591,7 +1592,7 @@ export class FluvyHistoryBarsCard extends Card<HistoryBarsCardConfig> {
     const sparkWidth = width - (kept ? this.readoutsWidth(resting.slice(0, kept)) + 12 : 0);
     const spark = sparkWidth >= SPARK_MIN && !none;
     // without a head the sparkline is the card's button
-    const tap = this.shows('show_head') ? null : this.chartTap;
+    const tap = this.chartIsButton ? this.chartTap : null;
     return html`<div class="hb-mini">
       ${kept ? this.renderReadouts(shown.slice(0, shown.length === 1 ? 1 : kept), resting.slice(0, kept), 'head') : nothing}
       ${
@@ -1675,6 +1676,18 @@ export class FluvyHistoryBarsCard extends Card<HistoryBarsCardConfig> {
       press.moved = true;
   };
 
+  /** What the card's taps act on: an imported statistic has no entity for more-info to open. */
+  private actsOn(view: EntityView): string {
+    return this.recorded.imported(view) ? '' : view.id;
+  }
+
+  /** Without a head the chart is the card's button, where its tap has something to do. */
+  private get chartIsButton(): boolean {
+    return (
+      !this.shows('show_head') && actionRuns(this.config?.tap_action, this.actsOn(this.entity()))
+    );
+  }
+
   /**
    * A tap on the chart of a card without a head runs the card's `tap_action`: a still and short press only — one that
    * travelled or was held was a reading of the bars.
@@ -1691,7 +1704,7 @@ export class FluvyHistoryBarsCard extends Card<HistoryBarsCardConfig> {
    * Escape lets go); Enter and Space tap a chart that is the card's button (no head).
    */
   private readonly onKey = (event: KeyboardEvent): void => {
-    if ((event.key === 'Enter' || event.key === ' ') && !this.shows('show_head')) {
+    if ((event.key === 'Enter' || event.key === ' ') && this.chartIsButton) {
       event.preventDefault();
       this.tap();
     } else if (this.plot.count) this.scrubber.key(event, this.plot.slot / this.contentWidth);
@@ -1839,7 +1852,7 @@ export class FluvyHistoryBarsCard extends Card<HistoryBarsCardConfig> {
       ? `${this.barLabel(hoveredBucket, hovered === running)} · ${this.figure(values[hovered as number] ?? null)}${values[hovered as number] === null ? '' : ` ${unit}`}`
       : name;
     // without a head the chart is the card's button: a still tap on it runs the card's tap
-    const tap = !this.shows('show_head');
+    const tap = this.chartIsButton;
     return html`<div
       class="hb-chart fv-tone--${unusable ? 'neutral' : tone} ${hovered !== null ? 'is-scrub' : ''} ${tap ? 'hb-chart--tap' : ''} ${style.animate ? '' : 'is-still'}"
       role=${tap ? 'button' : 'img'}

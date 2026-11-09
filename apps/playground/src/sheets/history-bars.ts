@@ -257,6 +257,7 @@ const RECORDED: Readonly<Record<string, (message: Record<string, unknown>) => An
   'sensor.hb_rain': rainRows,
   'sensor.hb_life': lifeRows,
   'sensor.hb_net': (message) => from(message, days(9, 3, NET_DAYS, 'change')),
+  'hb_import:consumption': pvRows,
 };
 
 /** A rain tank with no state class: no statistics, its history only — from 5 October, two days into the window. */
@@ -390,7 +391,15 @@ export const sheet: SheetSpec = {
     ['sensor.hb_live', String(LIVE_NOW), { friendly_name: 'House meter', ...KWH }],
   ],
 
-  statistics: { 'sensor.hb_live': { kind: 'counter', hourly: LIVE_HOURS } },
+  statistics: {
+    'sensor.hb_live': { kind: 'counter', hourly: LIVE_HOURS },
+    'hb_import:consumption': {
+      kind: 'counter',
+      hourly: [],
+      unit: 'kWh',
+      name: 'Imported consumption',
+    },
+  },
 
   ws: {
     'recorder/statistics_during_period': (message) => {
@@ -586,6 +595,10 @@ export const sheet: SheetSpec = {
     {
       title: 'Without a head, the chart is the tap',
       cards: [{ ...plain, show_head: false, tap_action: { action: 'more-info' } }],
+    },
+    {
+      title: 'An imported statistic, no entity behind it (#149)',
+      cards: [{ type: plain.type, entity: 'hb_import:consumption', color: 'green' }],
     },
   ],
 };
