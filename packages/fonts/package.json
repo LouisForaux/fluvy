@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/fonts",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Inter, self-hosted as a variable font (SIL OFL 1.1), subset to Latin + Latin Extended-A, with its licence",
   "license": "GPL-3.0-only",

@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/i18n",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "The language tooling: the catalogues checked for parity and placeholders, the strategy's naming words generated, a new language scaffolded",
   "license": "GPL-3.0-only",

@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/theme",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Emits the Home Assistant theme (light + dark) from @fluvy/tokens, validates it offline and writes it into custom_components/fluvy/themes",
   "license": "GPL-3.0-only",

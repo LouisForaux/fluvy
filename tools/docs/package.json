@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/docs",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "The documentation generated from the code and held to it: the cards' tables in docs/cards.md from the catalogue and the editors' contract, and the facts guard that holds every spelled count and budget in the prose to the code",
   "license": "GPL-3.0-only",

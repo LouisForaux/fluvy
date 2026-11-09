@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/ui",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Fluvy's UI primitives: glyphs, shared styles, templates and the precision controls (ruler, dial), with no Home Assistant coupling",
   "license": "GPL-3.0-only",

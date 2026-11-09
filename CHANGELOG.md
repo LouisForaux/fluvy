@@ -5,6 +5,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.18.0] — 2026-11-09
+
 ### Visible on upgrade
 
 - The Thermostat card's fan speeds and presets, the Fan card's presets and the Vacuum card's suction speak a page in

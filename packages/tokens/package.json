@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/tokens",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Design tokens for the Fluvy theme: OKLCH derivation, palettes, CSS/JSON emitters",
   "license": "GPL-3.0-only",

@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/brand",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Derives the brand files (the mark with explicit inks, the lockups, the integration's icon) from brand/mark.svg",
   "license": "GPL-3.0-only",

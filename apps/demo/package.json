@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/demo",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "The public demo: the real cards, pages and settings panel on a simulated home, published to GitHub Pages",
   "license": "GPL-3.0-only",

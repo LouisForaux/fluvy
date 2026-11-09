@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/bundle",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Builds the module Home Assistant loads: the entry, its chunks, the loader and the fonts, into custom_components/fluvy/frontend",
   "license": "GPL-3.0-only",

@@ -1,6 +1,6 @@
 {
   "name": "@fluvy/render",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "private": true,
   "description": "Headless Chromium tooling: screenshots of the design lab and the playground, the alignment measurer, interaction tests",
   "license": "GPL-3.0-only",
