@@ -306,6 +306,20 @@ describe('the room lights card’s editor (#58)', () => {
     // a room of whites alone has no colour to open
     expect(await shown({ lights: ['light.shelf'] })).not.toContain('show_color');
   });
+
+  it('hands its sheet the line as the head gives way, whole: the level goes, then the words, never cut', async () => {
+    const root = await mount({ show_color: true });
+    const card = root.host as unknown as {
+      head: { ruler: unknown };
+      sheetHost: { line(width: number): string };
+    };
+    // seven pixels a character: the sheet's switch and its gap leave the line the width less 68
+    Object.assign(card.head, { ruler: { width: (_cls: string, text: string) => text.length * 7 } });
+    expect(card.sheetHost.line(360)).toBe('3 of 4 on · 62 %');
+    expect(card.sheetHost.line(170)).toBe('3 of 4 on');
+    expect(card.sheetHost.line(120)).toBe('3/4 on');
+    expect(card.sheetHost.line(90)).toBe('3/4');
+  });
 });
 
 describe('a light’s own colour in a list: none chosen by default, its bulb’s (#58)', () => {

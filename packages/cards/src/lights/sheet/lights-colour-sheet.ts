@@ -47,9 +47,9 @@ export interface SheetLamp {
 
 /** What the sheet asks of the card that opened it. */
 export interface LightsColourHost {
-  /** The room's name, and the card's line under it ("2 of 3 on · 63 %"). */
+  /** The room's name, and the card's line under it fitted to a head that wide ("2 of 3 on · 63 %", "2/3 on"). */
   title(): string;
-  line(): string;
+  line(width: number): string;
   /** The tone the room's switch is drawn in while a light is on. */
   tone(): Tone;
   lamps(): readonly SheetLamp[];
@@ -257,7 +257,7 @@ export class FluvyLightsColourSheet extends LitElement {
         margin: 12px 0 0;
         font-size: 13px;
         font-weight: 500;
-        line-height: 18px;
+        line-height: 20px;
         color: var(--fluvy-text-secondary);
       }
       .ls-actions {
@@ -419,7 +419,7 @@ export class FluvyLightsColourSheet extends LitElement {
       <div class="fv-sheet__head">
         <div class="fv-card__titles">
           <h2 class="fv-sheet__title" id="ls-title">${title}</h2>
-          <p class="fv-card__sub">${card?.line() ?? ''}</p>
+          <p class="fv-card__sub">${card?.line(this.room) ?? ''}</p>
         </div>
         ${toggle(
           on,

@@ -566,7 +566,18 @@ export class FluvyLightsCard extends FluvyTileCard {
   /** What the sheet asks of the card: the room as it draws it, its switch, its colours, its sliders' style. */
   private readonly sheetHost: LightsColourHost = {
     title: () => this.roomName(),
-    line: () => this.line(this.lamps()),
+    // the head's own giving way, beside the sheet's switch and no circle: whole segments go, a word is never cut
+    line: (width) => {
+      const lamps = this.lamps();
+      return this.head.fit({
+        width,
+        title: this.roomName(),
+        sub: this.line(lamps),
+        shorter: this.short(lamps),
+        trailing: SWITCH_SLOT,
+        icon: 'never',
+      }).sub;
+    },
     tone: () => toneOf(this.config, 'light'),
     lamps: () => this.lamps(),
     flip: () => this.flipRoom(this.lamps()),
