@@ -89,8 +89,6 @@ export class FluvyReadoutsCard extends Card<ReadoutsCardConfig> {
     return 40 + rowsOf(n, columns) * 64 - 16;
   }
 
-  static override still = true;
-
   static override styles: CSSResultGroup = [
     ...(Card.styles as CSSResultGroup[]),
     sheetStyles.home,

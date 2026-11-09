@@ -303,7 +303,7 @@ export abstract class FluvyCard<C extends FluvyCardConfig = FluvyCardConfig>
   extends LitElement
   implements LovelaceCard
 {
-  /** Cards that are the dashboard's chrome (greeting, tabs, the readouts strip) draw at once, without the entrance, so they read as fixed while the views below them change. */
+  /** Cards that are the dashboard's chrome (the greeting and the tabs) draw at once, without the entrance, so they read as fixed while the views below them change. */
   static still = false;
 
   /**

@@ -56,6 +56,7 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   counts, each with its own sign (#140).
 - The Energy flow and Energy balance cards, and the Energy card's chart by source, said nothing of the house while one
   of two arrays or batteries could not be read: one that cannot counts as nothing while another of its kind reads.
+- The Readouts card just appeared when a dashboard loaded: it enters as the other cards do now (#148).
 
 ## [1.17.0] — 2026-11-07
 
