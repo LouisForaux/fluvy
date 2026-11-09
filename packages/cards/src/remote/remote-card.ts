@@ -840,11 +840,9 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
         .filter(Boolean)
         .join(' · ');
     }
-    return (
-      [textAttr(p, 'app_name') || textAttr(p, 'media_title'), textAttr(p, 'source')]
-        .filter(Boolean)
-        .join(' · ') || stateText(this.hass, p)
-    );
+    // an app is often its own source too: said once
+    const said = [textAttr(p, 'app_name') || textAttr(p, 'media_title'), textAttr(p, 'source')];
+    return [...new Set(said.filter(Boolean))].join(' · ') || stateText(this.hass, p);
   }
 
   private outOfReach(p: EntityView): string {

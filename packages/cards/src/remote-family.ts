@@ -61,18 +61,23 @@ export interface AppsLayout {
 /**
  * The apps' cells across `width`: as many as hold 50 while every name holds its cell (4 inside it), fewer a row down to
  * three where that keeps the names, else the most with the circles alone — the names all or none, as option tiles.
- * The card measures its names in their class (`measure`); the heights estimate them letter by letter.
+ * The card measures its names in their class (`measure`); the heights estimate them letter by letter. The same rows
+ * share the apps evenly, so none is left alone on the last (six at five a row: 3 + 3).
  */
 export function appsLayout(
   names: readonly string[],
   width: number,
   measure: (text: string) => number = (text) => textWidth(text, 'name'),
 ): AppsLayout {
-  const most = Math.min(Math.max(1, names.length), appsPerRow(width));
+  const count = Math.max(1, names.length);
+  const shared = (perRow: number): number => Math.ceil(count / rowsOf(count, perRow));
+  const most = Math.min(count, appsPerRow(width));
   const widest = Math.max(0, ...names.map(measure));
-  for (let n = most; n >= Math.min(3, most); n--)
-    if (widest <= (width - 4 * (n - 1)) / n - 4) return { perRow: n, names: true };
-  return { perRow: most, names: false };
+  for (let n = most; n >= Math.min(3, most); n--) {
+    const perRow = shared(n);
+    if (widest <= (width - 4 * (perRow - 1)) / perRow - 4) return { perRow, names: true };
+  }
+  return { perRow: shared(most), names: false };
 }
 
 /** The rows of an apps row laid out so, and their height: 68 a row with names (8 apart), 44 without. */

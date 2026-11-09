@@ -3,7 +3,7 @@ import type { HomeAssistant, LovelaceCardConfig } from '@fluvy/core';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { familiesDefined } from '../index.js';
-import { remoteHeight } from '../remote-family.js';
+import { appsBlock, appsLayout, remoteHeight } from '../remote-family.js';
 import { cardForm, drawEditor, listTitles, shownNames } from '../shared/fixtures/editor.js';
 import { FluvyRemoteCard } from './remote-card.js';
 
@@ -172,7 +172,8 @@ describe('the TV remote card (#143)', () => {
       hass,
     );
     expect(root.querySelector('.fv-card__head [aria-label="Turn off"]')).not.toBeNull();
-    expect(root.querySelector('.fv-card__sub')?.textContent?.trim()).toBe('Netflix · Netflix');
+    // the app is its own source here: said once
+    expect(root.querySelector('.fv-card__sub')?.textContent?.trim()).toBe('Netflix');
     // the platforms among the sources go to the apps row; the inputs stay chips
     expect([...root.querySelectorAll('.fv-chip__pill')].map((c) => c.textContent?.trim())).toEqual([
       'HDMI 1',
@@ -355,5 +356,19 @@ describe('the TV remote card (#143)', () => {
       });
       expect(listTitles(padOnly)).toEqual([]);
     });
+  });
+  it('leaves no app alone on the last row: the same rows, shared evenly', () => {
+    const names = (count: number): string[] => Array.from({ length: count }, () => 'Abc');
+    expect(appsLayout(names(5), 300, () => 20).perRow).toBe(5);
+    expect(appsLayout(names(6), 300, () => 20).perRow).toBe(3);
+    expect(appsLayout(names(7), 300, () => 20).perRow).toBe(4);
+    expect(appsLayout(names(10), 300, () => 20).perRow).toBe(5);
+    // the rows, and so the height, are what five a row would have taken
+    expect(
+      appsBlock(
+        6,
+        appsLayout(names(6), 300, () => 20),
+      ),
+    ).toBe(appsBlock(6, { perRow: 5, names: true }));
   });
 });
