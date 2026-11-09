@@ -224,3 +224,21 @@ export function platformOf(name: string | undefined): Platform | undefined {
   if (!name) return undefined;
   return byName.get(name.toLowerCase()) ?? byName.get(normalise(name));
 }
+
+/** What of an app of the row names it. */
+export type AppSaid = Readonly<{ app?: string; name?: string; source?: string }>;
+
+/** The platform an app of the row stands for: by its id, else by what it is called. */
+export const appPlatform = (app: AppSaid): Platform | undefined =>
+  platform(app.app) ?? platformOf(app.app) ?? platformOf(app.source) ?? platformOf(app.name);
+
+/** What an app is called in full: the person's name, else its platform's title, else its source. */
+export const appTitle = (app: AppSaid, pf = appPlatform(app)): string =>
+  app.name ?? pf?.title ?? app.source ?? '';
+
+/** A title as the row says it under the circle: a platform's own in its short form, a person's as it is. */
+export const shortTitle = (title: string, pf: Platform | undefined): string =>
+  pf && title === pf.title ? (pf.short ?? title) : title;
+
+/** What the row says under an app. */
+export const appSaid = (app: AppSaid): string => shortTitle(appTitle(app), appPlatform(app));

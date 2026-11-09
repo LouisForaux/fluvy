@@ -157,6 +157,35 @@ describe('the TV remote card (#143)', () => {
     expect(FluvyRemoteCard.layoutHeight({ type: 'x', variant: 'pad' })).toBe(276);
   });
 
+  it('declares each option as it draws: the pad’s shapes, its keys in a row, the apps as chips, what a device has none of', () => {
+    const pad = 64 + 16 + 176 + 20;
+    expect(remoteHeight({ type: 'x', variant: 'pad', dpad: 'grid' })).toBe(pad - 12);
+    expect(remoteHeight({ type: 'x', variant: 'pad', side_keys: 'row' })).toBe(pad + 60);
+    expect(remoteHeight({ type: 'x', variant: 'pad', side_keys: 'row', nav: [] })).toBe(pad);
+    expect(remoteHeight({ type: 'x', groups: ['dpad'], side_keys: 'row' })).toBe(pad + 60);
+    // the sources and the apps the house says it has none of draw nothing, 16 above them included
+    expect(remoteHeight({ type: 'x', groups: ['source', 'apps'] }, { sources: [], apps: [] })).toBe(
+      64 + 20,
+    );
+    // the keys' groups draw nothing where nothing takes the keys
+    expect(remoteHeight({ type: 'x', groups: ['dpad', 'channel'] }, { keyed: false })).toBe(
+      64 + 20,
+    );
+    expect(remoteHeight({ type: 'x', groups: ['custom'] })).toBe(64 + 20);
+    // six apps as chips with their logos: three a row where six circles would take two rows of 68
+    const six = ['Netflix', 'YouTube', 'Spotify', 'Disney+', 'Prime', 'Apple TV'];
+    expect(remoteHeight({ type: 'x', groups: ['apps'], apps_style: 'chips' }, { apps: six })).toBe(
+      64 + 16 + 2 * 44 + 20,
+    );
+  });
+
+  it('declares a compact card by the columns it is given: half a section wraps its five keys', () => {
+    const half = { type: 'x', variant: 'compact', grid_options: { columns: 6 } };
+    expect(remoteHeight(half)).toBe(64 + 16 + 3 * 44 + 2 * 16 + 20);
+    expect(remoteHeight({ ...half, keys: ['back', 'home'] })).toBe(64 + 16 + 44 + 20);
+    expect(remoteHeight({ ...half, grid_options: { columns: 12 } })).toBe(144);
+  });
+
   it('its stub takes the house’s first player and its first remote', () => {
     expect(FluvyRemoteCard.getStubConfig({}, ['light.a', 'remote.tv', 'media_player.tv'])).toEqual({
       type: 'custom:fluvy-remote-card',

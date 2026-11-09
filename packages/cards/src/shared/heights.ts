@@ -125,6 +125,8 @@ const CHIP_SIDES = 20;
 const PILL_SIDES = 28;
 /** An option tile's two sides (12 px of padding each). */
 const TILE_SIDES = 24;
+/** A chip's glyph and the gap before its label, where a row's chips carry them (`chipRows`). */
+export const CHIP_GLYPH = 24;
 
 /**
  * The rows a row of chips takes at `width`: filled (`full`, the default) as `fittedColumns` lays it out — every
@@ -135,6 +137,7 @@ export function chipRows(
   style: 'full' | 'chips' = 'full',
   width = COLUMN,
   candidates?: readonly number[],
+  glyph = 0,
 ): number {
   const count = labels.length;
   if (!count) return 0;
@@ -150,7 +153,10 @@ export function chipRows(
     }
     return rows;
   }
-  const widest = Math.max(0, ...labels.map((label) => textWidth(label, 'chip') + CHIP_SIDES));
+  const widest = Math.max(
+    0,
+    ...labels.map((label) => textWidth(label, 'chip') + CHIP_SIDES + glyph),
+  );
   const tried =
     candidates ??
     (count < 3 ? [count] : count === 3 ? [3, 2] : count === 4 ? [4, 2] : [count, 3, 2]);

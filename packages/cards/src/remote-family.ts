@@ -1,6 +1,6 @@
 import type { LovelaceCardConfig } from '@fluvy/core';
 import type { FamilyEntry } from './energy-family.js';
-import { chipRows, COLUMN, rowsOf, textWidth } from './shared/heights.js';
+import { CHIP_GLYPH, chipRows, COLUMN, rowsOf, textWidth } from './shared/heights.js';
 
 /**
  * The TV remote card (#143), announced at start and defined when its chunk lands (`remote-cards.ts`), as the Slider
@@ -98,10 +98,46 @@ export function actionRows(count: number, width = COLUMN): number {
   return rowsOf(count, Math.max(1, Math.floor((width + 16) / 60)));
 }
 
+/** Where the ring goes: between its four keys from 280 of content (44 + 28 + 176 + 28 + 44), or over a row of them. */
+const SIDES_FROM = 280;
+const RING = 176;
+
+/** The ring's size at `width` and whether its four keys stand beside it, as `side_keys` asks. */
+export function ringFit(width: number, asked: unknown): { sides: boolean; size: number } {
+  const sides = asked !== 'row' && width >= (asked === 'sides' ? 2 * 60 + 120 : SIDES_FROM);
+  const size = sides
+    ? Math.min(RING, Math.floor((width - 2 * 60) / 4) * 4)
+    : width >= RING + 8
+      ? RING
+      : Math.max(120, Math.floor((width - 8) / 4) * 4);
+  return { sides, size };
+}
+
+/** `count` rows of 44 action cells, 16 apart. */
+const keyRows = (count: number): number => (count ? count * 44 + (count - 1) * 16 : 0);
+
+/** The D-pad: the reference's grid (three rows of cells), or the ring, with a row of its four keys where they leave its sides. */
+function padHeight(config: LovelaceCardConfig, width: number): number {
+  if (config['dpad'] === 'grid') return keyRows(3);
+  const { sides, size } = ringFit(width, config['side_keys']);
+  const keys = Array.isArray(config['nav']) ? Math.min(4, (config['nav'] as unknown[]).length) : 4;
+  return sides || !keys ? size : size + 16 + keyRows(actionRows(keys, width));
+}
+
+/** A card's content column: a 360 section's, or the part of it `grid_options.columns` asks (12 a section, 16 apart). */
+function columnOf(config: LovelaceCardConfig): number {
+  const columns = (config['grid_options'] as { columns?: unknown } | undefined)?.columns;
+  return typeof columns === 'number' && columns > 0 && columns < 12
+    ? Math.floor((columns * (COLUMN + 40 + 16)) / 12) - 16 - 40
+    : COLUMN;
+}
+
 /** What the house says of the device, where it is there to say: its sources, and the apps the row shows, by name. */
 export interface RemoteHouse {
   readonly sources?: readonly string[];
   readonly apps?: readonly string[];
+  /** Something takes the D-pad's and the channel's keys (a remote, a webOS television's own buttons); left out, one does. */
+  readonly keyed?: boolean;
 }
 
 /** The names an apps row says for a config's own list: the person's, else the platform's id as it stands in for its title. */
@@ -112,48 +148,64 @@ const appNames = (apps: readonly unknown[]): string[] =>
   });
 
 /**
- * The remote's height at a 360 column from its config alone: the head (64 with the card's padding), 16 before each
- * group — the sources as one filled row of chips (the house counts their rows), the pad 176 between its keys, the
- * transport 48, the volume and the channel each a label over a 44 row (88 with their 16), the apps a row of 68 and
- * 76 for each more (as many a row as keep their names, six at most; one row of five by default), the custom keys a
- * row of 44 — and the card's 20 below. Compact: the head and its row of keys (144 with five); pad: the head and the
- * pad (276); row: 76. Unavailable, off or never read, the same.
+ * The remote's height from its config alone, at a 360 column or the part of one `grid_options.columns` asks: the head
+ * (64 with the card's padding), 16 before each group that draws — the sources as one filled row of chips (the house
+ * counts their rows, none where the player takes no source), the pad (176 between its keys, 60 more for its row of
+ * keys under it where `side_keys` asks, 164 as the grid), the transport 48, the volume and the channel each a label
+ * over a 44 row (88 with their 16), the apps a row of 68 and 76 for each more (as many a row as keep their names, six
+ * at most; one row of five by default) or as chips, the custom keys their rows of 44 — and the card's 20 below.
+ * Compact: the head and its keys (144 with five in one row); pad: the head and the pad (276); row: 76. Unavailable,
+ * off or never read, the same.
  */
 export function remoteHeight(config: LovelaceCardConfig, house: RemoteHouse = {}): number {
   const variant = config['variant'];
   if (variant === 'row') return 76;
+  const width = columnOf(config);
   const count = (key: string, fallback: readonly string[]): number =>
     Array.isArray(config[key]) ? (config[key] as unknown[]).length : fallback.length;
-  const rows = (n: number): number => (n ? n * 44 + (n - 1) * 16 : 0);
-  if (variant === 'compact') return 64 + 16 + rows(actionRows(count('keys', DEFAULT_KEYS))) + 20;
-  if (variant === 'pad') return 64 + 16 + 176 + 20;
+  if (variant === 'compact')
+    return 64 + 16 + keyRows(actionRows(count('keys', DEFAULT_KEYS), width)) + 20;
+  if (variant === 'pad') return 64 + 16 + padHeight(config, width) + 20;
+  const keyed = house.keyed !== false;
   let height = 64 + 20;
   for (const group of remoteGroups(config['groups'])) {
     switch (group) {
-      case 'source':
-        height += 16 + 44 * (house.sources ? chipRows(house.sources) : 1);
+      case 'source': {
+        const rows = house.sources ? chipRows(house.sources, 'full', width) : 1;
+        if (rows) height += 16 + 44 * rows;
         break;
+      }
       case 'dpad':
-        height += 16 + 176;
+        if (keyed) height += 16 + padHeight(config, width);
         break;
       case 'transport':
         height += 16 + 48;
         break;
       case 'volume':
-      case 'channel':
         height += 88;
         break;
+      case 'channel':
+        if (keyed) height += 88;
+        break;
       case 'apps': {
-        // the person's list, else the platforms the house found among the sources, else a row of five short names
-        const names = Array.isArray(config['apps'])
-          ? appNames(config['apps'] as unknown[])
-          : (house.apps ?? ['Netflix', 'YouTube', 'Spotify', 'Disney+', 'Prime']);
-        height += 16 + appsBlock(names.length, appsLayout(names, COLUMN));
+        // the names the row says (the house reads them), else the person's list, else a row of five short names
+        const own = Array.isArray(config['apps']) ? (config['apps'] as unknown[]) : [];
+        const names =
+          house.apps ??
+          (own.length ? appNames(own) : ['Netflix', 'YouTube', 'Spotify', 'Disney+', 'Prime']);
+        if (!names.length) break;
+        height +=
+          16 +
+          (config['apps_style'] === 'chips'
+            ? 44 * chipRows(names, 'full', width, undefined, CHIP_GLYPH)
+            : appsBlock(names.length, appsLayout(names, width)));
         break;
       }
-      case 'custom':
-        height += 16 + rows(actionRows(count('custom', [])));
+      case 'custom': {
+        const keys = count('custom', []);
+        if (keys) height += 16 + keyRows(actionRows(keys, width));
         break;
+      }
     }
   }
   return height;

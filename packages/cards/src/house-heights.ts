@@ -26,8 +26,9 @@ import { helpersHeight, type HelpersCardConfig } from './helpers/helpers-card.js
 import { lightHeight, type LightCardConfig } from './light/light-card.js';
 import { lightsHeight, type LightsCardConfig } from './lights/lights-card.js';
 import { mediaHeight } from './media-family.js';
-import { remoteHeight } from './remote-family.js';
-import { platformOf } from './remote/platforms.js';
+import { remoteGroups, remoteHeight } from './remote-family.js';
+import { buttonService } from './remote/keys.js';
+import { appSaid, platformOf, type AppSaid } from './remote/platforms.js';
 import { roomHeight, type RoomCardConfig } from './room/room-card.js';
 import { isWord, sensorHeight, type SensorCardConfig } from './sensor/sensor-card.js';
 import { normaliseExtras } from './sensor/series.js';
@@ -271,16 +272,24 @@ const media = (config: LovelaceCardConfig, hass: HomeAssistant): number =>
   mediaHeight(config, sourcesOf(hass, config['entity']));
 
 /**
- * The remote's sources as chips (the inputs: the platforms among them go to the apps row where the config lists no
- * apps), and the apps that row shows by the names it says under them.
+ * What the remote draws of the house: the sources as chips (the inputs, where the apps row draws the platforms among
+ * them), the apps by the names the row says under them (the person's list, else the platforms among the sources), and
+ * whether anything takes the D-pad's and the channel's keys (a remote, or a webOS television's own buttons).
  */
 const remote = (config: LovelaceCardConfig, hass: HomeAssistant): number => {
   const sources = sourcesOf(hass, config['entity']);
-  const apps = sources.map(platformOf).filter((p) => p !== undefined);
-  const own = Array.isArray(config['apps']) && (config['apps'] as unknown[]).length > 0;
+  const own = Array.isArray(config['apps']) ? (config['apps'] as AppSaid[]) : [];
+  const appsDrawn = remoteGroups(config['groups']).includes('apps') && !own.length;
+  const entity = typeof config['entity'] === 'string' ? config['entity'] : '';
   return remoteHeight(config, {
-    sources: own ? sources : sources.filter((source) => !platformOf(source)),
-    apps: apps.map((p) => p.short ?? p.title),
+    sources: appsDrawn ? sources.filter((source) => !platformOf(source)) : sources,
+    apps: own.length
+      ? own.map(appSaid)
+      : sources.flatMap((source) => {
+          const p = platformOf(source);
+          return p ? [p.short ?? p.title] : [];
+        }),
+    keyed: Boolean(config['remote']) || buttonService(hass.entities?.[entity]?.platform),
   });
 };
 

@@ -23,6 +23,7 @@ import {
   DEFAULT_KEYS,
   remoteGroups,
   remoteHeight,
+  ringFit,
   type RemoteGroup,
 } from '../remote-family.js';
 import { Card, type CardEditor } from '../shared/base.js';
@@ -31,7 +32,7 @@ import { iconOf } from '../shared/domain.js';
 import { drawnAs } from '../shared/heights.js';
 import { changedAt } from '../shared/since.js';
 import { buttonService, commandFor, isKey, KEY_GLYPHS, type Key } from './keys.js';
-import { platform, platformOf, type Platform } from './platforms.js';
+import { appPlatform, appTitle, platformOf, shortTitle, type Platform } from './platforms.js';
 
 const s = strings('remote');
 
@@ -130,9 +131,6 @@ const USUAL =
 
 export const DEFAULT_NAV: readonly Key[] = ['back', 'menu', 'captions', 'home'];
 export const DEFAULT_TRANSPORT: readonly Key[] = ['rewind', 'play_pause', 'forward'];
-/** The ring between its keys where the column holds them: 44 + 28 + 176 + 28 + 44. */
-const SIDES_FROM = 280;
-const RING = 176;
 /** A pressed quadrant lights this long. */
 const PRESS_MS = 180;
 /** A key held repeats after this long, this often. */
@@ -166,6 +164,10 @@ interface AppItem {
 const keysOf = (raw: unknown, fallback: readonly string[]): readonly Key[] => [
   ...new Set((Array.isArray(raw) ? (raw as unknown[]) : fallback).filter(isKey)),
 ];
+
+/** A cell of `columns` across `width`, `gap` apart, on a whole pixel: what the division leaves over is a tail at the row's end. */
+const wholeCell = (width: number, gap: number, columns: number): number =>
+  Math.max(0, Math.floor((width - gap * (columns - 1)) / columns));
 
 /** The player is switched off (a television in standby counts). */
 const isOff = (state: string): boolean => state === 'off' || state === 'standby';
@@ -345,6 +347,10 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
         color: var(--fluvy-text-secondary);
         white-space: nowrap;
       }
+      /* the baseline it shares with the taller figure pushes it down: a 16 line holds it inside the label's 20 */
+      .rm-label__word {
+        line-height: 16px;
+      }
       .rm-label__meta {
         font-size: 13px;
         font-weight: 500;
@@ -409,27 +415,22 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
       .rm-app.is-active .rm-app__name {
         color: var(--fluvy-text);
       }
-      /* out of reach: what would vanish into the card's page fill wears the dashed skin the card wears */
-      .is-off .fv-round,
-      .is-off .fv-action,
-      .is-off .fv-chip__pill,
-      .is-off .rm-ok,
-      .is-off .rm-app__circle,
-      .is-off .fv-stepper {
+      /* out of reach: what would vanish into the card's page fill wears the dashed skin the card wears; quiet, none of
+         it (the keys rest as they do, still and at full strength, and the quiet sheet answers the shared ones) */
+      .is-off:where(:not([data-unavailable='quiet']))
+        :is(.fv-round, .fv-action, .fv-chip__pill, .rm-ok, .rm-app__circle, .fv-stepper) {
         background: transparent;
         outline: 1px dashed var(--fluvy-unavailable-border);
         outline-offset: -1px;
         box-shadow: none;
         color: var(--fluvy-unavailable);
       }
-      .is-off .rm-ring__disc {
+      .is-off:where(:not([data-unavailable='quiet'])) .rm-ring__disc {
         fill: transparent;
         stroke: var(--fluvy-unavailable-border);
         stroke-dasharray: 3 3;
       }
-      .is-off .rm-arrow,
-      .is-off .rm-label,
-      .is-off .rm-app__name {
+      .is-off:where(:not([data-unavailable='quiet'])) :is(.rm-arrow, .rm-label, .rm-app__name) {
         color: var(--fluvy-unavailable);
       }
       .is-off .fv-round[disabled],
@@ -793,7 +794,7 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
     return html`<div
       class="rm-cells ${extra}"
       data-fill-row
-      style="grid-template-columns:repeat(${columns}, minmax(0, 1fr));--rm-gap:${gap}px"
+      style="grid-template-columns:repeat(${columns}, ${wholeCell(width, gap, columns)}px);--rm-gap:${gap}px"
     >
       ${items.map((item) => {
         const still = item.still ?? (!this.takes(item.key) || !this.alive(item.key));
@@ -904,14 +905,7 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
   private renderPad(width: number): TemplateResult {
     const nav = keysOf(this.remote.nav, DEFAULT_NAV).slice(0, 4);
     if ((this.remote.dpad ?? 'ring') === 'grid') return this.renderGrid(nav, width);
-    const asked = this.remote.side_keys ?? 'auto';
-    const sides =
-      asked !== 'row' && (asked === 'sides' ? width >= 2 * 60 + 120 : width >= SIDES_FROM);
-    const size = sides
-      ? Math.min(RING, Math.floor((width - 2 * 60) / 4) * 4)
-      : width >= RING + 8
-        ? RING
-        : Math.max(120, Math.floor((width - 8) / 4) * 4);
+    const { sides, size } = ringFit(width, this.remote.side_keys);
     const left = Math.round((width - size) / 2);
     const key = (k: Key | undefined, x: string, y: number) =>
       k
@@ -934,7 +928,10 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
       }`;
   }
 
-  /** The ring: a disc of the inset ground, four arrows at 44 targets, OK a 64 disc of the card's colour on its hairline. */
+  /**
+   * The ring: a disc of the inset ground, four arrows at 44 targets, OK a 64 disc of the card's colour on its hairline
+   * (a drawn key, a target but none of the house's control heights).
+   */
   private renderRing(size: number): TemplateResult {
     const c = size / 2;
     const rGap = 36;
@@ -988,7 +985,6 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
       <button
         class="rm-ok"
         style="left:${c - 32}px;top:${c - 32}px"
-        data-control
         data-target
         aria-label=${this.keyLabel('ok')}
         title=${this.keyLabel('ok')}
@@ -1019,7 +1015,8 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
         (row) =>
           html`<div
             class="rm-cells"
-            style="grid-template-columns:repeat(3, minmax(0, 1fr));--rm-gap:${gap}px"
+            data-fill-row
+            style="grid-template-columns:repeat(3, ${wholeCell(width, gap, 3)}px);--rm-gap:${gap}px"
           >
             ${row.map((item) => {
               const ok = item.key === 'ok' && item.still === okStill && item.glyph === undefined;
@@ -1057,7 +1054,7 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
         : 0;
     return html`<div class="rm-gap"></div>
       <div class="rm-transport" style="gap:${gap}px">
-        ${keys.map((k) => this.keyRound(k, '', k === 'play_pause' || k === 'play' ? 'accent' : ''))}
+        ${keys.map((k) => this.keyRound(k, '', this.usable() && (k === 'play_pause' || k === 'play') ? 'accent' : ''))}
       </div>`;
   }
 
@@ -1067,7 +1064,8 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
     const whole = place ? `${text} · ${place}` : text;
     const said = this.head.ruler.width('rm-label', whole) <= width - figureW ? whole : text;
     return html`<div class="rm-label">
-      <span>${said}</span>${figure ? html`<span class="rm-label__meta">${figure}</span>` : nothing}
+      <span class="rm-label__word">${said}</span
+      >${figure ? html`<span class="rm-label__meta">${figure}</span>` : nothing}
     </div>`;
   }
 
@@ -1189,8 +1187,7 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
               : undefined;
       return {
         id,
-        // a platform's title is said under the circle in its short form; a name of the person's own as it is
-        name: pf && name === pf.title ? (pf.short ?? name) : name,
+        name: shortTitle(name, pf),
         title: name,
         icon: own.icon ?? (pf ? `app:${pf.id}` : 'grid'),
         colour: own.color ?? (pf?.hex || undefined),
@@ -1204,17 +1201,8 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
     const own = this.remote.apps;
     if (own?.length)
       return own.map((app, index) => {
-        const pf =
-          platform(app.app) ??
-          platformOf(app.app) ??
-          platformOf(app.source) ??
-          platformOf(app.name);
-        return item(
-          app.app ?? app.source ?? app.name ?? String(index),
-          app.name ?? pf?.title ?? app.source ?? '',
-          pf,
-          app,
-        );
+        const pf = appPlatform(app);
+        return item(app.app ?? app.source ?? app.name ?? String(index), appTitle(app, pf), pf, app);
       });
     return sources
       .map((source) => [source, platformOf(source)] as const)
@@ -1294,7 +1282,7 @@ export class FluvyRemoteCard extends Card<RemoteCardConfig> {
     const own = this.remote.custom ?? [];
     if (!own.length) return nothing;
     const { gap, columns } = this.gapFor(own.length, width);
-    const cell = (width - gap * (columns - 1)) / columns;
+    const cell = wholeCell(width, gap, columns);
     const words = own.every(
       (item) => 20 + 8 + this.head.ruler.width('rm-cells__word', item.name) + 24 <= cell,
     );

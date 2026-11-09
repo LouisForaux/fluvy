@@ -256,6 +256,7 @@ export const sheet: SheetSpec = {
           remote: 'remote.rm_tv',
           variant: 'compact',
           cols: 6,
+          grid_options: { columns: 6 },
         },
         {
           type: REMOTE,
@@ -263,6 +264,7 @@ export const sheet: SheetSpec = {
           remote: 'remote.rm_bedroom',
           variant: 'compact',
           cols: 6,
+          grid_options: { columns: 6 },
         },
       ],
     },
@@ -465,6 +467,18 @@ export const sheet: SheetSpec = {
         },
       ],
     },
+    {
+      title: 'Out of reach · quiet',
+      cards: [
+        {
+          type: REMOTE,
+          entity: 'media_player.rm_tv_gone',
+          remote: 'remote.rm_tv_gone',
+          volume_entity: 'media_player.rm_receiver_gone',
+          unavailable: 'quiet',
+        },
+      ],
+    },
     // other integrations: their own keys
     {
       title: 'Apple TV',
@@ -477,6 +491,35 @@ export const sheet: SheetSpec = {
     {
       title: 'LG webOS',
       cards: [{ type: REMOTE, entity: 'media_player.rm_lg' }],
+    },
+    // what the height declared has to say of each: the pad's shapes, and a player with no remote takes no keys
+    {
+      title: 'Pad · grid',
+      cards: [
+        {
+          type: REMOTE,
+          entity: 'media_player.rm_tv',
+          remote: 'remote.rm_tv',
+          variant: 'pad',
+          dpad: 'grid',
+        },
+      ],
+    },
+    {
+      title: 'Pad · keys in a row',
+      cards: [
+        {
+          type: REMOTE,
+          entity: 'media_player.rm_tv',
+          remote: 'remote.rm_tv',
+          variant: 'pad',
+          side_keys: 'row',
+        },
+      ],
+    },
+    {
+      title: 'No remote',
+      cards: [{ type: REMOTE, entity: 'media_player.rm_roku' }],
     },
   ],
 };
