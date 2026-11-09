@@ -32,6 +32,7 @@ import { EMPTY, entryCount, HEAD, rowsOf, ROW } from '../shared/heights.js';
 import { emptyPanel, itemsOf, listOf, type EmptyList } from '../shared/lists.js';
 
 const s = strings('people');
+const DASH = '—';
 
 export type PeopleLayout = 'grid' | 'rows';
 
@@ -307,7 +308,7 @@ export class FluvyPeopleCard extends Card<PeopleCardConfig> {
   private batteryFigure(person: Person): string {
     const level = person.battery;
     return level === null || level === undefined
-      ? '—'
+      ? DASH
       : `${formatNumber(this.hass, level, { digits: 0 })} %`;
   }
 
@@ -337,17 +338,17 @@ export class FluvyPeopleCard extends Card<PeopleCardConfig> {
 
   /**
    * A person's word in a grid column of that width: their own; for someone out of reach (whose "Entity not found" is
-   * the longest thing a person says) "Unavailable", else a dash, and for someone nobody can place a dash — never cut,
-   * and never what turns the grid into rows, so the card keeps its size (1.9). Undefined where a placed person's word
-   * would be cut.
+   * the longest thing a person says) "Unavailable", else a dash; for someone nobody can place, or who is away (their
+   * dimmed face says so, Polish's "Poza domem" at 211), a dash — never cut, and never what turns the grid into rows, so
+   * the card keeps its size (1.9) and its faces. Undefined where the word of someone home would be cut.
    */
   private gridWord(person: Person, column: number): string | undefined {
     const words =
       person.presence === 'off'
-        ? [person.word, this.t('state.unavailable'), '—']
-        : person.presence === 'unknown'
-          ? [person.word, '—']
-          : [person.word];
+        ? [person.word, this.t('state.unavailable'), DASH]
+        : person.presence === 'home'
+          ? [person.word]
+          : [person.word, DASH];
     return words.find((word) => this.headFit.ruler.width('am-person__state', word) <= column);
   }
 
@@ -367,7 +368,8 @@ export class FluvyPeopleCard extends Card<PeopleCardConfig> {
       ${people.map((person) => {
         const detail = this.detail(person);
         const word = this.gridWord(person, column) ?? person.word;
-        const both = `${word} · ${detail}`;
+        // a dash joins no detail: the detail alone, then, says where or since when
+        const both = word === DASH ? detail : `${word} · ${detail}`;
         const line = detail && ruler.width('am-person__state', both) <= column ? both : word;
         const { tap, hold } = this.actionsOf(person);
         return html`<button
@@ -426,7 +428,7 @@ export class FluvyPeopleCard extends Card<PeopleCardConfig> {
         const word =
           this.contentWidth - (keep ? 56 : 0) - 12 - ruler.width('fv-row__value', person.word) <
           Math.max(Math.min(40, ruler.width('fv-row__title', person.name)), batteryNeed(person))
-            ? '—'
+            ? DASH
             : person.word;
         const room = this.contentWidth - (keep ? 56 : 0) - 12 - ruler.width('fv-row__value', word);
         const sub =
@@ -514,6 +516,8 @@ export class FluvyPeopleCard extends Card<PeopleCardConfig> {
       width: this.contentWidth,
       title,
       sub,
+      // half a section: the figures alone, under the title that says what they count ("Doma" over "2/3")
+      shorter: panel ? [] : [`${home}/${people.length}`],
       trailing: roundFits ? 44 : 0,
     });
 

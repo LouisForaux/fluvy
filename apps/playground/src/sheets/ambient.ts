@@ -1159,6 +1159,24 @@ export const sheet: SheetSpec = {
         },
       ],
     },
+    // half a section: the count stays whole in the head, whoever is away beside their face
+    {
+      title: 'Who is home · half a column',
+      cards: [
+        {
+          type: 'custom:fluvy-people-card',
+          entities: ['person.am_marta', 'person.am_pau', 'person.am_ona'],
+          _now,
+          cols: 6,
+        },
+        {
+          type: 'custom:fluvy-people-card',
+          entities: ['person.am_pau', 'person.am_ona'],
+          _now,
+          cols: 6,
+        },
+      ],
+    },
     {
       title: 'Who is home · edges',
       cards: [

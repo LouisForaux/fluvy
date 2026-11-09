@@ -63,6 +63,9 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 - The Readouts card just appeared when a dashboard loaded: it enters as the other cards do now (#148).
 - The media browser showed every photo and video in grey where Fluvy's look applies: only the sources' logos and icons
   wear the neutral ink, and a picture of the media itself keeps its colours (#147).
+- The People card in a narrow column lost its faces where the word for away did not hold (Polish's "Poza domem" at
+  211), and cut the count in its head at 152 in Slovak and Turkish ("Doma…"): the faces stay, saying the place or the
+  time, or a dash, the full word in the label, and the count reads "2/3" where its words would be cut.
 
 ## [1.17.0] — 2026-11-07
 
