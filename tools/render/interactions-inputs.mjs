@@ -922,7 +922,11 @@ for (const lang of ['de', 'fr', 'nl', 'pt-BR', 'es']) {
     const page = await open('ambient', width, `&lang=${lang}`);
     const cut = await page.evaluate(() => {
       const out = [];
-      for (const card of document.querySelectorAll('fluvy-openings-card, fluvy-people-card')) {
+      // whole cards: a frame of half a column at these widths is a card under the house's floor of 152, and the
+      // measurer reads those at 152 and 172
+      for (const card of document.querySelectorAll(
+        '[data-frame][data-span="12"] :is(fluvy-openings-card, fluvy-people-card)',
+      )) {
         const where = card.closest('[data-frame]')?.dataset.frame ?? card.localName;
         const root = card.shadowRoot;
         const box = root.querySelector('article').getBoundingClientRect();
