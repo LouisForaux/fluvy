@@ -548,6 +548,18 @@ export const sheet: SheetSpec = {
         }),
       ],
     },
+    // the arrows asked away (#151): the name has their room, a tap still opens the room
+    {
+      title: 'Room · tile · no arrow',
+      cards: [
+        room({
+          area: 'rm_living',
+          variant: 'tile',
+          show_arrow: false,
+          path: '/fluvy-auto/room-rm_living',
+        }),
+      ],
+    },
     // a compact tile: two a row
     {
       title: 'Room · rows',

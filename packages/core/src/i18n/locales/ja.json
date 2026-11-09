@@ -723,6 +723,7 @@
   },
   "room-editor": {
     "show_quick_actions": "クイックアクションを表示",
+    "show_arrow": "矢印を表示",
     "quick_actions": "クイックアクション",
     "group": "対象",
     "include": "追加でカウント",

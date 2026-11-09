@@ -276,6 +276,23 @@ describe('a room finds what is in it (#39)', () => {
     expect(root(tile).querySelector('.fv-empty-state')).toBeNull();
   });
 
+  it('hides its arrows where asked, a tap still opening the room (#151)', async () => {
+    const went: string[] = [];
+    const listen = (): void => void went.push(window.location.pathname);
+    window.addEventListener('location-changed', listen);
+    try {
+      const path = '/fluvy-home/room-leer';
+      const shown = await room({ area: 'leer', variant: 'tile', path });
+      expect(root(shown).querySelector('.fv-head__open')).not.toBeNull();
+      const hidden = await room({ area: 'leer', variant: 'tile', path, show_arrow: false });
+      expect(root(hidden).querySelector('.fv-head__open')).toBeNull();
+      root(hidden).querySelector<HTMLElement>('.fv-card__tap')!.click();
+      expect(went.at(-1)).toBe(path);
+    } finally {
+      window.removeEventListener('location-changed', listen);
+    }
+  });
+
   it('keeps an empty card’s way in: its tap, its hold and its chevron', async () => {
     const went: string[] = [];
     const listen = (): void => void went.push(window.location.pathname);
@@ -638,6 +655,14 @@ describe('a room’s quick actions (#113)', () => {
     const [lit = 0, whole = 1] = dash.split(' ').map(Number);
     return Math.round((lit / whole) * 100);
   };
+
+  it('hides the arrows of its rows where asked (#151)', async () => {
+    const path = '/fluvy-home/room-lounge';
+    const shown = await room({ area: 'lounge', path }, lounge());
+    expect(root(shown).querySelector('.fv-row__chevron')).not.toBeNull();
+    const hidden = await room({ area: 'lounge', path, show_arrow: false }, lounge());
+    expect(root(hidden).querySelector('.fv-row__chevron')).toBeNull();
+  });
 
   it('stands for the room’s lights, then its blinds, at the end of its picture, its head and its row', async () => {
     const parts = { photo: '.rm-hero', tile: '.fv-card__head', row: '.rm-tile' } as const;

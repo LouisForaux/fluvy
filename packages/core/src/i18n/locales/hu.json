@@ -723,6 +723,7 @@
   },
   "room-editor": {
     "show_quick_actions": "A gyorsműveletek megjelenítése",
+    "show_arrow": "Nyíl megjelenítése",
     "quick_actions": "Gyorsműveletek",
     "group": "Mire hat",
     "include": "Ezeket is számolja",

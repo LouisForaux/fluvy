@@ -60,6 +60,9 @@ const drawsLights = (form: Readonly<Record<string, unknown>>): boolean =>
   drawsControls(form) && form['controls'] !== 'none';
 
 /** …its quick actions. */
+/** The arrows stand on a tile's head and on the category rows: a card of neither has none to hide. */
+const drawsArrows = ({ variant, controls }: Readonly<Record<string, unknown>>): boolean =>
+  variant === 'tile' || (variant !== 'row' && (controls ?? 'rows') === 'rows');
 const drawsQuick = ({ show_quick_actions: shown }: Readonly<Record<string, unknown>>): boolean =>
   shown !== false;
 
@@ -89,6 +92,7 @@ export const keys = configKeys<RoomCardConfig>()([
   'show_climate',
   'show_count',
   'show_quick_actions',
+  'show_arrow',
   'controls',
   'tiles',
   'quick_actions',
@@ -212,6 +216,7 @@ export const defaults: EditorDefaults = (config, hass) => {
     show_count: true,
     show_climate: true,
     show_quick_actions: true,
+    show_arrow: true,
     quick_actions: defaultGroups(hass, found?.devices ?? []),
     tint: 'on',
     light_colors: lightDefaults().colors,
@@ -232,7 +237,7 @@ export function getConfigForm(): LovelaceConfigForm {
         onlyWhen(drawsControls, selectField('controls', ['rows', 'tiles', 'none'])),
       ),
       fieldRow(boolField('show_climate'), boolField('show_count')),
-      boolField('show_quick_actions'),
+      fieldRow(boolField('show_quick_actions'), onlyWhen(drawsArrows, boolField('show_arrow'))),
       // the list is edited item by item (the rows editor takes the field out of the form)
       { name: 'quick_actions', selector: { object: {} } },
       // a picture is the photo's alone (the default where the room has one)
@@ -259,6 +264,7 @@ export function getConfigForm(): LovelaceConfigForm {
       temperature_entity: 'editor.temperature_entity',
       humidity_entity: 'editor.humidity_entity',
       show_quick_actions: 'room-editor.show_quick_actions',
+      show_arrow: 'room-editor.show_arrow',
       quick_actions: 'room-editor.quick_actions',
       include: 'room-editor.include',
       exclude: 'room-editor.exclude',

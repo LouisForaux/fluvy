@@ -1475,6 +1475,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Snelle acties tonen",
+    "show_arrow": "Pijl tonen",
     "quick_actions": "Snelle acties",
     "group": "Werkt op",
     "include": "Ook meetellen",

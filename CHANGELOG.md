@@ -25,6 +25,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- The Room card's arrows can be hidden (`show_arrow: false`, #151): the name and its line have their room, and a tap
+  still opens the room. A switch in its editor, on by default.
 - The Room lights card can carry a colour round (`show_color: true`, Discussion #137): a palette round in the head,
   before the lights' rounds or the room's switch, whose one tap opens the room's colours for every light at once,
   while the room's icon keeps switching the lights and the brightness ruler keeps setting the room. It opens Fluvy's

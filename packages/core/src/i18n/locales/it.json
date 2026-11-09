@@ -1475,6 +1475,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Mostra le azioni rapide",
+    "show_arrow": "Mostra la freccia",
     "quick_actions": "Azioni rapide",
     "group": "Agisce su",
     "include": "Conta anche",

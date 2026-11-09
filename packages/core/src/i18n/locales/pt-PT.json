@@ -1475,6 +1475,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Mostrar as ações rápidas",
+    "show_arrow": "Mostrar a seta",
     "quick_actions": "Ações rápidas",
     "group": "Atua sobre",
     "include": "Contar também",

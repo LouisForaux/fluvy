@@ -1475,6 +1475,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Schnellaktionen zeigen",
+    "show_arrow": "Pfeil anzeigen",
     "quick_actions": "Schnellaktionen",
     "group": "Wirkt auf",
     "include": "Auch zählen",

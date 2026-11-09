@@ -2676,6 +2676,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Zobraziť rýchle akcie",
+    "show_arrow": "Zobraziť šípku",
     "quick_actions": "Rýchle akcie",
     "group": "Pôsobí na",
     "include": "Zahrnúť aj",

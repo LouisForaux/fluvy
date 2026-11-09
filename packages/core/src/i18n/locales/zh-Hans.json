@@ -2620,6 +2620,7 @@
   },
   "room-editor": {
     "show_quick_actions": "显示快捷操作",
+    "show_arrow": "显示箭头",
     "quick_actions": "快捷操作",
     "group": "作用于",
     "include": "同时计入",

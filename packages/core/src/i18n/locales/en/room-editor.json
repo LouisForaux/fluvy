@@ -1,6 +1,7 @@
 {
   "room-editor": {
     "show_quick_actions": "Show the quick actions",
+    "show_arrow": "Show the arrow",
     "quick_actions": "Quick actions",
     "group": "Acts on",
     "include": "Also count",

@@ -2559,6 +2559,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Pokaż szybkie akcje",
+    "show_arrow": "Pokaż strzałkę",
     "quick_actions": "Szybkie akcje",
     "group": "Działa na",
     "include": "Licz też",

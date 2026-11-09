@@ -1475,6 +1475,7 @@
   },
   "room-editor": {
     "show_quick_actions": "Hızlı eylemleri göster",
+    "show_arrow": "Oku göster",
     "quick_actions": "Hızlı eylemler",
     "group": "Neyi kontrol eder",
     "include": "Bunları da say",

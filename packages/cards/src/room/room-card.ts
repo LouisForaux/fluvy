@@ -85,6 +85,8 @@ export interface RoomCardConfig extends FluvyCardConfig, LightColours, RoomTunin
   name_lines?: NameLines;
   /** The quick actions at the end of its head, its row or its picture (default). */
   show_quick_actions?: boolean;
+  /** The arrows that say the room opens (default); hidden, the words have their room and a tap still opens it. */
+  show_arrow?: boolean;
   /**
    * The quick actions in order, as many as the width holds: the room's `lights`, `covers`, `fans` or `media` (a round
    * for each set), or an entity (default: its lights, then its blinds).
@@ -383,6 +385,10 @@ export class FluvyRoomCard extends FluvyTileCard {
   }
 
   /** Where the room opens: its path, or the area's settings for an admin; nothing for anyone else. */
+  private get arrows(): boolean {
+    return this.room?.show_arrow !== false;
+  }
+
   private destination(): string | undefined {
     if (this.room?.path) return this.room.path;
     return this.hass?.user?.is_admin ? `/config/areas/area/${this.room?.area}` : undefined;
@@ -560,7 +566,7 @@ export class FluvyRoomCard extends FluvyTileCard {
     // a column too narrow for a word beside its chevron (its 44) gives every row's circle to the words, as every list does
     const keep = this.headFit.rowsKeepIcon(
       this.contentWidth,
-      rows.map(([, title]) => ({ title, value: '', end: to ? 44 : 0 })),
+      rows.map(([, title]) => ({ title, value: '', end: to && this.arrows ? 44 : 0 })),
     );
     // the lights' row wears what the rule every light follows says (`lightLook`): the colour of what is lit, by
     // brightness, each lamp once (a group in the room is its members; `light_colors`, the house's where the card says
@@ -583,7 +589,7 @@ export class FluvyRoomCard extends FluvyTileCard {
           ...(tone === 'light' ? { tone: lightsTone, accent: this.accents.item(colour) } : {}),
           title,
           sub,
-          trailing: to ? 'chevron' : 'none',
+          trailing: to && this.arrows ? 'chevron' : 'none',
           ...(to ? { onTap: () => this.open() } : {}),
         }),
       )}
@@ -714,7 +720,7 @@ export class FluvyRoomCard extends FluvyTileCard {
     if (variant === 'tile') {
       // what trails the name, with the gap before it: the quick actions where the name keeps what it needs beside its
       // circle, then the chevron's 48 — its 44 and the 12 before it, less the 8 its ink stands past the column edge
-      const chevron = to ? 48 : 0;
+      const chevron = to && this.arrows ? 48 : 0;
       const quick = this.rounds(
         this.contentWidth - chevron - (this.showIcon === 'never' ? 0 : 56),
         'fv-card__title',
@@ -738,7 +744,7 @@ export class FluvyRoomCard extends FluvyTileCard {
           sub: this.roomLine(this.contentWidth - (fitted.icon ? 56 : 0) - end, 'fv-card__sub'),
           // "opens" is the bare chevron the rows use, its ink on the column edge
           trailing: html`${quick.template}${
-            to
+            to && this.arrows
               ? html`<button
                   class="fv-hit fv-head__open"
                   aria-label=${name}
