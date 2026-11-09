@@ -66,6 +66,9 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 - The People card in a narrow column lost its faces where the word for away did not hold (Polish's "Poza domem" at
   211), and cut the count in its head at 152 in Slovak and Turkish ("Doma…"): the faces stay, saying the place or the
   time, or a dash, the full word in the label, and the count reads "2/3" where its words would be cut.
+- A wall left in its screensaver waited for a first touch before it reloaded for an update: its screensaver is nothing
+  to lose, so it comes back on the new build by itself; and a change of the panels arriving while the page was asking
+  which build the server serves is asked about again, where it waited for the next trigger.
 
 ## [1.17.0] — 2026-11-07
 

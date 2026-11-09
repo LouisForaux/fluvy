@@ -147,6 +147,7 @@ export class FluvyWallScreensaver extends LitElement {
     return html`<dialog
       class="${this.shown ? 'is-on' : ''} ${this.dim ? 'is-dim' : 'fv-bg--wall'}"
       aria-label="Screensaver"
+      data-idle
       @pointerdown=${this.wake}
       @keydown=${this.wake}
       @click=${this.wake}

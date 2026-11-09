@@ -293,6 +293,39 @@ describe('a page left open through an update (#132)', () => {
     }
   });
 
+  it('reloads a wall left in its screensaver, its dialog no dialog of the kind', async () => {
+    const page = await setup(NEW);
+    const host = document.createElement('div');
+    const dialog = host
+      .attachShadow({ mode: 'open' })
+      .appendChild(document.createElement('dialog'));
+    dialog.setAttribute('data-idle', '');
+    dialog.tabIndex = -1;
+    document.body.append(host);
+    dialog.setAttribute('open', '');
+    dialog.focus();
+    page.update.watchUpdates(OLD, page.hass);
+    await settle();
+    await vi.advanceTimersByTimeAsync(70_000);
+    expect(page.replace).toHaveBeenCalledTimes(1);
+    host.remove();
+  });
+
+  it('asks once more for what came in while an answer was on its way', async () => {
+    const page = await setup(OLD);
+    const watch = page.update.watchUpdates(OLD, page.hass);
+    await settle();
+    expect(page.asked.count).toBe(1);
+    // asked before the answer: the build the first answer says is old, the question that follows finds the new one
+    watch.check();
+    page.serve(NEW);
+    watch.check();
+    watch.check();
+    await settle();
+    expect(page.asked.count).toBe(3);
+    expect(page.toasts).toHaveLength(1);
+  });
+
   it('reloads by itself once per update: a reload that brought the same copy back only says so', async () => {
     sessionStorage.setItem('fluvy:reloaded', `${OLD}>${NEW}`);
     const page = await setup(NEW);

@@ -84,7 +84,8 @@ function reload(update: string): void {
 /**
  * Nothing on the page can be lost to a reload: a dashboard out of edit mode, no dialog of Home Assistant's open (its
  * dialogs mark the history entry they open on), no change unsaved (its editors say so on the window), no dialog or
- * sheet of a card's holding the focus.
+ * sheet of a card's holding the focus. A wall's own screensaver is no dialog of the kind (`data-idle`): a wall left in
+ * it comes back on the new build overnight, where it would wait for a first touch.
  */
 function nothingToLose(hass: HomeAssistant | undefined): boolean {
   if (!isLovelace(hass?.panels, urlPathOf(location.pathname))) return false;
@@ -92,7 +93,7 @@ function nothingToLose(hass: HomeAssistant | undefined): boolean {
   if ((history.state as { dialog?: unknown } | null)?.dialog) return false;
   if ((window as { isDirtyState?: boolean }).isDirtyState) return false;
   for (let at = document.activeElement; at; at = at.shadowRoot?.activeElement ?? null)
-    if (at.closest('dialog[open]')) return false;
+    if (at.closest('dialog[open]:not([data-idle])')) return false;
   return true;
 }
 
@@ -159,13 +160,24 @@ export function watchUpdates(
     history.replaceState(history.state, '', url.href);
   }
   let asking = false;
+  // what is asked while another answer is on its way may be what changed it (`panels_updated` beside a `get_panels`
+  // from before the new panel): one more question follows the answer
+  let again = false;
   const check = (): void => {
     const app = hass();
-    if (!own || asking || offered || !app) return;
+    if (!own || offered || !app) return;
+    if (asking) {
+      again = true;
+      return;
+    }
     asking = true;
     void servedBuild(app).then((served) => {
       asking = false;
       if (served && served !== own) offer(own, served, hass);
+      if (again) {
+        again = false;
+        check();
+      }
     });
   };
   watch = { check };
