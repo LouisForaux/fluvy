@@ -1082,6 +1082,12 @@
     "item_unavailable_helper": "Puste: jak w karcie",
     "rgb": "Dowolny kolor",
     "swatch_name_help": "Napis na kółku; puste — nazwa koloru lub jego kod hex",
+    "color_round": "Przycisk koloru dla pokoju",
+    "color_action": "Przycisk otwiera",
+    "color_sheet": "Arkusz kolorów Fluvy",
+    "color_details": "Szczegóły Home Assistant",
+    "color_control": "Sterowanie kolorem",
+    "color_wheel": "Koło",
     "show_tilt": "Pokaż nachylenie",
     "show_favorites": "Pokaż ulubione",
     "favorites_style": "Ulubione jako",
@@ -1719,7 +1725,11 @@
     "editor_lights": "Światła (brak: z obszaru)",
     "editor_show_level": "Pokaż poziom",
     "editor_show_brightness": "Jedna jasność dla pomieszczenia",
-    "editor_tint": "Pokaż kolor każdego kafelka"
+    "editor_tint": "Pokaż kolor każdego kafelka",
+    "no_colour_one": "{names} nie przyjmuje koloru",
+    "no_colour_few": "{names} nie przyjmują koloru",
+    "no_colour_many": "{names} nie przyjmują koloru",
+    "no_colour_other": "{names} nie przyjmują koloru"
   },
   "lock": {
     "locked": "Zablokowane",

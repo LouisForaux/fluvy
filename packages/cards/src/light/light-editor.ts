@@ -154,39 +154,39 @@ export const keys = configKeys<LightCardConfig>()([
 
 /**
  * The quick colours, edited row by row in their order, any number of them: each a colour (a word, the picker,
- * or Custom with its well) and a name of its own. The bulb's default six show as rows until the list is touched.
+ * or Custom with its well) and a name of its own. The bulb's default six show as rows until the list is touched;
+ * `when` says while which cards the list is edited (the room lights card's sheet shares it, #137).
  */
-export const lists: readonly RowsListSpec[] = [
-  {
-    key: 'colors',
-    title: 'editor.colors',
-    idKey: 'color',
-    // the quick colours are a colour bulb's: the list is edited while the bulb has a colour to take, on a card that
-    // shows them
-    when: shown(bulbColours),
-    get picker() {
-      return swatchFieldsFor().color;
-    },
-    keys: ['color', 'rgb', 'name'],
-    get schema() {
-      return swatchFieldsFor().custom;
-    },
-    schemaOf: swatchFields,
-    read: swatchItem,
-    write: swatchEntry,
-    // the well is Home Assistant's colour input, which paints its whole field: a floating label would sit on the
-    // colour, so the well carries no label and its word goes under it as the helper
-    computeLabel: (schema) => (schema.name === 'rgb' ? '' : undefined),
-    computeHelper: (schema) =>
-      schema.name === 'color'
-        ? editorWord('editor.color_help')
-        : schema.name === 'name'
-          ? editorWord('editor.swatch_name_help')
-          : schema.name === 'rgb'
-            ? editorWord('editor.rgb')
-            : undefined,
+export const swatchList = (when: BulbWhen): RowsListSpec => ({
+  key: 'colors',
+  title: 'editor.colors',
+  idKey: 'color',
+  when,
+  get picker() {
+    return swatchFieldsFor().color;
   },
-];
+  keys: ['color', 'rgb', 'name'],
+  get schema() {
+    return swatchFieldsFor().custom;
+  },
+  schemaOf: swatchFields,
+  read: swatchItem,
+  write: swatchEntry,
+  // the well is Home Assistant's colour input, which paints its whole field: a floating label would sit on the
+  // colour, so the well carries no label and its word goes under it as the helper
+  computeLabel: (schema) => (schema.name === 'rgb' ? '' : undefined),
+  computeHelper: (schema) =>
+    schema.name === 'color'
+      ? editorWord('editor.color_help')
+      : schema.name === 'name'
+        ? editorWord('editor.swatch_name_help')
+        : schema.name === 'rgb'
+          ? editorWord('editor.rgb')
+          : undefined,
+});
+
+/** The quick colours are a colour bulb's: the list is edited while the bulb has a colour to take, on a card that shows them. */
+export const lists: readonly RowsListSpec[] = [swatchList(shown(bulbColours))];
 
 /** What the editor shows where the config says nothing: what the card does then (the quick colours by the bulb). */
 export const defaults: EditorDefaults = (config, hass) => ({

@@ -25,6 +25,15 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- The Room lights card can carry a colour round (`show_color: true`, Discussion #137): a palette round in the head,
+  before the lights' rounds or the room's switch, whose one tap opens the room's colours for every light at once,
+  while the room's icon keeps switching the lights and the brightness ruler keeps setting the room. It opens Fluvy's
+  colour sheet, the light card's own hue ruler and quick colours (`colors`) for the whole room, or the hue wheel
+  (`color_control: wheel`), with the room's switch in its head; a colour chosen goes to every light of the room in
+  one call, wakes a room that is off, and the sheet says which lights take none. Where the card is one light or a
+  light group, `color_action: more-info` opens Home Assistant's details instead. The round shows only where a light
+  of the room takes a colour; in half a column it steps to a "Colour" row under the body. Off unless asked: a card
+  that does not name it draws exactly as it did.
 - A TV remote card (`fluvy-remote-card`, #143), for televisions, receivers, consoles and players: the head with the
   power round, the player's sources as chips, a D-pad (a ring of four arrows round OK between its four keys, or a
   grid), rewind · play/pause · forward, the volume (the ruler where the device reports a level, keys or a stepper

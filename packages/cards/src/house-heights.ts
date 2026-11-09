@@ -1,6 +1,7 @@
 import {
   areaContents,
   areaEntities,
+  entriesOf,
   idsOf,
   layoutHeightOf,
   textName,
@@ -88,15 +89,25 @@ function light(config: LightCardConfig, hass: HomeAssistant): number {
   });
 }
 
-/** The room's lights where the card lists none, their names, and who reads the empty panel's hint. */
+/**
+ * The room's lights where the card lists none, their names, who reads the empty panel's hint, and whether one of
+ * its lights takes a colour (the colour round, #137; one the house has not described does).
+ */
 function lights(config: LightsCardConfig, hass: HomeAssistant): number {
+  const area =
+    hass.states && config.area
+      ? areaEntities(hass, config.area, { domains: ['light'] })
+      : undefined;
+  const ids = idsOf(entriesOf(config.lights ?? config.entities));
   return lightsHeight(config, {
-    area:
-      hass.states && config.area
-        ? areaEntities(hass, config.area, { domains: ['light'] })
-        : undefined,
+    area,
     nameOf: namesIn(hass),
     admin: Boolean(hass.user?.is_admin),
+    colour: (ids.length ? ids : (area ?? [])).some(
+      (id) =>
+        !known(hass, id) ||
+        listAttr(hass, id, 'supported_color_modes').some((mode) => COLOURED.has(mode)),
+    ),
   });
 }
 

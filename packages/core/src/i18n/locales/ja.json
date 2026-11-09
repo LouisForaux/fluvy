@@ -62,7 +62,9 @@
     "editor_lights": "照明（未選択ならエリアの照明）",
     "editor_show_level": "明るさを表示",
     "editor_show_brightness": "部屋全体を1つの明るさで",
-    "editor_tint": "各タイルの色を表示"
+    "editor_tint": "各タイルの色を表示",
+    "no_colour_one": "{names}は色を受け付けません",
+    "no_colour_other": "{names}は色を受け付けません"
   },
   "climate": {
     "mode": "モード",
@@ -427,6 +429,12 @@
     "item_unavailable_helper": "空のときはカードと同じ",
     "rgb": "任意の色",
     "swatch_name_help": "色の丸に表示する文字。空のときは色の名前またはHEXコード",
+    "color_round": "部屋の色ボタン",
+    "color_action": "ボタンで開くもの",
+    "color_sheet": "Fluvyの色シート",
+    "color_details": "Home Assistantの詳細",
+    "color_control": "色の操作",
+    "color_wheel": "ホイール",
     "show_tilt": "チルトを表示",
     "show_favorites": "お気に入りを表示",
     "favorites_style": "お気に入りの形式",

@@ -108,6 +108,9 @@ const BUDGETS = {
   // the light card's colour controls: the quick colours' table and row, fetched by the first colour bulb, and their
   // grammar, which the light's editor shares. 8 KB since 1.15 (the grammar left core, 0.4 KB): 4 before
   'light-colour': 8192,
+  // the room lights' colour sheet (1.18, #137): the room as one bulb, its switch, the hue wheel; fetched when a
+  // card's colour round is tapped (its controls are the light card's, in `light-colour`)
+  'lights-colour': 8192,
   // a room's quick actions (1.13, #113): their sets, levels, taps and holds, fetched as the bundle starts
   'quick-actions': 4096,
   // the weather card

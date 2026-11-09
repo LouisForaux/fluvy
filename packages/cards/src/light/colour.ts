@@ -240,12 +240,41 @@ export function shownOf(view: EntityView, on: boolean, held: HeldColour | null):
   return {};
 }
 
-/** Whether the bulb reports the colour the finger chose (within the swatches' tolerances): the hold can let go. */
+/** Whether what is shown is the colour the finger chose (within the swatches' tolerances): the hold can let go. */
+export const near = (held: HeldColour, shown: Shown, range: number): boolean =>
+  gap(held, shown, range) < Infinity;
+
+/** Whether the bulb reports the colour the finger chose: the hold can let go. */
 export const reported = (view: EntityView, held: HeldColour, range: number): boolean =>
-  gap(held, shownOf(view, true, null), range) < Infinity;
+  near(held, shownOf(view, true, null), range);
+
+/**
+ * What the controls draw of a bulb, or of a room's bulbs together (the room lights' sheet): what it shows, the hue
+ * the ruler stands on and the saturation a hue is sent at, and what it can do.
+ */
+export interface BulbState {
+  readonly shown: Shown;
+  /** The finger's hue while held, else the bulb's, else red. */
+  readonly hue: number;
+  /** The bulb's; the full one where it reports none: the ruler is for colours, not for whites. */
+  readonly saturation: number;
+  readonly modes: readonly string[];
+}
+
+/** A bulb as its controls draw it: the finger's choice while it is held, else what the bulb reports while it is on. */
+export function bulbOf(view: EntityView, on: boolean, held: HeldColour | null): BulbState {
+  const shown = shownOf(view, on, held);
+  const hs = view.attr<number[] | null>('hs_color');
+  return {
+    shown,
+    hue: held && 'rgb' in held ? held.hue : (hs?.[0] ?? (shown.rgb ? hueOf(shown.rgb) : 0)),
+    saturation: hs?.[1] || 100,
+    modes: view.attr<string[]>('supported_color_modes') ?? [],
+  };
+}
 
 /** Black or white, whichever reads better on a colour (WCAG luminance): the check on the swatch the bulb is on. */
-function inkOn(hex: string): string {
+export function inkOn(hex: string): string {
   const n = Number.parseInt(hex.slice(1), 16);
   const linear = (c: number): number => {
     const v = c / 255;
@@ -257,12 +286,12 @@ function inkOn(hex: string): string {
 }
 
 export interface ColourOptions {
-  readonly view: EntityView;
+  /** The bulb as it is drawn (`bulbOf`), or a room's bulbs together. */
+  readonly bulb: BulbState;
   readonly t: (key: MessageKey) => string;
   readonly name: string;
   readonly width: number;
   readonly on: boolean;
-  readonly held: HeldColour | null;
   readonly colors: readonly SwatchEntry[] | undefined;
   readonly minK: number;
   readonly maxK: number;
@@ -281,6 +310,8 @@ export interface ColourOptions {
   readonly words: <T>(items: readonly T[]) => readonly T[];
   /** The quick colours alone, one row of as many as the column holds (a colour bulb's compact layout by width). */
   readonly row?: boolean;
+  /** The hue wheel in the hue ruler's slot (the room lights' sheet), in place of the ruler and its words. */
+  readonly wheel?: ((hue: number, saturation: number) => TemplateResult) | undefined;
   /** The card: its face lays the ruler's words out. */
   readonly host: Element;
 }
@@ -317,14 +348,8 @@ const SWATCH = 44 + 8;
  * A white swatch leads to the temperature ruler, a colour to the hue ruler: the swatches are the mode's switch.
  */
 export function colourControls(o: ColourOptions): TemplateResult {
-  const shown = shownOf(o.view, o.on, o.held);
-  const hs = o.view.attr<number[] | null>('hs_color');
-  const hue =
-    o.held && 'rgb' in o.held ? o.held.hue : (hs?.[0] ?? (shown.rgb ? hueOf(shown.rgb) : 0));
-  // a bulb that reports no saturation is given the full one: the ruler is for colours, not for whites
-  const saturation = hs?.[1] || 100;
+  const { shown, hue, saturation, modes } = o.bulb;
   const range = o.maxK - o.minK;
-  const modes = o.view.attr<string[]>('supported_color_modes') ?? [];
   const entries = o.colors ?? defaultSwatches(modes);
   const all = entries.flatMap((entry) => resolveSwatch(entry, o.minK, o.maxK) ?? []);
   // one row: as many as fit, the picker kept last where the list has one
@@ -357,32 +382,35 @@ export function colourControls(o: ColourOptions): TemplateResult {
       }, PICK_DEBOUNCE),
     );
   };
+  // the slot's hue control: the ruler and its words, or the wheel where the sheet asks for one
+  const hueControl = o.wheel
+    ? o.wheel(hue, saturation)
+    : html`<fluvy-ruler
+          .value=${hue}
+          .min=${0}
+          .max=${360}
+          .step=${1}
+          .length=${o.width}
+          tone="accent"
+          .minor=${1 / 12}
+          .major=${0.25}
+          ?inactive=${!o.on}
+          ?disabled=${o.disabled}
+          ?on-fill=${o.onFill}
+          .look=${o.look}
+          ?still=${o.still}
+          tint="hue"
+          .label=${`${o.name} · ${o.t('light.color')}`}
+          .format=${(v: number) => `${o.format(v)}°`}
+          @fluvy-change=${(e: CustomEvent<RulerChangeDetail>) => {
+            const h = e.detail.value;
+            o.pick({ rgb: hsToRgb(h, saturation), hue: h }, { hs_color: [h, saturation] });
+          }}
+        ></fluvy-ruler>
+        ${rulerLabels(o.words(hueWords(o)))}`;
   const slot =
     shown.rgb || !o.temperature
-      ? html`${label(o.t('light.color'))}
-          <fluvy-ruler
-            .value=${hue}
-            .min=${0}
-            .max=${360}
-            .step=${1}
-            .length=${o.width}
-            tone="accent"
-            .minor=${1 / 12}
-            .major=${0.25}
-            ?inactive=${!o.on}
-            ?disabled=${o.disabled}
-            ?on-fill=${o.onFill}
-            .look=${o.look}
-            ?still=${o.still}
-            tint="hue"
-            .label=${`${o.name} · ${o.t('light.color')}`}
-            .format=${(v: number) => `${o.format(v)}°`}
-            @fluvy-change=${(e: CustomEvent<RulerChangeDetail>) => {
-              const h = e.detail.value;
-              o.pick({ rgb: hsToRgb(h, saturation), hue: h }, { hs_color: [h, saturation] });
-            }}
-          ></fluvy-ruler>
-          ${rulerLabels(o.words(hueWords(o)))}`
+      ? html`${label(o.t('light.color'))} ${hueControl}`
       : o.temperature();
   // a list of none (`colors: []`) draws no row at all, not an empty one with its 16 above
   if (!swatches.length) return o.row ? html`` : html`${slot}`;

@@ -62,7 +62,9 @@
     "editor_lights": "Lights (none: the area’s)",
     "editor_show_level": "Show the level",
     "editor_show_brightness": "One brightness for the room",
-    "editor_tint": "Show each tile’s colour"
+    "editor_tint": "Show each tile’s colour",
+    "no_colour_one": "{names} takes no colour",
+    "no_colour_other": "{names} take no colour"
   },
   "climate": {
     "mode": "Mode",

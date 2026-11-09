@@ -62,7 +62,9 @@
     "editor_lights": "Lumières (aucune : celles de la pièce)",
     "editor_show_level": "Afficher le niveau",
     "editor_show_brightness": "Une luminosité pour toute la pièce",
-    "editor_tint": "Afficher la couleur de chaque tuile"
+    "editor_tint": "Afficher la couleur de chaque tuile",
+    "no_colour_one": "{names} ne prend pas de couleur",
+    "no_colour_other": "{names} ne prennent pas de couleur"
   },
   "climate": {
     "mode": "Mode",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Vide, celle de la carte",
     "rgb": "Toute couleur",
     "swatch_name_help": "Ce que dit le rond ; vide, le mot de la couleur ou son code hexa",
+    "color_round": "Bouton couleur pour la pièce",
+    "color_action": "Le bouton ouvre",
+    "color_sheet": "La feuille couleur de Fluvy",
+    "color_details": "Les détails de Home Assistant",
+    "color_control": "Commande de couleur",
+    "color_wheel": "Roue",
     "show_tilt": "Afficher l’inclinaison",
     "show_favorites": "Afficher les favoris",
     "favorites_style": "Favoris en",

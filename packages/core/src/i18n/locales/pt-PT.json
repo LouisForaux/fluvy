@@ -62,7 +62,9 @@
     "editor_lights": "Luzes (nenhuma: as da área)",
     "editor_show_level": "Mostrar o nível",
     "editor_show_brightness": "Uma luminosidade para a divisão",
-    "editor_tint": "Mostrar a cor de cada bloco"
+    "editor_tint": "Mostrar a cor de cada bloco",
+    "no_colour_one": "{names} não aceita cor",
+    "no_colour_other": "{names} não aceitam cor"
   },
   "climate": {
     "mode": "Modo",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Vazio: a do cartão",
     "rgb": "Qualquer cor",
     "swatch_name_help": "O texto do círculo; vazio, mostra o nome da cor ou o código hexadecimal",
+    "color_round": "Botão de cor para a divisão",
+    "color_action": "O botão abre",
+    "color_sheet": "A folha de cores do Fluvy",
+    "color_details": "Os detalhes do Home Assistant",
+    "color_control": "Controlo de cor",
+    "color_wheel": "Roda",
     "show_tilt": "Mostrar a inclinação",
     "show_favorites": "Mostrar os favoritos",
     "favorites_style": "Favoritos como",

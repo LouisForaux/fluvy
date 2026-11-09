@@ -62,7 +62,9 @@
     "editor_lights": "Luci (nessuna: quelle dell’area)",
     "editor_show_level": "Mostra il livello",
     "editor_show_brightness": "Una luminosità per tutta la stanza",
-    "editor_tint": "Mostra il colore di ogni riquadro"
+    "editor_tint": "Mostra il colore di ogni riquadro",
+    "no_colour_one": "{names} non prende colore",
+    "no_colour_other": "{names} non prendono colore"
   },
   "climate": {
     "mode": "Modalità",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Vuoto, quello della scheda",
     "rgb": "Qualsiasi colore",
     "swatch_name_help": "Ciò che dice il cerchio; vuoto, la parola del colore o il suo esadecimale",
+    "color_round": "Pulsante colore per la stanza",
+    "color_action": "Il pulsante apre",
+    "color_sheet": "La scheda colore di Fluvy",
+    "color_details": "I dettagli di Home Assistant",
+    "color_control": "Controllo del colore",
+    "color_wheel": "Ruota",
     "show_tilt": "Mostra l’inclinazione",
     "show_favorites": "Mostra i preferiti",
     "favorites_style": "Preferiti come",

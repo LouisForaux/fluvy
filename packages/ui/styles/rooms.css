@@ -328,6 +328,26 @@
   padding-top: 16px;
 }
 
+/* the colour round (#137) stands 16 before the lights' rounds, so it never reads as one of them */
+.lt-trail {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 16px;
+}
+
+/* the round, and the "Colour" row it steps to in half a column, keep their taps over the room's button, as the
+   rounds do */
+.lt-card--row .lt-colour,
+.lt-card--row > .lt-colour-row {
+  position: relative;
+  pointer-events: auto;
+}
+
+.lt-colour-row {
+  margin-top: 16px;
+}
+
 /* an odd last tile takes the whole row */
 .lt-span {
   display: grid;

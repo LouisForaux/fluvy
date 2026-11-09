@@ -42,7 +42,7 @@ pnpm build
 ```
 
 The bundle is one ES module, `fluvy.js`, that imports `chunks/core-<hash>.js` (everything a page needs) and fetches
-`chunks/{activity,history,panel,pages,strategy,house-heights,wall,weather,calendar,media,chart,chart-card,energy-period,energy,history-bars-readings,devices,cameras-sheet,appliances,appliance-art,automations,automations-sheet,alerts,alerts-sheet,template,web,slider,remote,app-logos,vehicle,items,items-sheet,light-colour,quick-actions,editor,fields,forms,view-icons,glass,quiet,slider-styles,icons,lang-*}-<hash>.js`
+`chunks/{activity,history,panel,pages,strategy,house-heights,wall,weather,calendar,media,chart,chart-card,energy-period,energy,history-bars-readings,devices,cameras-sheet,appliances,appliance-art,automations,automations-sheet,alerts,alerts-sheet,template,web,slider,remote,app-logos,vehicle,items,items-sheet,lights-colour,light-colour,quick-actions,editor,fields,forms,view-icons,glass,quiet,slider-styles,icons,lang-*}-<hash>.js`
 on demand — the Activity page, the History page, the settings panel, what they share (the date picker; the pages'
 period, sources, layers, CSV and sheet), the automatic dashboards' strategy (when a dashboard asks for it) and the heights it
 counts with the house (what an entity's capabilities draw, what a room holds; every page carries the cards' heights
@@ -96,6 +96,7 @@ budget (`BUDGETS`; the facts guard in `tools/docs` holds this table to it):
 | `vehicle` | 24 KB | the Vehicle card: what finds a car's entities and folds its integration's words, its glyphs, its English |
 | `items` | 12 KB | the Items card, its fields and presets, its English |
 | `items-sheet` | 8 KB | an item's sheet |
+| `lights-colour` | 8 KB | the Room lights card's colour sheet and its hue wheel (#137), opened by the card's colour round |
 | `light-colour` | 8 KB | the light card's quick colours and hue ruler, and the quick colours' grammar its editor shares |
 | `quick-actions` | 4 KB | a room's quick actions: their sets, levels, taps and holds |
 | `weather` | 12 KB | the weather card |

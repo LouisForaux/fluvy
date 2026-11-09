@@ -62,7 +62,9 @@
     "editor_lights": "Luces (ninguna: las del área)",
     "editor_show_level": "Mostrar el nivel",
     "editor_show_brightness": "Un brillo para toda la habitación",
-    "editor_tint": "Mostrar el color de cada mosaico"
+    "editor_tint": "Mostrar el color de cada mosaico",
+    "no_colour_one": "{names} no toma color",
+    "no_colour_other": "{names} no toman color"
   },
   "climate": {
     "mode": "Modo",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Vacío, la de la tarjeta",
     "rgb": "Cualquier color",
     "swatch_name_help": "Lo que dice el círculo; vacío, la palabra del color o su hexadecimal",
+    "color_round": "Botón de color para la habitación",
+    "color_action": "El botón abre",
+    "color_sheet": "La hoja de color de Fluvy",
+    "color_details": "Los detalles de Home Assistant",
+    "color_control": "Control de color",
+    "color_wheel": "Rueda",
     "show_tilt": "Mostrar la inclinación",
     "show_favorites": "Mostrar los favoritos",
     "favorites_style": "Favoritos como",

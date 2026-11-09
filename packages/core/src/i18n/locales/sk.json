@@ -767,7 +767,10 @@
     "editor_lights": "Svetlá (prázdne: svetlá oblasti)",
     "editor_show_level": "Zobraziť úroveň",
     "editor_show_brightness": "Spoločný jas pre celú miestnosť",
-    "editor_tint": "Zobraziť farbu každej dlaždice"
+    "editor_tint": "Zobraziť farbu každej dlaždice",
+    "no_colour_one": "{names} neprijíma farbu",
+    "no_colour_few": "{names} neprijímajú farbu",
+    "no_colour_other": "{names} neprijímajú farbu"
   },
   "climate": {
     "mode": "Režim",
@@ -1142,6 +1145,12 @@
     "item_unavailable_helper": "Prázdne: ako karta",
     "rgb": "Ľubovoľná farba",
     "swatch_name_help": "Popis vzorky; ak je prázdny, použije sa názov farby alebo hexadecimálny kód",
+    "color_round": "Tlačidlo farby pre miestnosť",
+    "color_action": "Tlačidlo otvorí",
+    "color_sheet": "Hárok farieb Fluvy",
+    "color_details": "Podrobnosti Home Assistant",
+    "color_control": "Ovládanie farby",
+    "color_wheel": "Koleso",
     "show_tilt": "Zobraziť naklonenie",
     "show_favorites": "Zobraziť obľúbené",
     "favorites_style": "Obľúbené ako",

@@ -24,7 +24,9 @@ import {
   chips,
   clickPress,
   head,
+  listRow,
   preventMenu,
+  round,
   rulerLabels,
   sheetStyles,
   startPress,
@@ -33,7 +35,14 @@ import {
   type RulerChangeDetail,
   type Tone,
 } from '@fluvy/ui';
-import { css, html, nothing, type CSSResultGroup, type TemplateResult } from 'lit';
+import {
+  css,
+  html,
+  nothing,
+  type CSSResultGroup,
+  type PropertyValues,
+  type TemplateResult,
+} from 'lit';
 import { HeadFit, SWITCH_SLOT } from '../energy/head.js';
 import type { CardEditor } from '../shared/base.js';
 import { toneOf } from '../shared/colour.js';
@@ -51,10 +60,19 @@ import {
   type NameOf,
 } from '../shared/heights.js';
 import { hideEmpty, itemsOf, listOf, type EmptyList } from '../shared/lists.js';
-import { DIMMABLE, lightLook, litColour, withMembers, type LightWhites } from '../shared/light.js';
+import {
+  COLOURED,
+  DIMMABLE,
+  lightLook,
+  litColour,
+  withMembers,
+  type LightWhites,
+} from '../shared/light.js';
+import type { SwatchEntry } from '../light/swatches.js';
 import { FluvyTileCard, type NameLines } from '../tile/tile-card.js';
 import { fittedColumns } from '../shared/chips.js';
 import { levelRound, ROUND, ROUND_GAP } from '../shared/round.js';
+import type { FluvyLightsColourSheet, LightsColourHost } from './sheet/lights-colour-sheet.js';
 
 const s = strings('lights');
 
@@ -94,6 +112,22 @@ export interface LightsCardConfig extends FluvyCardConfig, EmptyList {
   light_whites?: LightWhites;
   /** `tiles`: a light's name in two lines where one would cut it (`2`), every tile a line taller (#100). */
   name_lines?: NameLines;
+  /**
+   * A colour round in the head (#137), its own tap opening the room's colours; off unless asked, and only where a
+   * light of the room takes a colour: a card that does not ask draws as it did.
+   */
+  show_color?: boolean;
+  /**
+   * What the round opens: Fluvy's sheet for the whole room (default), or Home Assistant's details of the card's one
+   * light (a light group counts as one; a card of several keeps the sheet).
+   */
+  color_action?: 'sheet' | 'more-info';
+  /** The sheet's hue control: the hue ruler (default) or the hue wheel. */
+  color_control?: 'ruler' | 'wheel';
+  /** The sheet's quick colours, as the light card lists them (none: the room's six). */
+  colors?: readonly SwatchEntry[];
+  /** Test hook: the colour sheet docked in the card's place (the playground). Undocumented. */
+  _sheet?: boolean;
 }
 
 /** What the room's name keeps beside its rounds before they take their own line. */
@@ -104,6 +138,10 @@ const INNER = 84;
 const CHIP_LINE = 44;
 /** The room's ruler: 16 above it, the ruler (44) and its labels (20). */
 const RULER = 80;
+/** The colour round stands 16 before the lights' rounds, so it never reads as one of them (#137). */
+const COLOUR_GAP = 16;
+/** A head's round and the 12 before it. */
+const ROUND_SLOT = ROUND + 12;
 /** An inner tile narrower than this has no room for its circle and a name: the tiles take one a row. */
 const TILE_MIN = 120;
 /** The empty panel with its hint under the line (8 + 20 more). */
@@ -120,6 +158,8 @@ export interface RoomLights {
   readonly area: readonly string[] | undefined;
   readonly nameOf: NameOf;
   readonly admin: boolean;
+  /** A light of the card takes a colour (the colour round shows); unknown: one does, as a bulb the house has not described. */
+  readonly colour?: boolean;
 }
 
 /**
@@ -152,8 +192,10 @@ export function lightsHeight(config: LightsCardConfig, house?: RoomLights): numb
     const rows = chipRows(names, 'full', 320, chipCandidates(n));
     return 20 + 44 + ruler + 16 + rows * CHIP_LINE + 20;
   }
-  // a 320 column holds four rounds beside the name (the icon gives way); more take their own line, six a line
-  return (n <= 4 ? 84 : 20 + 44 + 16 + rowsOf(n, 6) * (ROUND + 8) - 8 + 20) + ruler;
+  // a 320 column holds four rounds beside the name (the icon gives way), three with the colour round before them;
+  // more take their own line, six a line
+  const colour = config.show_color === true && (house?.colour ?? true);
+  return (n <= (colour ? 3 : 4) ? 84 : 20 + 44 + 16 + rowsOf(n, 6) * (ROUND + 8) - 8 + 20) + ruler;
 }
 
 /** One light as the card reads it. */
@@ -170,6 +212,8 @@ interface Lamp {
   readonly accent: string | undefined;
   /** The tone it is drawn in when on. */
   readonly tone: Tone;
+  /** It takes a colour (`hs`, `rgb`, `rgbw`, `rgbww` or `xy`): what the colour round acts on. */
+  readonly colours: boolean;
 }
 
 /**
@@ -194,6 +238,18 @@ export class FluvyLightsCard extends FluvyTileCard {
   ];
 
   private readonly head = new HeadFit(this);
+
+  static override properties = {
+    ...FluvyTileCard.properties,
+    sheetReady_: { state: true },
+  };
+  /** The colour sheet's chunk has landed (#137). */
+  declare sheetReady_: boolean;
+
+  constructor() {
+    super();
+    this.sheetReady_ = false;
+  }
 
   static override editor(): Promise<CardEditor> {
     return import('./lights-editor.js');
@@ -288,6 +344,7 @@ export class FluvyLightsCard extends FluvyTileCard {
         level,
         accent: this.accents.item(colour),
         tone,
+        colours: modes.some((m) => COLOURED.has(m)),
       };
     });
   }
@@ -357,13 +414,23 @@ export class FluvyLightsCard extends FluvyTileCard {
       .join(' · ');
   }
 
+  /** The room's area, where the card names one. */
+  private get area() {
+    return this.room?.area ? this.hass?.areas?.[this.room.area] : undefined;
+  }
+
+  /** The room's name: the card's own, else its area's, else "Lights". */
+  private roomName(): string {
+    return textName(this.config?.name) ?? (registryText(this.area?.name) || s(this.hass, 'title'));
+  }
+
   protected override renderCard(): TemplateResult {
+    if (this.room?._sheet) return this.sheetElement(true);
     const lamps = this.lamps();
     const w = this.contentWidth;
-    const area = this.room?.area ? this.hass?.areas?.[this.room.area] : undefined;
-    const name = textName(this.config?.name) ?? (registryText(area?.name) || s(this.hass, 'title'));
+    const name = this.roomName();
     // the room's own glyph — never a light's, so the room's circle is never taken for one of its lights
-    const glyph = this.config?.icon ?? area?.icon ?? 'home';
+    const glyph = this.config?.icon ?? this.area?.icon ?? 'home';
     hideEmpty(this, !lamps.length);
     const own = this.room?.empty_text;
     // the card's own words for an empty room say what it means here: the hint on how to fill it goes with ours
@@ -378,14 +445,24 @@ export class FluvyLightsCard extends FluvyTileCard {
     const sub = this.line(lamps);
     if (this.variant === 'row') return this.renderRow(lamps, name, glyph, tone, sub, w);
 
+    // the colour round before the switch, while the name keeps its floor beside them; else its row under the body
+    const colour = this.showsColour(lamps);
+    const roundInHead = colour && w - ROUND_SLOT - SWITCH_SLOT - 12 >= this.titleFloor(name);
     // out of reach, the room keeps its switch where it stands, disabled (1.9)
     const fitted = this.head.fit({
       width: w,
       title: name,
       sub,
       shorter: this.short(lamps),
-      trailing: SWITCH_SLOT,
+      trailing: SWITCH_SLOT + (roundInHead ? ROUND_SLOT : 0),
     });
+    const roomSwitch = toggle(
+      any,
+      toneOf(this.config, 'light'),
+      () => this.flipRoom(lamps),
+      name,
+      dead,
+    );
     return html`<article class="fv-card lt-card ${dead ? 'is-unavailable is-off' : ''}" data-card>
       ${head({
         icon: fitted.icon ? glyph : null,
@@ -394,14 +471,143 @@ export class FluvyLightsCard extends FluvyTileCard {
         title: name,
         name: true,
         sub: fitted.sub,
-        trailing: toggle(any, toneOf(this.config, 'light'), () => this.flipRoom(lamps), name, dead),
+        trailing: roundInHead ? html`${this.colourRound(name, dead)}${roomSwitch}` : roomSwitch,
         cut: fitted.cut,
         ...(this.roomActs(dead) ? { onTap: () => this.roomTap(lamps) } : {}),
         ...(actionRuns(this.config?.hold_action) ? { onHold: () => this.hold(undefined) } : {}),
       })}
       ${this.room?.show_brightness ? this.renderRuler(lamps, name, w) : nothing}
       ${this.variant === 'tiles' ? this.renderTiles(lamps) : this.renderChips(lamps, w)}
+      ${colour && !roundInHead ? this.renderColourRow(name, w) : nothing} ${this.renderSheet()}
     </article>`;
+  }
+
+  /* ---------- the colour round and its sheet (#137) ---------- */
+
+  /** Whether the colour round shows: asked for, and a light of the room takes a colour. */
+  private showsColour(lamps: readonly Lamp[]): boolean {
+    return this.room?.show_color === true && lamps.some((lamp) => lamp.colours);
+  }
+
+  /** The least the room's name keeps beside what trails it: 96, or the whole of a shorter name. */
+  private titleFloor(name: string): number {
+    return Math.min(MIN_TITLE, this.head.ruler.width('fv-card__title', name));
+  }
+
+  /** The round itself: the head's quiet round, "Living room · Colour" to a reader; out of reach it stays, disabled. */
+  private colourRound(name: string, dead: boolean): TemplateResult {
+    return round(
+      'palette',
+      'quiet',
+      `${name} · ${this.t('light.color')}`,
+      (event) => {
+        event.stopPropagation();
+        this.openColour();
+      },
+      dead,
+      'lt-colour',
+    );
+  }
+
+  /**
+   * The round's row where it could not stand in the head (half a column): "Colour" and a chevron under the body, its
+   * circle by the rows' rule — a control never goes, as the map's round steps to a row.
+   */
+  private renderColourRow(name: string, w: number): TemplateResult {
+    const title = this.t('light.color');
+    return html`<div class="lt-colour-row">
+      ${listRow({
+        icon: this.head.rowsKeepIcon(w, [{ title, value: '', end: 44 }], true) ? 'palette' : null,
+        tone: 'neutral',
+        title,
+        compact: true,
+        trailing: 'chevron',
+        label: `${name} · ${title}`,
+        onTap: () => this.openColour(),
+      })}
+    </div>`;
+  }
+
+  /**
+   * The round's tap: Home Assistant's details of the card's one light (a light group counts as one) where the card
+   * asks for them, else the room's colour sheet.
+   */
+  private openColour(): void {
+    const [only, ...more] = this.items();
+    if (this.room?.color_action === 'more-info' && only && !more.length)
+      this.tap(only.entity, { action: 'more-info' });
+    else void this.openSheet();
+  }
+
+  /** The sheet, its chunk fetched the first time: a dashboard that never opens it never pays for it. */
+  private async openSheet(): Promise<void> {
+    const openedBy = (this.renderRoot as ShadowRoot).activeElement as HTMLElement | null;
+    if (!this.sheetReady_) {
+      await import('./sheet/lights-colour-sheet.js');
+      this.sheetReady_ = true;
+    }
+    await this.updateComplete;
+    this.renderRoot
+      .querySelector<FluvyLightsColourSheet>('fluvy-lights-colour-sheet')
+      ?.open(openedBy ?? this);
+  }
+
+  /**
+   * A colour for the room: every light that can be read takes it in one call, each as Home Assistant fits it (a
+   * white bulb the nearest white, one that only dims its brightness), and wakes to it.
+   */
+  private colourRoom(lamps: readonly Lamp[], data: Record<string, unknown>): void {
+    const usable = lamps.filter((lamp) => lamp.usable);
+    if (!usable.length) return;
+    for (const lamp of usable) this.expect(lamp.view.id, 'on');
+    this.call('light', 'turn_on', { entity_id: usable.map((lamp) => lamp.view.id), ...data }, '');
+  }
+
+  /** What the sheet asks of the card: the room as it draws it, its switch, its colours, its sliders' style. */
+  private readonly sheetHost: LightsColourHost = {
+    title: () => this.roomName(),
+    line: () => this.line(this.lamps()),
+    tone: () => toneOf(this.config, 'light'),
+    lamps: () => this.lamps(),
+    flip: () => this.flipRoom(this.lamps()),
+    colors: () => this.room?.colors,
+    control: () => (this.room?.color_control === 'wheel' ? 'wheel' : 'ruler'),
+    look: () => sliderStyleOf(this.config),
+    still: () => sliderStill(),
+    words: (items) => sliderWordsOf(this.config, items, sliderStyleOf(this.config)),
+    pick: (data) => this.colourRoom(this.lamps(), data),
+    adopt: (root) => this.accents.adopt(root),
+  };
+
+  /** The sheet's element once its chunk is here, nothing before. */
+  private renderSheet(): TemplateResult | typeof nothing {
+    return this.sheetReady_ ? this.sheetElement(false) : nothing;
+  }
+
+  /** The sheet's element; docked in the card's place for the playground. */
+  private sheetElement(docked: boolean): TemplateResult {
+    return html`<fluvy-lights-colour-sheet
+      ?docked=${docked}
+      ?dark=${this.dark}
+      ?no-theme=${this.noTheme}
+      .hass=${this.hass}
+      .card=${this.sheetHost}
+    ></fluvy-lights-colour-sheet>`;
+  }
+
+  /** The playground's docked sheet (`_sheet`), opened once its chunk is here. */
+  private demo = false;
+
+  protected override updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (this.room?._sheet && !this.demo) {
+      this.demo = true;
+      void import('./sheet/lights-colour-sheet.js').then(async () => {
+        this.sheetReady_ = true;
+        await this.updateComplete;
+        this.renderRoot.querySelector<FluvyLightsColourSheet>('fluvy-lights-colour-sheet')?.open();
+      });
+    }
   }
 
   /** The card's tap: its own action when it has one, else the whole room on or off. */
@@ -431,18 +637,25 @@ export class FluvyLightsCard extends FluvyTileCard {
     w: number,
   ): TemplateResult {
     const rounds = lamps.length * ROUND + (lamps.length - 1) * ROUND_GAP;
+    // the colour round (#137) stands 16 before the lights' rounds, where the card asks for it
+    const colour = this.showsColour(lamps);
+    const colourWidth = colour ? ROUND + COLOUR_GAP : 0;
     // beside the name while it keeps what it needs — the icon circle gives way first (the head's own rule)
-    const title = Math.min(MIN_TITLE, this.head.ruler.width('fv-card__title', name));
-    const inline = w - rounds - 12 >= title;
+    const title = this.titleFloor(name);
+    const inline = w - rounds - colourWidth - 12 >= title;
+    // the lights on their own line, the colour round is the head's round while the name keeps its floor beside it;
+    // where not even that holds (half a column), it steps to a "Colour" row under them
+    const roundInHead = colour && (inline || w - ROUND_SLOT >= title);
     const fitted = this.head.fit({
       width: w,
       title: name,
       sub,
       shorter: this.short(lamps),
-      ...(inline ? { trailing: rounds } : {}),
+      ...(inline ? { trailing: rounds + colourWidth } : roundInHead ? { trailing: ROUND } : {}),
     });
     const dead = tone === 'off';
     const acts = this.roomActs(dead);
+    const colourRound = roundInHead ? this.colourRound(name, dead) : nothing;
     const bulbs = inline
       ? html`<div class="lt-bulbs">${lamps.map((lamp) => this.renderBulb(lamp))}</div>`
       : this.renderLine(lamps, w);
@@ -469,10 +682,15 @@ export class FluvyLightsCard extends FluvyTileCard {
         title: name,
         name: true,
         sub: fitted.sub,
-        trailing: inline ? bulbs : nothing,
+        trailing: inline
+          ? colour
+            ? html`<div class="lt-trail">${colourRound}${bulbs}</div>`
+            : bulbs
+          : colourRound,
       })}
       ${inline ? nothing : bulbs}
       ${this.room?.show_brightness ? this.renderRuler(lamps, name, w) : nothing}
+      ${colour && !roundInHead ? this.renderColourRow(name, w) : nothing} ${this.renderSheet()}
     </article>`;
   }
 

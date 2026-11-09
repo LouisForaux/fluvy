@@ -212,6 +212,9 @@ const ITEMS =
  */
 const LIGHT_COLOUR = /\/packages\/cards\/src\/light\/(colour|swatches)\.ts/;
 
+/** The room lights' colour sheet and its hue wheel (#137): fetched the first time a card's colour round is tapped. */
+const LIGHTS_COLOUR = /\/packages\/cards\/src\/lights\/sheet\//;
+
 /**
  * A room's quick actions (their sets, levels, taps and holds, #113): fetched as the bundle starts, with the families,
  * so a room card draws them from its first render (`room-card.ts` asks for them itself where it is drawn first).
@@ -314,6 +317,7 @@ export const GROUPS = [
   { name: 'vehicle', test: VEHICLE },
   { name: 'items-sheet', test: ITEMS_SHEET },
   { name: 'items', test: ITEMS },
+  { name: 'lights-colour', test: LIGHTS_COLOUR },
   { name: 'light-colour', test: LIGHT_COLOUR },
   { name: 'quick-actions', test: QUICK_ACTIONS },
   { name: 'editor', test: EDITOR },

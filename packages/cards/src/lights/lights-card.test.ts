@@ -15,7 +15,7 @@ import {
 } from '../shared/fixtures/editor.js';
 import type { FormLabeler } from '../shared/form.js';
 import { FluvyTilesCard } from '../tiles/tiles-card.js';
-import { FluvyLightsCard, type LightsCardConfig } from './lights-card.js';
+import { FluvyLightsCard, lightsHeight, type LightsCardConfig } from './lights-card.js';
 
 // the index fetches the lazy families: they land before this file's page goes
 afterAll(() => familiesDefined);
@@ -62,11 +62,11 @@ const STATES = {
 };
 const LIGHTS = Object.keys(STATES);
 
-const house = (): HomeAssistant =>
+const house = (extra: Record<string, ReturnType<typeof state>> = {}): HomeAssistant =>
   ({
     language: 'en',
     locale: { language: 'en', number_format: 'language', time_format: '24' },
-    states: STATES,
+    states: { ...STATES, ...extra },
     entities: {},
     devices: {},
     areas: {},
@@ -83,10 +83,13 @@ type CardElement = HTMLElement & {
   updateComplete: Promise<boolean>;
 };
 
-async function mount(config: Record<string, unknown>): Promise<ShadowRoot> {
+async function mount(
+  config: Record<string, unknown>,
+  extra: Record<string, ReturnType<typeof state>> = {},
+): Promise<ShadowRoot> {
   const card = document.createElement('fluvy-lights-card') as CardElement;
   card.setConfig({ type: 'custom:fluvy-lights-card', lights: LIGHTS, ...config });
-  card.hass = house();
+  card.hass = house(extra);
   document.body.append(card);
   await card.updateComplete;
   return card.shadowRoot!;
@@ -171,17 +174,106 @@ describe('the room lights in their bulbs’ colours, in every style (#58)', () =
   });
 });
 
+describe('the colour round (#137)', () => {
+  const ROUND = '.fv-round.lt-colour';
+
+  it('is off by default: a card that does not ask draws no round, its head and its height as before', async () => {
+    for (const variant of ['row', 'chips', 'tiles']) {
+      const root = await mount({ variant });
+      expect(root.querySelector(ROUND), variant).toBeNull();
+      expect(root.querySelector('.lt-trail, .lt-colour-row, fluvy-lights-colour-sheet')).toBeNull();
+    }
+    const config: LightsCardConfig = {
+      type: 'custom:fluvy-lights-card',
+      lights: ['light.a', 'light.b', 'light.c', 'light.d'],
+    };
+    expect(FluvyLightsCard.layoutHeight(config)).toBe(84);
+    expect(FluvyLightsCard.layoutHeight({ ...config, show_color: false })).toBe(84);
+    // asked for, the round takes a fourth light's room beside the name: four lights go to their own line
+    expect(FluvyLightsCard.layoutHeight({ ...config, show_color: true })).toBe(
+      20 + 44 + 16 + 44 + 20,
+    );
+    expect(
+      FluvyLightsCard.layoutHeight({
+        ...config,
+        lights: config.lights!.slice(0, 3),
+        show_color: true,
+      }),
+    ).toBe(84);
+    // a room of whites draws none, whatever is asked: the house says so
+    expect(
+      lightsHeight(
+        { ...config, show_color: true },
+        { area: undefined, nameOf: () => undefined, admin: false, colour: false },
+      ),
+    ).toBe(84);
+  });
+
+  it('stands in the head before the lights’ rounds, or before the switch, named for a reader', async () => {
+    const row = await mount({ show_color: true });
+    const trail = row.querySelector('.fv-card__head .lt-trail')!;
+    expect(trail.firstElementChild?.matches(ROUND)).toBe(true);
+    expect(trail.lastElementChild?.matches('.lt-bulbs')).toBe(true);
+    expect(trail.querySelector(ROUND)?.getAttribute('aria-label')).toBe('Lights · Colour');
+    for (const variant of ['chips', 'tiles']) {
+      const head = (await mount({ variant, show_color: true })).querySelector('.fv-card__head')!;
+      const round = head.querySelector(ROUND)!;
+      expect(round, variant).not.toBeNull();
+      expect(round.nextElementSibling?.matches('.fv-hit'), variant).toBe(true);
+    }
+  });
+
+  it('shows only where a light of the room takes a colour; out of reach it stays, disabled', async () => {
+    expect(
+      (await mount({ show_color: true, lights: ['light.shelf'] })).querySelector(ROUND),
+    ).toBeNull();
+    expect(
+      (await mount({ show_color: true, lights: ['light.desk', 'light.shelf'] })).querySelector(
+        ROUND,
+      ),
+    ).not.toBeNull();
+    // an unavailable bulb keeps its colour modes: the round stays where it stands, disabled; one the house has never read has none
+    const lost = await mount(
+      { show_color: true, lights: ['light.lost'] },
+      { 'light.lost': state('light.lost', 'unavailable', { friendly_name: 'Lost', ...PLAY }) },
+    );
+    expect(lost.querySelector<HTMLButtonElement>(ROUND)?.disabled).toBe(true);
+    expect(
+      (await mount({ show_color: true, lights: ['light.gone'] })).querySelector(ROUND),
+    ).toBeNull();
+  });
+
+  it('opens Home Assistant’s details of the card’s one light where asked, else the sheet', async () => {
+    const card = document.createElement('fluvy-lights-card') as CardElement;
+    card.setConfig({
+      type: 'custom:fluvy-lights-card',
+      lights: ['light.floor'],
+      show_color: true,
+      color_action: 'more-info',
+    });
+    card.hass = house();
+    document.body.append(card);
+    await card.updateComplete;
+    const opened: string[] = [];
+    card.addEventListener('hass-more-info', (e) =>
+      opened.push((e as CustomEvent<{ entityId: string }>).detail.entityId),
+    );
+    card.shadowRoot!.querySelector<HTMLElement>(ROUND)!.click();
+    expect(opened).toEqual(['light.floor']);
+  });
+});
+
 describe('the room lights card’s editor (#58)', () => {
-  const shown = async (config: Record<string, unknown>): Promise<string[]> =>
-    shownNames(
+  const shown = async (config: Record<string, unknown>): Promise<string[]> => {
+    // the editor reads the house: which lights take a colour (#137)
+    const editor = await FluvyLightsCard.getConfigElement();
+    (editor as HTMLElement & { hass: HomeAssistant }).hass = house();
+    return shownNames(
       cardForm(
-        await drawEditor(await FluvyLightsCard.getConfigElement(), {
-          type: 'custom:fluvy-lights-card',
-          lights: LIGHTS,
-          ...config,
-        }),
+        await drawEditor(editor, { type: 'custom:fluvy-lights-card', lights: LIGHTS, ...config }),
       ).schema,
     );
+  };
 
   it('offers the colour at rest in tiles alone: the rounds and the chips have no surface to wash', async () => {
     expect(await shown({ variant: 'tiles' })).toContain('tint');
@@ -196,6 +288,23 @@ describe('the room lights card’s editor (#58)', () => {
       'light_whites',
     ]);
     expect(await shown({ light_colors: false })).not.toContain('light_whites');
+  });
+
+  it('offers the colour round where a light takes a colour, and what it opens only while it is on (#137)', async () => {
+    const off = await shown({});
+    expect(off).toContain('show_color');
+    expect(off).not.toContain('color_control');
+    expect(off).not.toContain('color_action');
+    const on = await shown({ show_color: true });
+    expect(on).toContain('color_control');
+    // the details are one light's: a card of several keeps the sheet
+    expect(on).not.toContain('color_action');
+    expect(await shown({ show_color: true, lights: ['light.floor'] })).toContain('color_action');
+    expect(
+      await shown({ show_color: true, lights: ['light.floor'], color_action: 'more-info' }),
+    ).not.toContain('color_control');
+    // a room of whites alone has no colour to open
+    expect(await shown({ lights: ['light.shelf'] })).not.toContain('show_color');
   });
 });
 

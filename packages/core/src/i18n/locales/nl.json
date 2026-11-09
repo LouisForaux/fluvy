@@ -62,7 +62,9 @@
     "editor_lights": "Lampen (geen: die van de ruimte)",
     "editor_show_level": "Niveau tonen",
     "editor_show_brightness": "Eén helderheid voor de ruimte",
-    "editor_tint": "Kleur van elke tegel tonen"
+    "editor_tint": "Kleur van elke tegel tonen",
+    "no_colour_one": "{names} neemt geen kleur aan",
+    "no_colour_other": "{names} nemen geen kleur aan"
   },
   "climate": {
     "mode": "Modus",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Leeg: die van de kaart",
     "rgb": "Elke kleur",
     "swatch_name_help": "Wat het rondje zegt; leeg: het woord van de kleur of haar hexcode",
+    "color_round": "Kleurknop voor de kamer",
+    "color_action": "De knop opent",
+    "color_sheet": "Het kleurblad van Fluvy",
+    "color_details": "De details van Home Assistant",
+    "color_control": "Kleurregelaar",
+    "color_wheel": "Wiel",
     "show_tilt": "Kanteling tonen",
     "show_favorites": "Favorieten tonen",
     "favorites_style": "Favorieten als",

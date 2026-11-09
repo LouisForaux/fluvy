@@ -62,7 +62,9 @@
     "editor_lights": "Lichter (keine: die des Bereichs)",
     "editor_show_level": "Helligkeit zeigen",
     "editor_show_brightness": "Eine Helligkeit für den Raum",
-    "editor_tint": "Farbe jeder Kachel zeigen"
+    "editor_tint": "Farbe jeder Kachel zeigen",
+    "no_colour_one": "{names} nimmt keine Farbe an",
+    "no_colour_other": "{names} nehmen keine Farbe an"
   },
   "climate": {
     "mode": "Modus",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Leer: die der Karte",
     "rgb": "Beliebige Farbe",
     "swatch_name_help": "Was der Kreis sagt; leer: das Wort der Farbe oder ihr Hexcode",
+    "color_round": "Farbtaste für den Raum",
+    "color_action": "Die Taste öffnet",
+    "color_sheet": "Fluvys Farbblatt",
+    "color_details": "Details von Home Assistant",
+    "color_control": "Farbregler",
+    "color_wheel": "Farbrad",
     "show_tilt": "Neigung zeigen",
     "show_favorites": "Favoriten zeigen",
     "favorites_style": "Favoriten als",

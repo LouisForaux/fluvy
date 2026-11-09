@@ -62,7 +62,9 @@
     "editor_lights": "Işıklar (yoksa: alanınkiler)",
     "editor_show_level": "Seviyeyi göster",
     "editor_show_brightness": "Oda için tek parlaklık",
-    "editor_tint": "Her kutunun rengini göster"
+    "editor_tint": "Her kutunun rengini göster",
+    "no_colour_one": "{names} renk almaz",
+    "no_colour_other": "{names} renk almaz"
   },
   "climate": {
     "mode": "Mod",
@@ -478,6 +480,12 @@
     "item_unavailable_helper": "Boşsa, kartınki",
     "rgb": "Herhangi bir renk",
     "swatch_name_help": "Yuvarlağın söylediği; boşsa rengin sözcüğü ya da hex kodu",
+    "color_round": "Oda için renk düğmesi",
+    "color_action": "Düğme şunu açar",
+    "color_sheet": "Fluvy renk sayfası",
+    "color_details": "Home Assistant ayrıntıları",
+    "color_control": "Renk denetimi",
+    "color_wheel": "Tekerlek",
     "show_tilt": "Eğimi göster",
     "show_favorites": "Favorileri göster",
     "favorites_style": "Favoriler şöyle",

@@ -101,6 +101,12 @@ export const sheet: SheetSpec = {
       white(`${kelvin} K`, 80, kelvin),
     ]),
     ['light.lt_dimmer', 'on', dimmer('Hallway', 45)],
+    // a colour bulb that is off: the colour round opens a sheet whose ruler sleeps (#137)
+    [
+      'light.lt_colour_off',
+      'off',
+      { friendly_name: 'Reading lamp', supported_color_modes: ['hs', 'color_temp'] },
+    ],
     [
       'light.lt_group',
       'on',
@@ -330,6 +336,99 @@ export const sheet: SheetSpec = {
         lights({ name: 'Hall', lights: ['light.lt_porch'], cols: 6 }),
         lights({ name: 'Kitchen', variant: 'chips', area: 'lt_kitchen', cols: 6 }),
         lights({ name: 'Living', variant: 'tiles', lights: LIVING.slice(0, 2), cols: 6 }),
+      ],
+    },
+    // #137: the colour round before the lights' rounds or the switch, its own tap opening the room's colours; off
+    // unless asked, so the frames above draw as they did
+    {
+      title: 'Colour round (#137)',
+      cards: [
+        lights({ name: 'Living room', show_color: true, lights: LIVING }),
+        lights({ name: 'Living room', variant: 'chips', show_color: true, lights: LIVING }),
+        lights({ name: 'Living room', variant: 'tiles', show_color: true, lights: LIVING }),
+      ],
+    },
+    {
+      title: 'Colour round · one brightness',
+      cards: [
+        lights({ name: 'Living room', show_color: true, show_brightness: true, lights: LIVING }),
+      ],
+    },
+    // four lights and the round: the lights take their own line, the round stays the head's
+    {
+      title: 'Colour round · four lights',
+      cards: [
+        lights({
+          name: 'Living room',
+          show_color: true,
+          lights: ['light.lt_ceiling', 'light.lt_floor', 'light.lt_reading', 'light.lt_shelf'],
+        }),
+      ],
+    },
+    // half a column: the round steps to a "Colour" row under the body, a control never goes
+    {
+      title: 'Colour round · half a column',
+      cards: [
+        lights({ name: 'Living room', show_color: true, lights: LIVING, cols: 6 }),
+        lights({
+          name: 'Living room',
+          variant: 'chips',
+          show_color: true,
+          lights: LIVING,
+          cols: 6,
+        }),
+        lights({
+          name: 'Living room',
+          variant: 'tiles',
+          show_color: true,
+          lights: LIVING,
+          cols: 6,
+        }),
+        lights({ name: 'Hall', show_color: true, lights: ['light.lt_floor'], cols: 6 }),
+      ],
+    },
+    // one light, or a group, may open Home Assistant's details instead; a room of whites draws no round at all
+    {
+      title: 'Colour round · one light, a group, whites only',
+      cards: [
+        lights({
+          name: 'Hall',
+          show_color: true,
+          color_action: 'more-info',
+          lights: ['light.lt_floor'],
+        }),
+        lights({ name: 'Lamps', show_color: true, lights: ['light.lt_group'] }),
+        lights({ name: 'Bathroom', show_color: true, lights: WHITES.slice(0, 2) }),
+      ],
+    },
+    {
+      title: 'Colour sheet · the hue ruler',
+      width: 392,
+      cards: [lights({ name: 'Living room', show_color: true, lights: LIVING, _sheet: true })],
+    },
+    {
+      title: 'Colour sheet · the hue wheel',
+      width: 392,
+      cards: [
+        lights({
+          name: 'Living room',
+          show_color: true,
+          color_control: 'wheel',
+          lights: LIVING,
+          _sheet: true,
+        }),
+      ],
+    },
+    {
+      title: 'Colour sheet · the room off',
+      width: 392,
+      cards: [
+        lights({
+          name: 'Bedroom',
+          show_color: true,
+          lights: ['light.lt_colour_off', 'light.lt_off_one'],
+          _sheet: true,
+        }),
       ],
     },
     // #100: a light's long name in two lines where one would cut it, every tile a line taller

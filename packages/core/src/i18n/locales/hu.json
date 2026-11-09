@@ -62,7 +62,9 @@
     "editor_lights": "Lámpák (egy sem: a terület lámpái)",
     "editor_show_level": "Szint megjelenítése",
     "editor_show_brightness": "Egy fényerő az egész szobának",
-    "editor_tint": "Minden csempe színének megjelenítése"
+    "editor_tint": "Minden csempe színének megjelenítése",
+    "no_colour_one": "{names} nem vesz fel színt",
+    "no_colour_other": "{names} nem vesznek fel színt"
   },
   "climate": {
     "mode": "Üzemmód",
@@ -427,6 +429,12 @@
     "item_unavailable_helper": "Üresen: a kártyáé",
     "rgb": "Bármilyen szín",
     "swatch_name_help": "Amit a kör felirata mutat; üresen a szín neve vagy hexadecimális kódja",
+    "color_round": "Színgomb a szobához",
+    "color_action": "A gomb megnyitja",
+    "color_sheet": "A Fluvy színlapját",
+    "color_details": "A Home Assistant részleteit",
+    "color_control": "Színvezérlő",
+    "color_wheel": "Színkerék",
     "show_tilt": "Döntés megjelenítése",
     "show_favorites": "Kedvencek megjelenítése",
     "favorites_style": "Kedvencek megjelenése",

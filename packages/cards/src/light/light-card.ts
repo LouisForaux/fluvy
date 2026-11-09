@@ -561,12 +561,11 @@ export class FluvyLightCard extends Card<LightCardConfig> {
         ? nothing
         : colour
           ? colour.colourControls({
-              view,
+              bulb: colour.bulbOf(view, on, choice),
               t: (key) => this.t(key),
               name,
               width: w,
               on,
-              held: choice,
               colors: this.config?.colors,
               minK,
               maxK,

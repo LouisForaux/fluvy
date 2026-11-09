@@ -747,7 +747,9 @@
     "editor_lights": "灯光（留空则用区域的）",
     "editor_show_level": "显示亮度",
     "editor_show_brightness": "整个房间统一亮度",
-    "editor_tint": "显示每个磁贴的颜色"
+    "editor_tint": "显示每个磁贴的颜色",
+    "no_colour_one": "{names}不接受颜色",
+    "no_colour_other": "{names}不接受颜色"
   },
   "climate": {
     "mode": "模式",
@@ -1646,6 +1648,12 @@
     "item_unavailable_helper": "留空：卡片颜色",
     "rgb": "任意颜色",
     "swatch_name_help": "色块上显示的文字；留空则为颜色名称或色值",
+    "color_round": "房间的颜色按钮",
+    "color_action": "按钮打开",
+    "color_sheet": "Fluvy 的颜色面板",
+    "color_details": "Home Assistant 的详情",
+    "color_control": "颜色控件",
+    "color_wheel": "色轮",
     "show_tilt": "显示倾斜",
     "show_favorites": "显示收藏",
     "favorites_style": "收藏显示为",
