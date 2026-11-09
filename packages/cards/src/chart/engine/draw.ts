@@ -240,11 +240,16 @@ function layout(spec: ChartSpec, cursor: number | null | undefined): Laid {
         : Math.round(clamp01(f) * Math.max(0, length - 1));
   const nowIndex = nowOf(bars || step);
   const lastIndex = nowIndex ?? count - 1;
+  // what has happened ends on the first series' last reading: one of its own times may stop short of the plot's end
+  const lead = spec.series[0];
+  const restAt = lead?.at
+    ? lead.at.filter((_at, i) => lead.values[i] !== null && lead.values[i] !== undefined).pop()
+    : undefined;
   const restX =
     bars || step
       ? left + (lastIndex + 0.5) * slot
       : nowIndex === null
-        ? left + span
+        ? left + (restAt ?? 1) * span
         : left + (lastIndex / Math.max(1, count - 1)) * span;
   const cursorX = given(cursor) ? left + clamp01(cursor) * plotWidth : restX;
   return {
@@ -464,7 +469,9 @@ function barsBody(spec: ChartSpec, laid: Laid, drawn: readonly Column[]): SVGTem
   }${drawn.map((c) => {
     const hollow = laid.nowIndex !== null && c.slot > laid.nowIndex;
     const quiet = !hollow && highlights && !lit(c.slot);
-    const bar = svg`<path class="fc-bar ${hollow ? 'fc-bar--hollow' : quiet ? 'fc-bar--quiet' : ''} ${c.sign < 0 ? 'fc-bar--hanging' : ''}" d=${c.d} fill=${style.bars === 'gradient' && !hollow ? `url(#${gradient})` : nothing} style=${`animation-delay:${c.slot * 18}ms`} />`;
+    // the slot still running reads so far: paler than a whole one, never hollow (it has readings)
+    const soFar = spec.series[c.series]?.soFar === true && c.slot === laid.count - 1;
+    const bar = svg`<path class="fc-bar ${hollow ? 'fc-bar--hollow' : quiet ? 'fc-bar--quiet' : ''} ${soFar ? 'fc-bar--sofar' : ''} ${c.sign < 0 ? 'fc-bar--hanging' : ''}" d=${c.d} fill=${style.bars === 'gradient' && !hollow ? `url(#${gradient})` : nothing} style=${`animation-delay:${c.slot * 18}ms`} />`;
     // a bar over a threshold wears its ink
     const over = thresholdAt(spec, c.value);
     return over ? painted(seriesPaint(over.colour), bar) : group(spec, c.series, bar);
@@ -518,8 +525,13 @@ function lineBody(spec: ChartSpec, laid: Laid, index: number): SVGTemplateResult
   const several = spec.series.length > 1;
   const curve = curveOf(spec, index);
   const fill = fillOf(spec, index);
+  // a slot still running reads so far: its last stretch is dashed, as what is to come, so it never reads as a whole one
   const nowIndex =
-    laid.nowIndex === null ? null : laid.nowOf(curve === 'step', series.values.length);
+    laid.nowIndex !== null
+      ? laid.nowOf(curve === 'step', series.values.length)
+      : series.soFar
+        ? series.values.length - 2
+        : null;
   const { past, future } =
     nowIndex === null ? { past: pts, future: [] } : splitAt(pts, nowIndex, curve);
   const line = linePath(past, curve);

@@ -102,6 +102,45 @@ export function quarterTicks(o: QuartersOptions): readonly TimeTick[] {
   return [five, three, two].find((items) => o.holds(items)) ?? two;
 }
 
+export interface SlotTicksOptions {
+  /** The slots' edges, the plot's two ends the first and the last. */
+  readonly edges: readonly number[];
+  /** The window's length in hours, as its card names it. */
+  readonly hours: number;
+  /** Whether its last slot holds now: the plot's end says so. */
+  readonly running: boolean;
+  /** The clock at an instant, how long ago a day was, the word for now. */
+  readonly time: (t: number) => string;
+  readonly daysAgo: (days: number) => string;
+  readonly nowWord: string;
+  /** Whether a set of labels keeps 12 between every two, as the axis places them. */
+  readonly holds: (items: readonly TimeTick[]) => boolean;
+}
+
+/**
+ * The clock of a window cut into round slots: each label on one of the slots' own edges, the times of its quarters (or
+ * its days back from two days on, as `quarterTicks` writes them) ending in "Now" where the last slot holds it, else in
+ * the time its last slot ends.
+ */
+export function slotTicks(o: SlotTicksOptions): readonly TimeTick[] {
+  const count = o.edges.length - 1;
+  const edge = (fraction: number): number => Math.round(fraction * count);
+  const at = (index: number): TimeTick => [index / count, o.time(o.edges[index] as number)];
+  const end: TimeTick = [1, o.running ? o.nowWord : o.time(o.edges[count] as number)];
+  if (o.hours >= 48) {
+    const days: readonly TimeTick[] = [
+      [0, o.daysAgo(o.hours / 24)],
+      [edge(0.5) / count, o.daysAgo(o.hours / 48)],
+      end,
+    ];
+    return o.holds(days) ? days : [days[0] as TimeTick, end];
+  }
+  const five = [at(0), at(edge(0.25)), at(edge(0.5)), at(edge(0.75)), end];
+  const three = [five[0], five[2], five[4]] as TimeTick[];
+  const two = [five[0], five[4]] as TimeTick[];
+  return [five, three, two].find((items) => o.holds(items)) ?? two;
+}
+
 export interface MarksOptions {
   readonly start: number;
   readonly end: number;

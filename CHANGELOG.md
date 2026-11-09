@@ -51,6 +51,11 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   read 1.27 kW at 12:00 on a smooth hill where Home Assistant's history read 2.61 kW: read with a finger it says Home
   Assistant's own five minutes now, and its line is the mean of each half hour on a phone, or every bucket with
   `points: 5m` (#138).
+- The Chart card cut a rolling window into slots counted back from now, so bars, columns, a band and a stepped line
+  stood at minutes past the hour, each slot blended two of Home Assistant's hours, a week's bars read the mean of their
+  hours where they should add up, and a band over a rolling window never drew: each slot is now a whole round period of
+  the house's clock and reads what Home Assistant says of it, added up, its lowest or highest as its statistic asks,
+  the axis on the same round times, and the slot still running reads so far, paler (as #138 on the Energy card).
 - The Energy card following a date picker on today squeezed the whole day into the hours so far, and drew nothing new
   until the range changed.
 - The Sensor, Readouts, Humidity and Gauge cards read a sensor's history at one moment of each step, so a peak between

@@ -8,7 +8,7 @@ import { FluvyChartCard, legendColumns, type ChartCardConfig } from './chart-car
 import { capsIn, defaultWindows, isPrice, SERIES_LIST, seriesOf, windowAt } from './config.js';
 import type { Reading } from './data/attribute.js';
 import { sourceOf } from './data/sources.js';
-import { gains, slotted, spanOf, stepOf, windowOf } from './data/span.js';
+import { evenEdges, gains, slotted, spanOf, stepOf, windowOf } from './data/span.js';
 
 // the chart family lands with the index: the card's tag is defined before a page needs it
 await familiesDefined;
@@ -268,7 +268,9 @@ describe('the slots', () => {
 
   it('read a meter’s gain in each, a reset as what it shows since', () => {
     const meter: Reading[] = [10, 11, 13, 1].map((v, h) => ({ t: MIDNIGHT + h * HOUR, v }));
-    expect(gains(meter, window, 3, { hold: Infinity, until: window.end }, true)).toEqual([1, 2, 1]);
+    expect(
+      gains(meter, evenEdges(window, 3), { hold: Infinity, until: window.end }, true, window.end),
+    ).toEqual([1, 2, 1]);
   });
 
   it('know a list’s step: its entries’ own end, else the usual distance between them', () => {
@@ -512,6 +514,183 @@ describe('a sensor’s history', () => {
   it('with nothing in its window: the empty panel in the chart’s room', async () => {
     const card = await draw({ series: ['sensor.cellar'] });
     expect(texts(card, '.ch-empty .fv-empty')).toEqual(['Nothing to chart in this window']);
+  });
+});
+
+describe('bars, a band and a step on the house’s round times (1.18)', () => {
+  /** The sheets' clock: its hour's statistic is not compiled yet, its moment not on a round time. */
+  const AT = '2026-09-17T14:37:00Z';
+  const ROUND = Date.parse('2026-09-17T14:00:00Z');
+  const scrubbed = async (card: Inner, fraction: number) => {
+    (card as unknown as { scrubber: { set(value: number): void } }).scrubber.set(fraction);
+    await card.updateComplete;
+    return {
+      time: texts(card, '.ch-now .fv-readout__label')[0],
+      value: texts(card, '.ch-now .fv-readout__value')[0]?.replace(/\s+/g, ''),
+    };
+  };
+  const ticks = (card: Inner) => texts(card, '.ch-axis .fv-axis > *');
+
+  /** A recorder keeping `id`'s statistics by the hour (a row a whole hour, the running one none), and its raw history. */
+  function recorder(
+    id: string,
+    row: (t: number) => Record<string, number>,
+    history?: (t: number) => number,
+    attributes: Record<string, unknown> = {
+      unit_of_measurement: 'kWh',
+      state_class: 'total_increasing',
+    },
+  ): HomeAssistant {
+    const base = house();
+    return {
+      ...base,
+      states: { ...base.states, [id]: state(id, '5', attributes) },
+      callWS: (message: Record<string, unknown>) => {
+        const start = Date.parse(String(message['start_time']));
+        const end = Date.parse(String(message['end_time']));
+        if (message['type'] === 'recorder/statistics_during_period') {
+          const rows = [];
+          for (
+            let t = Math.ceil(start / HOUR) * HOUR;
+            t + HOUR <= end && t + HOUR <= Date.parse(AT);
+            t += HOUR
+          )
+            rows.push({ start: t, end: t + HOUR, ...row(t) });
+          return Promise.resolve({ [id]: rows });
+        }
+        if (message['type'] === 'history/history_during_period' && history) {
+          const rows = [];
+          for (let t = start; t <= Math.min(end, Date.parse(AT)); t += 120_000)
+            rows.push({ s: String(history(t)), lu: t / 1000 });
+          return Promise.resolve({ [id]: rows });
+        }
+        return base.callWS(message as never);
+      },
+    } as HomeAssistant;
+  }
+
+  const hourOf = (t: number) => new Date(t).getUTCHours();
+
+  it('a bar labelled 12:00 reads Home Assistant’s 12:00, where a slot from 11:37 blended two of its hours', async () => {
+    const card = await draw(
+      {
+        _now: AT,
+        chart: 'bars',
+        span: '12h',
+        series: [{ entity: 'sensor.kwh', source: 'statistics', stat: 'change', period: 'hour' }],
+      },
+      recorder('sensor.kwh', (t) => ({ change: hourOf(t) })),
+    );
+    // whole hours from 02:00 to the last compiled one, none running: twelve bars, the running hour left out
+    expect(root(card).querySelectorAll('.fc-bar')).toHaveLength(12);
+    expect(root(card).querySelector('.fc-bar--sofar')).toBeNull();
+    expect(ticks(card)).toEqual(['02:00', '05:00', '08:00', '11:00', '14:00']);
+    // the bar over 12:00 reads that hour's own figure, and the bubble says 12:00
+    expect(await scrubbed(card, 10.5 / 12)).toEqual({ time: '12:00', value: '12kWh' });
+    expect(await scrubbed(card, 0.5 / 12)).toEqual({ time: '02:00', value: '2kWh' });
+  });
+
+  it('a window of days adds up the hours each slot holds', async () => {
+    const card = await draw(
+      {
+        _now: AT,
+        chart: 'bars',
+        span: '7d',
+        series: [{ entity: 'sensor.kwh', source: 'statistics', stat: 'change', period: 'hour' }],
+      },
+      recorder('sensor.kwh', () => ({ change: 1 })),
+    );
+    // four hours a slot: the running one (12:00 to 16:00) so far, the two compiled hours of it, paler
+    const bars = root(card).querySelectorAll('.fc-bar');
+    expect(bars).toHaveLength(42);
+    expect(root(card).querySelectorAll('.fc-bar--sofar')).toHaveLength(1);
+    expect(await scrubbed(card, 41.5 / 42)).toEqual({ time: 'Now', value: '2kWh' });
+    expect(await scrubbed(card, 0.5 / 42)).toMatchObject({ value: '4kWh' });
+  });
+
+  it('a sensor’s own history: the running hour is whole on the axis, reads so far and says Now', async () => {
+    const card = await draw(
+      {
+        _now: AT,
+        chart: 'bars',
+        span: '12h',
+        series: ['sensor.power'],
+      },
+      recorder(
+        'sensor.power',
+        () => ({}),
+        (t) => (t >= ROUND ? 100 : 40),
+        {
+          unit_of_measurement: 'W',
+          state_class: 'measurement',
+        },
+      ),
+    );
+    const bars = root(card).querySelectorAll('.fc-bar');
+    expect(bars).toHaveLength(12);
+    expect([...bars].map((b) => b.classList.contains('fc-bar--sofar')).at(-1)).toBe(true);
+    expect(ticks(card).slice(0, 2)).toEqual(['03:00', '06:00']);
+    expect(ticks(card).at(-1)).toBe('Now');
+    // so far: the 40 of the reading at 13:59 for a minute, then 100 until 14:37
+    expect(await scrubbed(card, 11.5 / 12)).toEqual({ time: 'Now', value: '98W' });
+    expect(await scrubbed(card, 10.5 / 12)).toEqual({ time: '13:00', value: '40W' });
+  });
+
+  it('a band reads per slot: its low and its high around its mean, a whole hour each', async () => {
+    const card = await draw(
+      {
+        _now: AT,
+        chart: 'band',
+        span: '12h',
+        series: [
+          {
+            entity: 'sensor.room',
+            source: 'statistics',
+            stat: 'mean',
+            period: 'hour',
+            kind: 'band',
+          },
+        ],
+      },
+      recorder(
+        'sensor.room',
+        (t) => ({ mean: hourOf(t), min: hourOf(t) - 1, max: hourOf(t) + 1 }),
+        undefined,
+        { unit_of_measurement: '°C', state_class: 'measurement', device_class: 'temperature' },
+      ),
+    );
+    // the band is drawn: a rolling window no longer leaves its last slot empty, which dropped the whole of it
+    expect(root(card).querySelector('.fc-band')).not.toBeNull();
+    expect(await scrubbed(card, 10.5 / 12)).toEqual({ time: '12:00', value: '12°C' });
+    expect(ticks(card)).toEqual(['02:00', '05:00', '08:00', '11:00', '14:00']);
+  });
+
+  it('a stepped line of the history: each step a whole hour, the running one dashed', async () => {
+    const card = await draw(
+      { _now: AT, chart: 'step', span: '12h', series: ['sensor.room'] },
+      recorder(
+        'sensor.room',
+        () => ({}),
+        (t) => hourOf(t),
+        {
+          unit_of_measurement: '°C',
+          state_class: 'measurement',
+        },
+      ),
+    );
+    const line = root(card).querySelector('.fc-line')?.getAttribute('d') ?? '';
+    expect(line.startsWith('M')).toBe(true);
+    expect(root(card).querySelector('.fc-future')).not.toBeNull();
+    expect(ticks(card).at(-1)).toBe('Now');
+    // a slot of a quarter of an hour (the card's width), on the house's round quarters
+    for (const tick of ticks(card).slice(0, -1)) expect(tick).toMatch(/:(00|15|30|45)$/);
+    // read at a slot, it says that slot's reading, on the round time
+    expect((await scrubbed(card, 0.04)).time).toMatch(/:(00|15|30|45)$/);
+  });
+
+  it('a plain line card keeps its rolling window: its axis says when it is, not a round time', async () => {
+    const card = await draw({ series: ['sensor.temperature'], span: '12h' });
+    expect(ticks(card)[0]).toBe('09:47');
   });
 });
 

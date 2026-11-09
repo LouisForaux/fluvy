@@ -98,10 +98,18 @@ export const grainOf = (length: number, width: number, finest = 0): number =>
   GRAINS.find((grain) => grain >= Math.max(finest, length / Math.max(1, width))) ??
   (GRAINS[GRAINS.length - 1] as number);
 
-/** The house's midnight on the day of `at` (the clock Home Assistant shows): where the round times are counted from. */
+/**
+ * The house's midnight on the day of `at` (the clock Home Assistant shows): where the round times are counted from.
+ * The day's clock may have changed since then (a day of 23 or 25 hours): counted back on the clock, that lands an hour
+ * from its midnight, which the clock there says.
+ */
 export function midnightOf(hass: HomeAssistant | undefined, at: number): number {
-  const wall = wallClock(new Date(at), houseZone(hass));
-  return at - ((wall.hour * 60 + wall.minute) * 60 + wall.second) * 1000 - (at % 1000);
+  const zone = houseZone(hass);
+  const wall = wallClock(new Date(at), zone);
+  const back = at - ((wall.hour * 60 + wall.minute) * 60 + wall.second) * 1000 - (at % 1000);
+  const landed = wallClock(new Date(back), zone);
+  const off = landed.hour * 60 + landed.minute;
+  return back - (off > 720 ? off - 1440 : off) * MINUTE;
 }
 
 /** The index of the last reading at or before `t`; -1 before the first. */

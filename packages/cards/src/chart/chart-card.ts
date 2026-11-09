@@ -73,19 +73,23 @@ import {
   type ForecastType,
   type Source,
 } from './data/sources.js';
+import { bucketGrid, roundGrid, roundStep, type Grid } from './data/slots.js';
 import {
   dayStart,
   DAY,
+  evenEdges,
   gains,
   HOUR,
   MOST_SLOTS,
   nowFraction,
   previousOf,
+  readSlots,
   slotted,
   spanOf,
   stepOf,
   windowOf,
   type Holding,
+  type SlotRule,
   type Span,
 } from './data/span.js';
 import {
@@ -106,6 +110,7 @@ import {
   type Windows,
 } from './config.js';
 import {
+  acts,
   chartKeysOf,
   chartDefaultsFor,
   chartSection,
@@ -113,6 +118,7 @@ import {
   drawChart,
   drawRead,
   isBars,
+  leastGap,
   legend,
   niceTicks,
   plotOf,
@@ -125,6 +131,7 @@ import {
   scrub,
   ScrubController,
   seriesPaint,
+  slotTicks,
   tickText,
   timeLine,
   type ChartFrame,
@@ -184,10 +191,10 @@ const ROW = 80;
 const TIGHT = 12;
 /** A stepped line's least slot: under it the steps of a line 2.5 wide read as beads (a phone's card reads a day by the hour). */
 const STEP_MIN = 5;
+/** A bar's least slot: its 2 at the narrowest and the air beside it. */
+const BAR_MIN = 4;
 /** The most a scale's column takes of a plot's width ("−0.10" and its gap): a step is counted on what is left. */
 const SCALE_MOST = 48;
-/** The round lengths of time a stepped line's slots take, finest first: quarters, half hours, hours … days. */
-const ROUND_STEPS = [5, 10, 15, 20, 30, 60, 120, 180, 240, 360, 720, 1440].map((m) => m * 60_000);
 /** The tile's spark: 24 tall, 4 around it. */
 const SPARK = 24;
 /** The most bars a window is read in: an hour each over two days. */
@@ -254,6 +261,8 @@ interface Drawn {
    */
   readonly line: TimeLine | null;
   readonly cover: number;
+  /** Where its points stand, where not evenly across the window: a line through time's, a band's on its slots' middles. */
+  readonly at: readonly number[] | undefined;
   readonly band: ChartSeries['band'];
   /** Its reading now, in its unit; null where it has none. */
   readonly now: number | null;
@@ -824,33 +833,76 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
   }
 
   /**
-   * The slots a window is read in: as fine as its finest series (a list's quarter, a statistic's hour, the recorder's
-   * window in 48), never finer than 192 — columns an hour at the finest, 48 at most.
+   * The slots a window is read in. Bars, columns, a band and a stepped line read whole round periods of the house's
+   * clock (`roundGrid`): the finest round step its series come in, its width draws calmly and the style asks (`points`)
+   * — a statistic's weeks and months, the buckets themselves. A line reads the window cut evenly, as fine as its finest
+   * series (a list's quarter, a statistic's hour, the recorder's window in 48), never finer than 192.
    */
-  private slotCount(
+  private gridOf(
     window: Window,
     items: readonly ChartSeriesConfig[],
     days: readonly [Day, Day],
-    columns: boolean,
-    stepped: boolean,
-  ): number {
+    style: ResolvedStyle,
+  ): Grid {
     const length = window.end - window.start;
-    const steps = items.map((item, index) => {
+    const columns = isBars(style.preset) || items.some((item) => item.kind === 'columns');
+    const stepped = style.curve === 'step' || items.some((item) => item.curve === 'step');
+    const band = items.some((item) => item.kind === 'band');
+    const round = columns || stepped || band;
+    const statistics = items.map((item) => this.sourceFor(item) === 'statistics');
+    const grains = items.map((item, index) => {
       const source = this.sourceFor(item);
       if (source === 'statistics') return PERIOD_MS[item.period ?? periodOf(this.span.hours)];
-      if (source === 'history') return Math.max(5 * 60_000, length / 48);
+      if (source === 'history') return round ? 5 * 60_000 : Math.max(5 * 60_000, length / 48);
       const readings = this.readingsOf(item, index, source, this.entity(item.entity), days);
       return readings?.length ? stepOf(readings) : HOUR;
     });
-    let step = Math.max(length / MOST_SLOTS, Math.min(...steps, length / 2));
-    // a step narrower than its line is a bead, not a step: a stepped line holds each slot at least STEP_MIN across, on
-    // a round length of time (a narrow card reads a day's quarters as half hours or hours, a wide one as quarters)
-    if (stepped) {
-      const least = (length * STEP_MIN) / Math.max(1, this.contentWidth - SCALE_MOST);
-      step = ROUND_STEPS.find((round) => round >= Math.max(step, least)) ?? step;
+    if (!round) {
+      const step = Math.max(length / MOST_SLOTS, Math.min(...grains, length / 2));
+      return {
+        edges: evenEdges(window, Math.min(MOST_SLOTS, Math.max(2, Math.round(length / step)))),
+        running: false,
+        round: false,
+      };
     }
-    const count = Math.min(MOST_SLOTS, Math.max(2, Math.round(length / step)));
-    return columns ? Math.min(count, MOST_BARS, Math.max(2, Math.round(length / HOUR))) : count;
+    const finest = Math.min(...grains, length / 2);
+    // a week or a month of Home Assistant's is its own calendar's: its buckets are the slots
+    const statistic = statistics.indexOf(true);
+    if (finest >= 7 * DAY && statistic >= 0) {
+      const item = items[statistic] as ChartSeriesConfig;
+      const readings = this.readingsOf(
+        item,
+        statistic,
+        'statistics',
+        this.entity(item.entity),
+        days,
+      );
+      const buckets = readings ? bucketGrid(readings, window) : null;
+      if (buckets) return buckets;
+    }
+    const every = acts('points', style.preset, CHART_CAPS) ? style.every : 'auto';
+    const step = roundStep({
+      length,
+      width: Math.max(1, this.contentWidth - SCALE_MOST),
+      // bars read an hour at the finest, automatically
+      finest: columns && every === 'auto' ? Math.max(finest, HOUR) : finest,
+      every,
+      most: columns ? MOST_BARS : MOST_SLOTS,
+      gap: columns
+        ? BAR_MIN
+        : stepped
+          ? STEP_MIN
+          : leastGap(style.line, style.glow.kind === 'blur'),
+    });
+    const hourly = statistics.includes(true) && finest === HOUR;
+    return roundGrid({
+      window,
+      step,
+      hass: this.hass,
+      hours: hourly,
+      // a statistic's running hour is not compiled until it ends: the chart ends on the last whole one
+      whole: hourly && step === HOUR && statistics.every(Boolean),
+    });
   }
 
   /**
@@ -861,16 +913,19 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
    */
   private drawn(
     window: Window,
-    count: number,
+    grid: Grid,
     items: readonly ChartSeriesConfig[],
     days: readonly [Day, Day],
     style: ResolvedStyle,
   ): Drawn[] {
     const several = items.length > 1;
     const bars = isBars(style.preset);
+    const count = grid.edges.length - 1;
     const half = (window.end - window.start) / count / 2;
     // a line's points sit between the slots: the first on the window's start, the last on its end
     const edges = { start: window.start - half, end: window.end + half };
+    // a band's points sit in the middle of its slots, the values of those periods
+    const middles = Array.from({ length: count }, (_unused, k) => (k + 0.5) / count);
     return items.map((item, index) => {
       const view = this.entity(item.entity);
       const source = this.sourceFor(item);
@@ -915,12 +970,36 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
         n: number,
         pick?: (reading: Reading) => number | undefined,
       ): Array<number | null> => (readings ? shown(slotted(readings, span, n, holding, pick)) : []);
+      const perSlot = (
+        rule: SlotRule,
+        pick?: (reading: Reading) => number | undefined,
+      ): Array<number | null> =>
+        readings ? shown(readSlots(readings, grid.edges, holding, rule, pick)) : [];
       const kind = item.kind ?? 'line';
+      // a statistic reads by its own: its changes added up, a running total's last, its lowest or highest, else its mean
+      const stat = source === 'statistics' ? (item.stat ?? statOf(view.attr('state_class'))) : null;
+      const slotRule: SlotRule = !grid.round
+        ? 'mean'
+        : stat === 'change'
+          ? 'sum'
+          : stat === 'sum'
+            ? 'last'
+            : stat === 'min' || stat === 'max'
+              ? stat
+              : 'mean';
       // a meter's history drawn as bars reads what it gained in each slot, not what it showed
-      const rule = readingsOf(view.deviceClass, view.attr('state_class'), view.unit).rule;
+      const meter = readingsOf(view.deviceClass, view.attr('state_class'), view.unit).rule;
       const gained =
-        readings && source === 'history' && rule !== 'mean' && (bars || kind === 'columns')
-          ? shown(gains(readings, window, count, holding, rule === 'increase'))
+        readings && source === 'history' && meter !== 'mean' && (bars || kind === 'columns')
+          ? shown(
+              gains(
+                readings,
+                grid.edges,
+                holding,
+                meter === 'increase',
+                window.running ? window.now : window.end,
+              ),
+            )
           : null;
       // a line of the recorder's runs through time: on the house's round times, as calmly as the card draws it (or
       // every `points`), read where Home Assistant reads it
@@ -941,8 +1020,12 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
                 : undefined,
             )
           : null;
-      const lows = kind === 'band' ? lay(edges, count + 1, (r) => r.low) : [];
-      const highs = kind === 'band' ? lay(edges, count + 1, (r) => r.high) : [];
+      // a slot's band: the lowest and the highest of what it holds, around its mean; a slot still running with nothing
+      // yet compiled has none, and the band ends on the slot before it
+      const wide = (values: Array<number | null>): Array<number | null> =>
+        window.running && values[values.length - 1] === null ? values.slice(0, -1) : values;
+      const lows = kind === 'band' ? wide(perSlot('min', (r) => r.low)) : [];
+      const highs = kind === 'band' ? wide(perSlot('max', (r) => r.high)) : [];
       const banded = lows.length > 1 && lows.every((v, i) => v !== null && highs[i] !== null);
       const live = recorded
         ? view.number
@@ -951,6 +1034,9 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
           : ((readings
               ? slotted(readings, { start: window.now, end: window.now + 1 }, 1, holding)[0]
               : null) ?? view.number);
+      const curve = item.curve ?? style.curve;
+      const slots = gained ?? perSlot(slotRule);
+      const cover = (Math.min(window.end, window.now) - window.start) / (window.end - window.start);
       return {
         item,
         view,
@@ -961,13 +1047,26 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
         colour,
         accent,
         kind,
-        curve: item.curve ?? style.curve,
+        curve,
         readings,
         holding,
-        slots: gained ?? lay(window, count),
-        points: kind === 'columns' ? [] : line ? shown(line.values) : lay(edges, count + 1),
+        slots,
+        // bars are read and drawn by the slot: they have no line's points to read between
+        points:
+          kind === 'columns' || bars
+            ? []
+            : line
+              ? shown(line.values)
+              : grid.round && (kind === 'band' || curve === 'step')
+                ? slots
+                : lay(edges, count + 1),
         line,
-        cover: (Math.min(window.end, window.now) - window.start) / (window.end - window.start),
+        cover,
+        at: line
+          ? line.at.map((f) => f * cover)
+          : grid.round && kind === 'band' && curve !== 'step'
+            ? middles
+            : undefined,
         band: banded ? { low: lows as number[], high: highs as number[] } : undefined,
         now: live === null || live === undefined ? null : live / scale.divisor,
         price: isPrice(scale.unit, view.deviceClass),
@@ -1036,21 +1135,28 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
    * calendar window's ends and its round marks between — where its ends do not stand 12 apart (half a section), the
    * days they are (Thu · Fri), else their times, else its start alone.
    */
-  private axisItems(window: Window, width: number): ReadonlyArray<readonly [number, string]> {
+  private axisItems(
+    window: Window,
+    grid: Grid,
+    width: number,
+  ): ReadonlyArray<readonly [number, string]> {
     const span = this.span;
     const ruler = this.headFit.ruler;
     const time = (t: number): string => formatTime(this.hass, new Date(t));
     const weekday = (t: number): string => formatDate(this.hass, new Date(t), 'weekday');
-    if (span.kind === 'rolling')
-      return quarterTicks({
+    if (span.kind === 'rolling') {
+      const clock = {
         hours: span.hours,
-        now: window.now,
         time,
-        daysAgo: (days) =>
+        daysAgo: (days: number) =>
           this.t('sensor.days_ago', { count: formatNumber(this.hass, days, { digits: 1 }) }),
         nowWord: this.t('common.now'),
-        holds: (items) => axisHolds(ruler, width, items),
-      });
+        holds: (items: ReadonlyArray<readonly [number, string]>) => axisHolds(ruler, width, items),
+      };
+      return grid.round
+        ? slotTicks({ ...clock, edges: grid.edges, running: grid.running })
+        : quarterTicks({ ...clock, now: window.now });
+    }
     type Items = ReadonlyArray<readonly [number, string]>;
     // every label 12 apart, the two ends too (the axis's rule holds three or more)
     const holds = (items: Items): boolean =>
@@ -1100,9 +1206,10 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
    * own) and words in four forms, longest first: "Cheapest 13:00–15:00 · 0.078 €/kWh", without the unit, without the
    * figure, the hours alone.
    */
-  private marked(drawn: Drawn, window: Window, count: number): Marked[] {
+  private marked(drawn: Drawn, window: Window, grid: Grid): Marked[] {
     const wanted = this.config?.highlight ?? defaultWindows(this.config?.chart);
     if (wanted === 'none' || drawn.readings === undefined) return [];
+    const count = grid.edges.length - 1;
     const length = window.end - window.start;
     const hours = Math.min(12, Math.max(1, Math.round(this.config?.highlight_hours ?? 1)));
     const k = Math.max(1, Math.round((hours * HOUR * count) / length));
@@ -1114,8 +1221,8 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     return picks.flatMap((pick): Marked[] => {
       const found = windowAt(drawn.slots, k, pick, ahead ? nowSlot : 0);
       if (!found) return [];
-      const from = window.start + (found.start / count) * length;
-      const to = window.start + ((found.start + k) / count) * length;
+      const from = grid.edges[found.start] as number;
+      const to = grid.edges[found.start + k] as number;
       const range = `${this.when(from, window)}–${formatTime(this.hass, new Date(to))}`;
       const key = drawn.price
         ? pick === 'min'
@@ -1190,29 +1297,35 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     const days = this.days(now);
     const span = this.span;
     // the window as far as the readings reach (today and tomorrow is today until tomorrow is published)
-    const window = windowOf(span, now, this.hass, this.latest(items, days));
+    const asked = windowOf(span, now, this.hass, this.latest(items, days));
     // the windows it marks are its own: the style's lowest and highest marks stay off
     const style = resolveStyle(
       this.config?.chart,
       { ...chartKeysOf(this.config), highlight: 'none' },
-      capsFor(items.length, window.now < window.end),
+      capsFor(items.length, asked.now < asked.end),
     );
-    const columns = isBars(style.preset) || items.some((item) => item.kind === 'columns');
-    const stepped = style.curve === 'step' || items.some((item) => item.curve === 'step');
-    const count = this.slotCount(window, items, days, columns, stepped);
-    const drawn = this.drawn(window, count, items, days, style);
+    const grid = this.gridOf(asked, items, days, style);
+    // the slots' round times may run on past the rolling window's own end: their last holds now, still running
+    const window: Window = {
+      ...asked,
+      start: grid.edges[0] as number,
+      end: grid.edges[grid.edges.length - 1] as number,
+      running: grid.running,
+    };
+    const drawn = this.drawn(window, grid, items, days, style);
     return this.variant === 'tile'
       ? this.renderTile(drawn, window)
-      : this.renderChartCard(drawn, window, count, style);
+      : this.renderChartCard(drawn, window, grid, style);
   }
 
   private renderChartCard(
     drawn: readonly Drawn[],
     window: Window,
-    count: number,
+    grid: Grid,
     style: ResolvedStyle,
   ): TemplateResult {
     const config = this.config;
+    const count = grid.edges.length - 1;
     const lead = drawn[0] as Drawn;
     const view = lead.view;
     const several = drawn.length > 1;
@@ -1234,7 +1347,7 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     const tone: Tone = off ? 'off' : toneOf(config, 'accent');
     const loading = drawn.some((d) => d.readings === undefined);
     const empty = !loading && drawn.every((d) => !d.slots.some((v) => v !== null));
-    const marks = !several && !loading && !empty ? this.marked(lead, window, count) : [];
+    const marks = !several && !loading && !empty ? this.marked(lead, window, grid) : [];
     const showHead = config?.show_head !== false;
     const legendShown = several && config?.show_legend !== false;
     // a legend of four or more under the axis in the columns that hold its items; two or three series', and one whose
@@ -1269,7 +1382,7 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
         : scaled;
     const fraction = this.scrubber.value;
     const read =
-      specs && fraction !== null ? this.readAt(specs, drawn, window, count, fraction) : null;
+      specs && fraction !== null ? this.readAt(specs, drawn, window, grid, fraction) : null;
     const values = drawn.map((d, i) => (read ? (read.values[i] ?? null) : d.now));
     const left = specs ? plotOf(specs.main).left : 0;
     // the legend's lines in the row read each series: when that is goes on the axis, under the cursor
@@ -1317,7 +1430,7 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
         class="ch-axis ${when ? 'is-reading' : ''}"
         style=${left > 0 ? `margin-inline-start:${left}px` : nothing}
       >
-        ${axis(this.axisItems(window, width - left))}
+        ${axis(this.axisItems(window, grid, width - left))}
         ${when ? this.whenPill(when.time, when.x - left, width - left) : nothing}
       </div>
       ${
@@ -1358,7 +1471,10 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     const stretches: Stretch[] = marks.map((m) => ({ from: m.from, to: m.to, colour: m.tone }));
     const asSeries = (d: Drawn, slots: boolean): ChartSeries => ({
       values: slots || d.curve === 'step' ? d.slots : d.points,
-      ...(d.line && !slots ? { at: d.line.at.map((f) => f * d.cover) } : {}),
+      ...(d.at && !slots && d.curve !== 'step' ? { at: d.at } : {}),
+      ...(window.running && (slots || d.curve === 'step' || d.kind === 'band')
+        ? { soFar: true }
+        : {}),
       colour: d.colour,
       name: d.name,
       ...(d.accent ? { accent: d.accent } : {}),
@@ -1422,28 +1538,43 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
     specs: Specs,
     drawn: readonly Drawn[],
     window: Window,
-    count: number,
+    grid: Grid,
     fraction: number,
   ): Read {
-    // a stepped series and columns are read by their slot, which began then; a line where the cursor is — a line
-    // through time at the round time nearest it, as Home Assistant reads it (each line there, every reading its own)
-    const slotwise = specs.main.kind === 'bars' || drawn.every((d) => d.curve === 'step');
+    const count = grid.edges.length - 1;
+    // a stepped series and columns are read by their slot, which began then; so is a lone band, its mark on the slot's
+    // middle (a band is read per slot); a line where the cursor is — a line through time at the round time nearest it,
+    // as Home Assistant reads it (each line there, every reading its own)
+    const banded = drawn.every((d) => d.kind === 'band' && d.at);
+    const slotwise = specs.main.kind === 'bars' || banded || drawn.every((d) => d.curve === 'step');
     const timed = slotwise ? undefined : drawn.find((d) => d.line);
     // what has happened, that is: past now on a calendar day a list or a forecast is read where it is pointed at
     const hit = timed && fraction <= timed.cover ? timed.line?.read(fraction / timed.cover) : null;
-    const cursor = hit && timed ? hit.fraction * timed.cover : fraction;
+    const landed = banded
+      ? (Math.min(count - 1, Math.floor(fraction * count)) + 0.5) / count
+      : fraction;
+    const cursor = hit && timed ? hit.fraction * timed.cover : landed;
     const read = readAt(specs.main, cursor);
     const plot = plotOf(specs.main);
     const f = Math.min(1, Math.max(0, (read.x - plot.left) / plot.width));
     // a key's step lands on a slot's start: a hair of rounding must not leave it in the slot before
     const slot = Math.min(count - 1, Math.floor(f * count + 1e-6));
     const length = window.end - window.start;
+    // a slot's readings are its round period's, and the one still running is so far: it says now
+    const slotTime =
+      window.running && slot === count - 1
+        ? this.t('common.now')
+        : this.when(grid.edges[slot] as number, window);
     return {
       cursor,
       x: read.x,
-      time: this.when(hit ? hit.t : window.start + (slotwise ? slot / count : f) * length, window),
+      time: hit
+        ? this.when(hit.t, window)
+        : slotwise
+          ? slotTime
+          : this.when(window.start + f * length, window),
       values: drawn.map((d) => {
-        if (d.kind === 'columns' || d.curve === 'step' || !d.points.length)
+        if (d.kind === 'columns' || d.kind === 'band' || d.curve === 'step' || !d.points.length)
           return d.slots[slot] ?? null;
         if (!d.line) return between(d.points, f);
         const v = cursor > d.cover ? undefined : d.line.read(cursor / d.cover)?.v;
@@ -1677,7 +1808,7 @@ export class FluvyChartCard extends Card<ChartCardConfig> {
                 ? { values: d.slots }
                 : {
                     values: d.points,
-                    ...(d.line ? { at: d.line.at.map((f) => f * d.cover) } : {}),
+                    ...(d.at ? { at: d.at } : {}),
                   }),
               colour: d.colour,
               ...(d.accent ? { accent: d.accent } : {}),

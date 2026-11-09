@@ -19,6 +19,8 @@ export interface Window {
   readonly start: number;
   readonly end: number;
   readonly now: number;
+  /** A chart's slots end past now, on the round time of its last one, still running (`nowFraction`: the chart has no now of its own). */
+  readonly running?: boolean;
 }
 
 /**
@@ -43,6 +45,8 @@ export interface ChartSeries {
   readonly band?: { readonly low: readonly number[]; readonly high: readonly number[] };
   /** How this series' line joins its readings, where it is not the style's (a price stepped beside a smooth forecast). */
   readonly curve?: Curve;
+  /** Its last reading is a slot still running: what it reads is so far, drawn paler, dashed, never as a whole one. */
+  readonly soFar?: boolean;
   /** What lies under this series' line, where it is not the style's: its gradient or flat fill, its band, nothing. */
   readonly fill?: 'gradient' | 'flat' | 'band' | 'none';
 }

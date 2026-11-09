@@ -769,7 +769,11 @@ negative. `span` is the window: the house's (fluvy's settings → Charts: the la
 1.18) where it names none, or any `<N>h` or `<N>d` rolling to now (`4h`, `12h`, `24h`, `48h`, `7d`, `30d` offered),
 `today`, or `today+tomorrow`, which is today alone until tomorrow's prices are published. A series of the recorder's
 drawn as a line or an area runs through time as the sensor card's does, on `points` (an hour's statistics never finer
-than the hour).
+than the hour). Bars, columns, a band and a stepped line stand on whole round periods of the house's clock (12:00,
+13:00 …, as many as the card's width holds calmly), each reading what Home Assistant says of its period: a bar at 12:00
+is its 12:00 hour — a statistic's mean, its changes added up, its lowest or its highest as its `stat` says — the band
+its lows and highs of each period, the axis on the same round times. The slot still running reads so far, paler, and
+says Now.
 
 A series wears the card's colour alone, and the palette's series colours (or the house's set, fluvy's settings →
 Charts) beside others; its own `color` wins over both. It may name a colour of the palette's, which follows the

@@ -45,7 +45,7 @@
  *                                             `PREVIEW_LEAST` across
  *   the maths, pure and tested: `scale.ts` (tightScale, airScale, niceTicks, niceStep, yOf), `path.ts`
  *   (linePath, areaPath, bandPath, yAt, splitAt), `bars.ts` (barGeometry, barPath, columns, thinStep, labelled,
- *   labelsApart), `axis.ts` (tickText, gridLines, tickLabels, unitLabel, quarterTicks, roundTicks), `ring.ts` (polar,
+ *   labelsApart), `axis.ts` (tickText, gridLines, tickLabels, unitLabel, quarterTicks, slotTicks, roundTicks), `ring.ts` (polar,
  *   arcPath, arcDash, radialTicks, knobAt), `model.ts` (bucket, readingsOf), `palette.ts`
  *   (seriesPaint, fitSet: a house's set fitted to each mode's card, seriesCheck: what fitting cannot fix,
  *   PALETTE_REFS · refInk · refHex: the colours of the palette's a set or a series may name, as tokens and as hexes)
@@ -97,12 +97,14 @@ export {
   gridLines,
   quarterTicks,
   roundTicks,
+  slotTicks,
   tickLabels,
   tickText,
   UNIT_COLUMN,
   unitLabel,
   type MarksOptions,
   type QuartersOptions,
+  type SlotTicksOptions,
   type TimeTick,
 } from './axis.js';
 export {
@@ -177,6 +179,7 @@ export { adopt, chartStyles } from './styles.js';
 export { scrub, ScrubController, scrubFraction } from './scrub.js';
 export {
   everyWord,
+  leastGap,
   pastLine,
   timeLine,
   windowWord,

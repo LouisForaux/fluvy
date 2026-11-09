@@ -213,6 +213,9 @@ export const chartStyles = css`
     stroke-dasharray: 3 2;
     stroke-opacity: 0.6;
   }
+  .fc-bar--sofar {
+    fill-opacity: 0.42;
+  }
   .fc-bar-a {
     stop-color: var(--tone-ink, var(--fluvy-accent));
     stop-opacity: 0.6;
