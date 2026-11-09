@@ -279,13 +279,24 @@ export const toneSelector = (language: Pick<HomeAssistant, 'language'> = editorL
   },
 });
 
-/** Two fields side by side: one row of the editor (Home Assistant's form grid). */
-export const fieldRow = (...schema: HaFormSchemaItem[]): HaFormSchemaItem => ({
-  type: 'grid',
-  name: '',
-  flatten: true,
-  schema,
-});
+/** Whether a field's label stands above its box (an entity's or a statistic's picker); every other field's is inside it. */
+const labelAbove = (item: HaFormSchemaItem): boolean =>
+  Boolean(item.selector && ('entity' in item.selector || 'statistic' in item.selector));
+
+/**
+ * Fields side by side: one row of the editor (Home Assistant's form grid), on their boxes' tops whatever hint is under
+ * each. A label above its box beside one inside its own would leave the boxes 24 apart: such a row stacks.
+ */
+export const fieldRow = (...schema: HaFormSchemaItem[]): HaFormSchemaItem => {
+  const above = schema.filter(labelAbove).length;
+  return {
+    type: 'grid',
+    name: '',
+    flatten: true,
+    ...(above && above < schema.length ? { column_min_width: '100%' } : {}),
+    schema,
+  };
+};
 
 /** A group of fields under a title of its own, folded until opened (Home Assistant's expandable section). */
 export const sectionField = (

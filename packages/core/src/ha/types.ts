@@ -216,6 +216,8 @@ export interface HaFormSchemaItem {
   type?: 'grid' | 'expandable';
   title?: string;
   flatten?: boolean;
+  /** A grid's narrowest column, 100% to stack its fields. */
+  column_min_width?: string;
   schema?: readonly HaFormSchemaItem[];
   /** What a selector reads beside its value, by the field that holds it (an entity's name reads `{ entity: 'entity' }`). */
   context?: Readonly<Record<string, string>>;

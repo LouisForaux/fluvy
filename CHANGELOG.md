@@ -63,6 +63,7 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A card editor's boxes on one row stand level whatever hint is under each, where a longer hint, as a translation often is, lifted its box above its neighbour's. A row that paired an entity picker with another kind of field now stacks them, each on its line, as their labels cannot line up (#150).
 - The History bars card draws a statistic an integration imports, one with no entity behind it (`entity: linky:…`), in its own name and colour, where it drew the bars grey under "Entity not found" (#149).
 - The Thermostat card says its fan speeds and presets in the page's language: Home Assistant's own word for each, the
   standard speeds and an integration's own, then Fluvy's for low, mid and high, then the word as sent, where every

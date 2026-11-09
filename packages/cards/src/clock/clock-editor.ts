@@ -1,4 +1,4 @@
-import { strings, type HaFormSchemaItem, type LovelaceConfigForm } from '@fluvy/core';
+import { strings, type LovelaceConfigForm } from '@fluvy/core';
 import type { BaseKey } from '../shared/base.js';
 import {
   accentField,
@@ -8,6 +8,7 @@ import {
   onlyWhen,
   unavailableField,
   entityField,
+  fieldRow,
   formLabels,
   selectField,
   textField,
@@ -75,19 +76,13 @@ export const defaults: EditorDefaults = (config, hass) => {
 
 export function getConfigForm(): LovelaceConfigForm {
   const core = formLabels(CORE_LABELS);
-  const grid = (...schema: HaFormSchemaItem[]): HaFormSchemaItem => ({
-    type: 'grid',
-    name: '',
-    flatten: true,
-    schema,
-  });
   return {
     schema: [
-      grid(
+      fieldRow(
         selectField('face', ['analog', 'digital']),
         selectField('variant', ['hero', 'side', 'tile']),
       ),
-      grid(selectField('numerals', ['none', 'quarters', 'all']), textField('title')),
+      fieldRow(selectField('numerals', ['none', 'quarters', 'all']), textField('title')),
       boolField('show_seconds'),
       boolField('hour12'),
       boolField('show_date'),

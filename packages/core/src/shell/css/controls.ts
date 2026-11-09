@@ -17,9 +17,6 @@ export const radioGroupCss =
 export const booleanSelectorCss =
   'ha-formfield { padding-inline: 16px; } .primary { line-height: 20px; }';
 
-/** Side-by-side cells of a form line up on their boxes' bottoms (an entity picker's label above its box put its neighbour 25 px higher). */
-export const formGridCss = ':host { align-items: end; }';
-
 /** A picker's label above its box (entity pickers in card editors): the fields' label face, 13/500 secondary, 8 over the box. */
 export const genericPickerCss =
   'label { font: 500 13px/16px var(--ha-font-family-body); color: var(--secondary-text-color); margin: 0 0 8px; }';

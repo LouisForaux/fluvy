@@ -201,3 +201,19 @@ describe('a form that shows only what can act', () => {
     ).toBe(rows[0]);
   });
 });
+
+describe('fieldRow', () => {
+  const text = { name: 'a', selector: { text: {} } };
+  const entity = { name: 'b', selector: { entity: {} } };
+  const statistic = { name: 'c', selector: { statistic: {} } };
+
+  it('stacks a picker whose label stands above its box beside a field whose label is inside its own (#150)', () => {
+    expect(fieldRow(entity, text).column_min_width).toBe('100%');
+    expect(fieldRow(text, statistic).column_min_width).toBe('100%');
+  });
+
+  it('keeps side by side the fields whose boxes line up', () => {
+    expect(fieldRow(text, text)).not.toHaveProperty('column_min_width');
+    expect(fieldRow(entity, statistic)).not.toHaveProperty('column_min_width');
+  });
+});
