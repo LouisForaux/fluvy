@@ -13,9 +13,12 @@ import { sliderStylesCss } from '../styles/slider-styles.js';
 export const sliderStylesSheet = new CSSStyleSheet();
 sliderStylesSheet.replaceSync(sliderStylesCss);
 
+/** A bar's handle along the band's thickness, whatever the band: the same pill on a tile as on a card. */
+const HANDLE = 20;
+
 /** What a style is drawn from: the band, the level as the ruler shows it, and the state the ruler is in. */
 export interface StyleDrawing {
-  /** The scale's length and the band's thickness, in CSS px. */
+  /** The scale's length and the thickness drawn (the band's, or its `face`), in CSS px. */
   readonly len: number;
   readonly band: number;
   readonly vertical: boolean;
@@ -36,35 +39,38 @@ const state = (o: StyleDrawing): string =>
 
 /**
  * The bar: the track the inset ground, the fill the tone's ink to the level, the handle a 4 × 20 pill of the card's
- * colour 8 inside the fill's end (18 on a tile's 40 band; on a tinted bar, at the level itself, on the gradient).
- * Vertical, lit from the foot. Asleep, the track alone.
+ * colour 8 inside the fill's end (on a tinted bar, at the level itself, on the gradient). Vertical, lit from the foot.
+ * Asleep, the track alone. The fill and the handle follow the level, so the measurer reads them as values.
  */
 export function drawBar(o: StyleDrawing): TemplateResult {
   const x = Math.round(o.fraction * o.len);
-  const long = Math.round((o.band * 0.45) / 2) * 2;
   // from the origin: 8 inside the fill's end, never nearer the ends than 8
   const along = o.tint
     ? Math.min(Math.max(x - 2, 8), o.len - 8 - 4)
     : Math.min(Math.max(x - 8 - 4, 8), o.len - 8 - 4);
-  const across = (o.band - long) / 2;
+  const across = (o.band - HANDLE) / 2;
   const fill =
     o.tint || o.inactive
       ? nothing
       : html`<span
           class="sb-bar__fill"
+          data-measure="value"
           style=${o.vertical ? `height:${x}px` : `width:${x}px`}
         ></span>`;
   const handle = o.inactive
     ? nothing
     : html`<span
         class="sb-bar__handle"
+        data-measure="value"
         style=${
           o.vertical
-            ? `left:${across}px;top:${o.len - 4 - along}px;width:${long}px;height:4px`
-            : `left:${along}px;top:${across}px;width:4px;height:${long}px`
+            ? `left:${across}px;top:${o.len - 4 - along}px;width:${HANDLE}px;height:4px`
+            : `left:${along}px;top:${across}px;width:4px;height:${HANDLE}px`
         }
       ></span>`;
-  return html`<span class="sb-bar${o.tint ? ` sb-bar--${o.tint}` : ''}${state(o)}"
+  return html`<span
+    class="sb-bar${o.tint ? ` sb-bar--${o.tint}` : ''}${state(o)}"
+    style="height:${o.vertical ? o.len : o.band}px"
     >${fill}${handle}</span
   >`;
 }
@@ -96,7 +102,7 @@ export function drawLiquid(o: StyleDrawing): TemplateResult {
       : svg`<g style="transform:translate(${level}px,0px)"><path class="${cls} lq-y${wavelength}" d="${edge(o, amplitude, wavelength, phase)} L${-w - 40} ${h + wavelength} L${-w - 40} ${-wavelength} Z" /></g>`;
   return html`<span
     class="sb-liq${o.disabled ? ' is-disabled' : ''}"
-    style=${o.tint ? `--tone-ink:${o.dot}` : nothing}
+    style="height:${h}px${o.tint ? `;--tone-ink:${o.dot}` : ''}"
   >
     <svg width=${w} height=${h} viewBox="0 0 ${w} ${h}" aria-hidden="true">
       ${o.inactive ? nothing : [layer(3, 26, 0, 'lq-b'), layer(2.5, 20, 7, 'lq-a')]}
@@ -111,6 +117,6 @@ export function drawLiquid(o: StyleDrawing): TemplateResult {
 export function drawFill(o: StyleDrawing): TemplateResult | typeof nothing {
   if (o.inactive) return nothing;
   const x = Math.round(o.fraction * o.len);
-  return html`<span class="sb-fill" style="width:${x}px"></span
-    ><span class="sb-fill__edge" style="translate:${x - 1}px 0"></span>`;
+  return html`<span class="sb-fill" data-measure="value" style="width:${x}px"></span
+    ><span class="sb-fill__edge" data-measure="value" style="translate:${x - 1}px 0"></span>`;
 }

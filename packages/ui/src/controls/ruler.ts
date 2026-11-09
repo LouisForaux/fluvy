@@ -115,6 +115,7 @@ export class FluvyRuler extends LitElement {
     tint: { type: String },
     length: { type: Number },
     band: { type: Number },
+    face: { type: Number },
     knob: { type: Number },
     minor: { type: Number },
     major: { type: Number },
@@ -154,6 +155,8 @@ export class FluvyRuler extends LitElement {
   declare length: number;
   /** Thickness of the hit band: 44 everywhere. */
   declare band: number;
+  /** What a bar or a liquid draws of the band's thickness, on its foot: a tile's 40 in the finger's 44. 0: all of it. */
+  declare face: number;
   declare knob: number;
   /** Tick spacing as fractions of the range. */
   declare minor: number;
@@ -208,6 +211,7 @@ export class FluvyRuler extends LitElement {
     this.tint = '';
     this.length = 320;
     this.band = 44;
+    this.face = 0;
     this.knob = 36;
     this.minor = 0.05;
     this.major = 0.25;
@@ -662,11 +666,12 @@ export class FluvyRuler extends LitElement {
     const valueText = `${this.text(current)}${this.unit ? ` ${this.unit}` : ''}`;
     const [min, max] = this.range;
     // A read-only ruler (marker, readonly, disabled, inactive without wake) is an image whose name carries the value.
-    // A tile's fill reads its level on the tile's line: no bubble over it.
+    // A tile's fill reads its level on the tile's line: no bubble over it, and the band is the tile, not a control of
+    // a control's height.
     return html`<div
       class=${classes}
       style="width:${w}px;height:${h}px"
-      data-control
+      ?data-control=${!this.fill}
       data-target
       ?data-interactive=${this.interactive}
       role=${this.interactive ? 'slider' : 'img'}
@@ -683,7 +688,7 @@ export class FluvyRuler extends LitElement {
     >
       ${
         drawn !== 'ruler'
-          ? this.drawStyle(drawn, len, band, active)
+          ? this.drawStyle(drawn, len, Math.min(this.face || band, band), active)
           : html`<svg width=${w} height=${h} viewBox="0 0 ${w} ${h}" aria-hidden="true">
                 ${this.tint ? svg`<defs><linearGradient id="fv-tint" gradientUnits="userSpaceOnUse" x1="0" y1=${this.vertical ? len : 0} x2=${this.vertical ? 0 : len} y2="0">${this.tint === 'hue' ? HUE_STOPS : svg`<stop offset="0" class="tint-a" /><stop offset="1" class="tint-b" />`}</linearGradient></defs>` : nothing}${lines}
               </svg>

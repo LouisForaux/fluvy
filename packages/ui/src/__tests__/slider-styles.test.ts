@@ -74,8 +74,8 @@ describe('the bar', () => {
     const tile = drawn(drawBar(drawing({ band: 40, len: 140 }))).querySelector<HTMLElement>(
       '.sb-bar__handle',
     )!;
-    expect(tile.style.height).toBe('18px');
-    expect(tile.style.top).toBe('11px');
+    expect(tile.style.height).toBe('20px');
+    expect(tile.style.top).toBe('10px');
   });
 
   it('is the gradient itself when tinted, the handle alone at the level; asleep, the track alone', () => {
@@ -151,6 +151,28 @@ describe('the ruler asked for a style', () => {
     await plain.updateComplete;
     expect(plain.shadowRoot!.querySelector('.sb-liq')).not.toBeNull();
     expect(plain.shadowRoot!.querySelector('svg line')).toBeNull();
+  });
+
+  it('draws its face on the band’s foot and keeps the band for the finger', async () => {
+    const bar = await ruler('bar', { band: 44, face: 40, length: 140 });
+    expect(bar.shadowRoot!.querySelector<HTMLElement>('.fv-ruler')!.style.height).toBe('44px');
+    expect(bar.shadowRoot!.querySelector<HTMLElement>('.sb-bar')!.style.height).toBe('40px');
+    // centred on the 40 it draws, not on the band
+    expect(bar.shadowRoot!.querySelector<HTMLElement>('.sb-bar__handle')!.style.top).toBe('10px');
+    const liquid = await ruler('liquid', { band: 44, face: 40, length: 140 });
+    expect(liquid.shadowRoot!.querySelector<HTMLElement>('.sb-liq')!.style.height).toBe('40px');
+    expect(liquid.shadowRoot!.querySelector('svg')!.getAttribute('height')).toBe('40');
+    // no face: the band's own thickness
+    const full = await ruler('bar');
+    expect(full.shadowRoot!.querySelector<HTMLElement>('.sb-bar')!.style.height).toBe('44px');
+  });
+
+  it('is a control of a control’s height everywhere but on a tile’s fill, whose band is the tile', async () => {
+    const band = (el: FluvyRuler) => el.shadowRoot!.querySelector<HTMLElement>('.fv-ruler')!;
+    expect(band(await ruler('bar')).hasAttribute('data-control')).toBe(true);
+    const fill = band(await ruler('fill', { band: 168 }));
+    expect(fill.hasAttribute('data-control')).toBe(false);
+    expect(fill.hasAttribute('data-target')).toBe(true);
   });
 
   it('keeps the fine scale to the ruler: a still press on a bar raises none', async () => {

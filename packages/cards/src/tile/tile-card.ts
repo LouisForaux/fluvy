@@ -239,8 +239,8 @@ export class FluvyTileCard extends Card<TileCardConfig> {
         height: 168px;
         text-align: left;
       }
-      /* the ruler's 44 band drawn 4 up in the 40 foot slot; a bar or a liquid is 40 and fills it */
-      .fv-tile > fluvy-ruler[look='ruler'] {
+      /* a slider's 44 band sits 4 up in the 40 foot slot: the ruler's ticks drawn through it, a bar's or a liquid's 40 on its foot; a fill's covers the tile */
+      .fv-tile > fluvy-ruler:not([look='fill']) {
         margin-top: -4px;
       }
       .fv-tile__foot {
@@ -737,9 +737,9 @@ export class FluvyTileCard extends Card<TileCardConfig> {
     const tapAction = item.tap_action ?? MORE_INFO;
     const tapNow = actionRuns(tapAction, view.id) ? () => this.tap(view.id, tapAction) : undefined;
 
-    // the slider's style (1.18, #144): the ruler at the foot (knob 28), a bar or a liquid in the foot's 40, or the
-    // fill — the tile itself, its ruler covering it and drawing the wash to the level under the words, the foot free
-    // for the readouts; a still press on it is the tile's tap or hold, which the ruler says (`fluvy-tap`, `fluvy-hold`)
+    // the slider's style (1.18, #144): the ruler at the foot (knob 28), a bar or a liquid drawing the foot's 40 of the
+    // finger's 44 band, or the fill — the tile itself, its ruler covering it and drawing the wash to the level under
+    // the words, the foot free for the readouts; a still press on it is the tile's tap or hold, which the ruler says (`fluvy-tap`, `fluvy-hold`)
     const style = level ? sliderStyleOf(this.config, true) : 'ruler';
     const fill = level !== null && style === 'fill';
     const slider = (level: TileLevel, length: number): TemplateResult => {
@@ -754,7 +754,8 @@ export class FluvyTileCard extends Card<TileCardConfig> {
         .step=${scale.step}
         .origin=${scale.origin}
         .length=${length}
-        .band=${fill ? 168 : style === 'ruler' ? 44 : 40}
+        .band=${fill ? 168 : 44}
+        .face=${40}
         .knob=${28}
         .minor=${ticks.minor}
         .major=${ticks.major}

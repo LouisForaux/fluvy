@@ -4,10 +4,11 @@
    shadow root: the card's tokens reach it as custom properties (the tone's, the inset ground, the mode's tints). */
 
 /* ---------- the bar: Home Assistant's idea in the ruler's slot ---------- */
-/* the track the inset ground (the card's colour on a lit tile), the control radius; it fills the band */
+/* the track the inset ground (the card's colour on a lit tile), the control radius; it stands on the band's foot,
+   as tall as it draws (a tile's 40 in the finger's 44) */
 .sb-bar {
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
   border-radius: var(--fluvy-radius-control, 12px);
   background: var(--fluvy-inset, var(--fluvy-page));
 }
@@ -76,7 +77,7 @@
 /* ---------- the liquid: the bar's slot, the fill water ---------- */
 .sb-liq {
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
   border-radius: var(--fluvy-radius-control, 12px);
   background: var(--fluvy-inset, var(--fluvy-page));
   overflow: hidden;

@@ -41,8 +41,8 @@ const WARM = {
   hs_color: [27.5, 51.7],
   rgb_color: [255, 184, 123],
 };
-/** A player's volume: set and muted. */
-const PLAYER = 4 | 8;
+/** A speaker: its transport (pause, previous, next, play) and its volume (set and muted). */
+const PLAYER = 1 | 4 | 8 | 16 | 32 | 16384;
 /** A cover set to a position. */
 const COVER_FEATURES = 1 | 2 | 4 | 8;
 
