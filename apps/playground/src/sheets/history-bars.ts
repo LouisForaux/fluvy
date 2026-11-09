@@ -59,6 +59,10 @@ const SENSORS: Record<
   'sensor.hb_house': { daily: series([22.1, 25.3, 28.7, 24.6, 23.9, 26.4, 22.8], 24, 5, 9.8) },
   'sensor.hb_export': { daily: series([28.4, 27.6, 22.1, 19.8, 24.7, 6.2, 21.4], 17, 10, 7.1) },
   'sensor.hb_import': { daily: series([4.8, 6.9, 9.1, 5.6, 4.3, 16.8, 7.2], 7, 5, 2.4) },
+  // an imported statistic (#149): no entity behind it, its days as the recorder keeps them
+  'hb_import:consumption': {
+    daily: series([22.1, 25.3, 28.7, 24.6, 23.9, 26.4, 22.8], 24, 5, 9.8),
+  },
   'sensor.hb_outside': {
     daily: series([14.2, 15.8, 13.1, null, 16.0, 17.3, 15.1], 15, 4, 13.0),
     mean: true,
@@ -257,7 +261,6 @@ const RECORDED: Readonly<Record<string, (message: Record<string, unknown>) => An
   'sensor.hb_rain': rainRows,
   'sensor.hb_life': lifeRows,
   'sensor.hb_net': (message) => from(message, days(9, 3, NET_DAYS, 'change')),
-  'hb_import:consumption': pvRows,
 };
 
 /** A rain tank with no state class: no statistics, its history only — from 5 October, two days into the window. */
@@ -598,7 +601,7 @@ export const sheet: SheetSpec = {
     },
     {
       title: 'An imported statistic, no entity behind it (#149)',
-      cards: [{ type: plain.type, entity: 'hb_import:consumption', color: 'green' }],
+      cards: [{ type: plain.type, entity: 'hb_import:consumption', color: 'green', _now: NOW }],
     },
   ],
 };
