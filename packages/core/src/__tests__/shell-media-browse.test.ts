@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { mediaBrowseCss } from '../shell/css/panels.js';
+import { mediaBrowseCss, mediaThumbnailCss } from '../shell/css/panels.js';
 
 /** A tile of Home Assistant's media browser: `.child ha-card .thumbnail`, then the class its picture is drawn with. */
 const tile = (classes: string): Element => {
@@ -10,16 +10,34 @@ const tile = (classes: string): Element => {
   return child.querySelector('.thumbnail > div') as Element;
 };
 
-describe('the media browser', () => {
-  const selector = mediaBrowseCss.slice(0, mediaBrowseCss.indexOf('{')).trim();
+/** What `ha-media-browser-thumbnail` draws in its own shadow root. */
+const thumbnail = (classes: string): Element => {
+  const root = document.createElement('div');
+  root.innerHTML = `<div class="${classes}"></div>`;
+  return root.firstElementChild as Element;
+};
 
-  it('greys the sources’ logos and icons', () => {
-    expect(tile('centered-image image').matches(selector)).toBe(true);
-    expect(tile('icon-holder image').matches(selector)).toBe(true);
+const selectorOf = (css: string): string => css.slice(0, css.indexOf('{')).trim();
+
+describe('the media browser', () => {
+  const browse = selectorOf(mediaBrowseCss);
+  const picture = selectorOf(mediaThumbnailCss);
+
+  it('greys the icon of a tile with no picture', () => {
+    expect(tile('icon-holder image').matches(browse)).toBe(true);
   });
 
-  // #147: a photo or a video keeps its colours, to be told apart and compared
+  it('greys a brand’s logo', () => {
+    expect(thumbnail('image brand').matches(picture)).toBe(true);
+  });
+
+  // #147: a photo, a video, an album's or a folder's cover keeps its colours, to be told apart and compared
   it('leaves a picture of the media itself alone', () => {
-    expect(tile('image').matches(selector)).toBe(false);
+    expect(tile('image').matches(browse)).toBe(false);
+    expect(thumbnail('image').matches(picture)).toBe(false);
+  });
+
+  it('leaves a folder or an app with a cover of its own alone', () => {
+    expect(tile('centered-image image').matches(browse)).toBe(false);
   });
 });

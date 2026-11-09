@@ -112,6 +112,7 @@ import {
   logbookPanelCss,
   mediaBarCss,
   mediaBrowseCss,
+  mediaThumbnailCss,
   moreInfoLogbookCss,
   todoListCardCss,
   todoPanelCss,
@@ -724,6 +725,7 @@ export const SHEETS: readonly ShellSheet[] = [
   { id: 'debug-viewport', target: 'ha-debug-viewport-environment-card', css: debugViewportCss },
   { id: 'media-bar', target: 'ha-bar-media-player', css: mediaBarCss },
   { id: 'media-browse', target: 'ha-media-player-browse', css: mediaBrowseCss },
+  { id: 'media-thumbnail', target: 'ha-media-browser-thumbnail', css: mediaThumbnailCss },
   {
     id: 'grid-section',
     target: 'hui-grid-section',
