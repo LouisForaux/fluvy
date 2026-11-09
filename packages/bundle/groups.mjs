@@ -53,6 +53,14 @@ const WALL = /\/packages\/(core\/src\/wall\/(?!start\.ts)|cards\/src\/wall\/)/;
 const WEATHER = /\/packages\/cards\/src\/(weather-cards\.ts|weather\/)/;
 
 /**
+ * The calendar card (its views, what reads its events and its sheet; its editor goes with the forms): fetched as the
+ * bundle starts and defined as it lands, as the weather card is (`calendar-family.ts` stays in core: the name, the
+ * height).
+ */
+const CALENDAR =
+  /\/packages\/(cards\/src\/(calendar-cards\.ts|calendar\/)|ui\/src\/styles\/(generated\/)?calendar\.ts)/;
+
+/**
  * The media family (the player and the now-playing strip, what only they share, the player's sheet and their
  * English): fetched as the bundle starts and defined as it lands, as the energy family is (`media-family.ts` stays in
  * core: the names, the heights).
@@ -242,7 +250,7 @@ const FORMS =
 /**
  * Where each module goes, first match wins: a language's catalogue, the page controls, the Activity page, the History
  * page, the settings panel, the strategy and the heights it counts with the house, the wall, the forms of the cards
- * every page carries, the weather card, the media, the chart engine, the Chart card, the Energy period card, energy
+ * every page carries, the weather card, the calendar card, the media, the chart engine, the Chart card, the Energy period card, energy
  * (the history bars' readings on their own), devices (the cameras' sheet on its own), appliances (their pictures on
  * their own), automations and alerts families (each sheet on its own), the template card, the web page card, the Slider
  * card, the Vehicle card, the items card (its sheet on its own), the light card's colours, a room's quick actions, the cards' editor, the
@@ -261,6 +269,7 @@ export const GROUPS = [
   { name: 'wall', test: WALL },
   { name: 'forms', test: FORMS },
   { name: 'weather', test: WEATHER },
+  { name: 'calendar', test: CALENDAR },
   { name: 'media', test: MEDIA },
   { name: 'history-bars-readings', test: HISTORY_BARS_READINGS },
   { name: 'chart', test: CHART },

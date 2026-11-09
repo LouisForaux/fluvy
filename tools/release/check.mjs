@@ -106,6 +106,9 @@ const BUDGETS = {
   'quick-actions': 4096,
   // the weather card
   weather: 12_288,
+  // the calendar card: its views, what reads its events, its sheet (1.18: it left core, 9.7 KB of what every page
+  // loads, for the release's new card and styles); measured at 11.5 KB
+  calendar: 16_384,
   editor: 8192,
   // the fields every card's editor is built of: the schema's helpers, a list's row form, and the editors' English
   // (1.15: they left core, 4.3 KB)

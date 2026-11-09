@@ -2,7 +2,6 @@ import { announceCard, registerCard } from '@fluvy/core';
 import '@fluvy/ui';
 import { FluvyActionsCard } from './actions/actions-card.js';
 import { FluvyBarsCard } from './bars/bars-card.js';
-import { FluvyCalendarCard } from './calendar/calendar-card.js';
 import { FluvyChipsCard } from './chips/chips-card.js';
 import { FluvyClockCard } from './clock/clock-card.js';
 import { FluvyCoverCard } from './cover/cover-card.js';
@@ -36,6 +35,7 @@ import { defineStrategies } from './strategy/define.js';
 import { ALERTS_FAMILY } from './alerts-family.js';
 import { APPLIANCES_FAMILY } from './appliances-family.js';
 import { AUTOMATIONS_FAMILY } from './automations-family.js';
+import { CALENDAR_FAMILY } from './calendar-family.js';
 import { CHART_FAMILY } from './chart-family.js';
 import { DEVICES_FAMILY } from './devices-family.js';
 import { ENERGY_FAMILY, ENERGY_PERIOD_FAMILY, type FamilyEntry } from './energy-family.js';
@@ -239,12 +239,6 @@ const CATALOGUE: readonly CatalogueEntry[] = [
     'Fluvy · Clock',
     'Analog or digital, hero, side or tile, with or without weather.',
   ],
-  [
-    'fluvy-calendar-card',
-    FluvyCalendarCard,
-    'Fluvy · Calendar',
-    'Agenda, month, week, month + day, timeline, upcoming or tile.',
-  ],
 ];
 
 for (const [tag, element, name, description] of CATALOGUE)
@@ -260,11 +254,12 @@ type Family = readonly [
 ];
 
 /**
- * The weather, template, web page, Slider, items and chart cards, the Energy period and Energy usage cards, and the media,
- * energy, devices, automations, appliances and alerts families.
+ * The weather, calendar, template, web page, Slider, items and chart cards, the Energy period and Energy usage cards, and
+ * the media, energy, devices, automations, appliances and alerts families.
  */
 const FAMILIES: readonly Family[] = [
   [WEATHER_FAMILY, () => import('./weather-cards.js')],
+  [CALENDAR_FAMILY, () => import('./calendar-cards.js')],
   [MEDIA_FAMILY, () => import('./media-cards.js')],
   [ENERGY_FAMILY, () => import('./energy-cards.js')],
   [ENERGY_PERIOD_FAMILY, () => import('./energy-period-cards.js')],
@@ -315,7 +310,6 @@ export { historyIsOurs, takeOverHistory } from './history/takeover.js';
 export {
   FluvyActionsCard,
   FluvyBarsCard,
-  FluvyCalendarCard,
   FluvyChipsCard,
   FluvyClockCard,
   FluvyCoverCard,

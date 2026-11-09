@@ -42,14 +42,14 @@ pnpm build
 ```
 
 The bundle is one ES module, `fluvy.js`, that imports `chunks/core-<hash>.js` (everything a page needs) and fetches
-`chunks/{activity,history,panel,pages,strategy,house-heights,wall,weather,media,chart,chart-card,energy-period,energy,history-bars-readings,devices,cameras-sheet,appliances,appliance-art,automations,automations-sheet,alerts,alerts-sheet,template,web,slider,vehicle,items,items-sheet,light-colour,quick-actions,editor,fields,forms,view-icons,glass,quiet,icons,lang-*}-<hash>.js`
+`chunks/{activity,history,panel,pages,strategy,house-heights,wall,weather,calendar,media,chart,chart-card,energy-period,energy,history-bars-readings,devices,cameras-sheet,appliances,appliance-art,automations,automations-sheet,alerts,alerts-sheet,template,web,slider,vehicle,items,items-sheet,light-colour,quick-actions,editor,fields,forms,view-icons,glass,quiet,icons,lang-*}-<hash>.js`
 on demand — the Activity page, the History page, the settings panel, what they share (the date picker; the pages'
 period, sources, layers, CSV and sheet), the automatic dashboards' strategy (when a dashboard asks for it) and the heights it
 counts with the house (what an entity's capabilities draw, what a room holds; every page carries the cards' heights
 from their configs alone), wall mode (on a device that is a wall), the chart engine (fetched as the bundle starts: the
 sensor card in core reaches it through `src/shared/chart-load.ts`, the energy family, the History page and the Chart
 card import it from their own chunks), a room's quick actions (fetched as the bundle starts too: the room card in
-core reaches them through `loadQuickActions`), the weather, template, Energy period and usage, web page, Slider, Vehicle, items and
+core reaches them through `loadQuickActions`), the weather, calendar, template, Energy period and usage, web page, Slider, Vehicle, items and
 chart cards and the media, energy, devices, appliances, automations and alerts families (fetched as the bundle starts:
 their cards are announced in core — `src/energy-family.ts` and its siblings, their names and heights — and defined as
 `src/energy-cards.ts` and its siblings land; Home Assistant builds a card again the moment its tag is defined), the
@@ -96,6 +96,7 @@ budget (`BUDGETS`; the facts guard in `tools/docs` holds this table to it):
 | `light-colour` | 8 KB | the light card's quick colours and hue ruler, and the quick colours' grammar its editor shares |
 | `quick-actions` | 4 KB | a room's quick actions: their sets, levels, taps and holds |
 | `weather` | 12 KB | the weather card |
+| `calendar` | 16 KB | the calendar card: its views, what reads its events, its sheet |
 | `editor` | 8 KB | the cards' visual editor |
 | `fields` | 8 KB | the fields every card's editor is built of: the schema's helpers, a list's row form, the editors' English |
 | `forms` | 12 KB | the editors of the cards every page carries and of the template and Slider cards: their forms, lists and defaults |

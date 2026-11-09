@@ -1,6 +1,8 @@
 import { plural, stateText, strings, type LovelaceGridOptions } from '@fluvy/core';
-import { forgetTextWidths, sheetStyles } from '@fluvy/ui';
+import { forgetTextWidths } from '@fluvy/ui';
+import { calendarSheet } from '@fluvy/ui/styles/calendar';
 import { nothing, type CSSResultGroup, type PropertyValues, type TemplateResult } from 'lit';
+import { calendarHeight, viewOf, type CalendarView } from '../calendar-family.js';
 import { Card, type CardEditor } from '../shared/base.js';
 import { FontsSettled } from '../shared/fonts.js';
 import {
@@ -8,10 +10,8 @@ import {
   daysOf,
   idsOf,
   toneOf,
-  viewOf,
   type CalendarCardConfig,
   type CalendarItem,
-  type CalendarView,
 } from './config.js';
 import {
   addDays,
@@ -38,7 +38,7 @@ import { Words } from './words.js';
 
 const s = strings('calendar');
 
-export type { CalendarCardConfig, CalendarView } from './config.js';
+export type { CalendarCardConfig } from './config.js';
 
 const REFRESH = 15 * 60_000; // while visible, a window is read again this often
 const RETRY = 60_000; // a calendar that failed is asked again after a minute, then ever more patiently (up to REFRESH)
@@ -55,21 +55,12 @@ const IDLE = 10 * 60_000; // a day someone picked gives way to today again after
 export class FluvyCalendarCard extends Card<CalendarCardConfig> {
   /** The card's height at a 360 column, for the automatic dashboard's columns. */
   static override layoutHeight(config: CalendarCardConfig): number {
-    const heights = {
-      agenda: 416,
-      month: 360,
-      week: 428,
-      'month-day': 644,
-      timeline: 476,
-      upcoming: 340,
-      tile: 168,
-    };
-    return heights[viewOf(config)];
+    return calendarHeight(config);
   }
 
   static override styles: CSSResultGroup = [
     ...(Card.styles as CSSResultGroup[]),
-    sheetStyles.calendar,
+    calendarSheet,
     calendarStyles,
   ];
 

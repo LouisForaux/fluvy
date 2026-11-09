@@ -27,6 +27,7 @@
     "./time-rail": "./src/controls/time-rail.ts",
     "./time-field": "./src/controls/time-field.ts",
     "./select": "./src/controls/select.ts",
+    "./styles/calendar": "./src/styles/calendar.ts",
     "./styles/energy": "./src/styles/energy.ts",
     "./styles/glass": "./src/styles/glass.ts",
     "./styles/quiet": "./src/styles/quiet.ts",

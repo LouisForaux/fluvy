@@ -17,7 +17,8 @@ import {
   textField,
   toneField,
 } from '../shared/form.js';
-import { VIEWS, type CalendarCardConfig, type CalendarView } from './config.js';
+import { VIEWS, type CalendarView } from '../calendar-family.js';
+import type { CalendarCardConfig } from './config.js';
 import { WEEKDAYS } from '../shared/dates.js';
 import { configKeys } from '../shared/config.js';
 import type { EditorChoices, EditorDefaults, RowsListSpec } from '../shared/rows-editor.js';

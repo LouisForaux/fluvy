@@ -2,17 +2,7 @@ import type { EntityName, FluvyCardConfig } from '@fluvy/core';
 import type { HeadConfig } from '../shared/base.js';
 import type { FirstWeekday } from '../shared/dates.js';
 import { type Tone } from '@fluvy/ui';
-
-export const VIEWS = [
-  'agenda',
-  'month',
-  'week',
-  'month-day',
-  'timeline',
-  'upcoming',
-  'tile',
-] as const;
-export type CalendarView = (typeof VIEWS)[number];
+import type { CalendarView } from '../calendar-family.js';
 
 /**
  * The tones a calendar may take, in the order they are handed out. The accent is not among them and
@@ -59,9 +49,6 @@ export interface CalendarCardConfig extends FluvyCardConfig, HeadConfig {
   /** Test hook: an ISO date picked as if tapped (a sheet shows the selected day apart from today). */
   _picked?: string;
 }
-
-export const viewOf = (config: CalendarCardConfig | undefined): CalendarView =>
-  config?.variant && VIEWS.includes(config.variant) ? config.variant : 'agenda';
 
 /** The card's calendars as items, in order; a bare id is an item with nothing of its own. */
 export const calendarsOf = (config: CalendarCardConfig | undefined): CalendarItem[] =>

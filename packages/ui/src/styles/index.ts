@@ -1,6 +1,5 @@
 import { unsafeCSS, type CSSResult } from 'lit';
 import { ambientCss } from './generated/ambient.js';
-import { calendarCss } from './generated/calendar.js';
 import { climateCss } from './generated/climate.js';
 import { clocksCss } from './generated/clocks.js';
 import { devicesCss } from './generated/devices.js';
@@ -35,8 +34,8 @@ export function setFallbackTokens(css: string): void {
 
 /**
  * The sheets of the cards' families. One that only a family or a page fetched on demand adopts is a module of its own,
- * which travels in that chunk: the energy family's (`@fluvy/ui/styles/energy`), the player's (`@fluvy/ui/styles/media`)
- * and the Activity and History pages' chrome (`@fluvy/ui/styles/page`).
+ * which travels in that chunk: the energy family's (`@fluvy/ui/styles/energy`), the player's (`@fluvy/ui/styles/media`),
+ * the calendar's (`@fluvy/ui/styles/calendar`) and the Activity and History pages' chrome (`@fluvy/ui/styles/page`).
  */
 export const sheetStyles = {
   home: sheet(homeCss),
@@ -47,6 +46,5 @@ export const sheetStyles = {
   inputs: sheet(inputsCss),
   solar: sheet(solarCss),
   clocks: sheet(clocksCss),
-  calendar: sheet(calendarCss),
   rooms: sheet(roomsCss),
 } as const;
