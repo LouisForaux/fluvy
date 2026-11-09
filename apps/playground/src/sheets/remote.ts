@@ -388,8 +388,8 @@ export const sheet: SheetSpec = {
           apps: [
             { app: 'netflix' },
             { app: 'disneyplus', image: OWN_PICTURE },
-            // an address that will not load: the platform's own mark again
-            { app: 'primevideo', image: '/local/nowhere.svg' },
+            // a picture that will not load, with no request for the demo to count: the platform's own mark again
+            { app: 'primevideo', image: 'data:image/png;base64,AAAA' },
           ],
         },
       ],
