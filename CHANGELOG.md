@@ -35,6 +35,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   stand (Automatic, or a point every 5, 15 or 30 minutes or every hour, each then Home Assistant's reading at that
   time, so the line passes through what Home Assistant says at 12:00); a card's own `hours` (a Chart card's `span`)
   and `points` win, and both travel with a backup and with Export and Import.
+- The Weather card can hide the name of its weather (`show_name: false`, or Show the name in its editor): the condition
+  says what the card is, in either variant, with no name and no separator beside it (#145).
 
 ### Fixed
 

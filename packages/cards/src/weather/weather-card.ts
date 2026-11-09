@@ -46,8 +46,10 @@ import {
   editorLabels,
   entityField,
   fieldRow,
-  nameIconFields,
+  iconField,
+  nameField,
   numberField,
+  onlyWhen,
   selectField,
   showIconField,
 } from '../shared/form.js';
@@ -87,6 +89,8 @@ export interface WeatherCardConfig extends FluvyCardConfig {
   days?: number;
   /** The forecast under the hero (default); `false` keeps the hero alone. */
   show_forecast?: boolean;
+  /** The entity's name (default); `false` leaves the condition to say what the card is, in either variant. */
+  show_name?: boolean;
   /** Test hook: an ISO date that freezes "now" (day labels, the hours ahead). Undocumented. */
   _now?: string;
 }
@@ -120,6 +124,9 @@ const ROW = WEATHER_ROW;
 const COMPACT_HEAD = WEATHER_COMPACT_HEAD;
 const modeOf = (config: WeatherCardConfig | undefined): Drawn => forecastModeOf(config);
 const dayCountOf = forecastDaysOf;
+/** Whether a config shows the entity's name: all but `show_name: false`. */
+const namesItself = (config: { readonly show_name?: unknown } | undefined): boolean =>
+  config?.show_name !== false;
 
 const isNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
@@ -283,6 +290,7 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
     'forecast',
     'days',
     'show_forecast',
+    'show_name',
   ]);
   /** `forecast: none` was the way to keep the hero alone: it reads as `show_forecast: false`. */
   static override aliases: AliasSpec = {
@@ -298,14 +306,15 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
   static override defaults: EditorDefaults = () => ({
     forecast: 'daily',
     show_forecast: true,
+    show_name: true,
     variant: 'full',
   });
   static override getConfigForm(): LovelaceConfigForm {
     return {
       schema: [
         entityField(['weather']),
-        nameIconFields(),
-        showIconField(),
+        fieldRow(onlyWhen(namesItself, nameField()), iconField()),
+        fieldRow(boolField('show_name'), showIconField()),
         fieldRow(
           selectField('variant', VARIANTS),
           selectField('forecast', ['daily', 'hourly', 'both']),
@@ -834,7 +843,7 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
       .flatMap((text) => text.split(' '))
       .some((word) => this.head.ruler.width('fv-readout__label', word) > column);
     const nameRoom = (wide ? this.contentWidth : column) - labelWidth(` · ${condition}`);
-    const named = nameRoom >= Math.min(64, labelWidth(name) + 2);
+    const named = namesItself(this.config) && nameRoom >= Math.min(64, labelWidth(name) + 2);
     // the figure at the hero's 40 while it holds its column beside the 64 circle (a 211 column does not hold
     // "17.6 °C"): else at the readout's 24, a step down before its unit is cut
     const unit = value === null ? '' : this.unit();
@@ -907,9 +916,10 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
       // the line is the condition's: a reading that cannot be had says nothing more ("Feels —" is the hero's slot)
       ...(view.status === 'ok' ? this.contextParts() : []),
     ].filter(Boolean);
+    const title = namesItself(this.config) ? o.name : '';
     const fitted = this.head.fit({
       width: this.contentWidth,
-      title: o.name,
+      title,
       // what follows a condition left to the glyph leaves whole too, from the end, beside the circle
       sub: said
         ? segments.join(' · ')
@@ -925,7 +935,7 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
       icon: fitted.icon ? o.icon : null,
       small: fitted.small,
       tone: o.tone,
-      title: o.name,
+      title,
       name: true,
       sub: fitted.sub,
       trailing: html`<span class="am-weather__temp">${temperature}</span>`,

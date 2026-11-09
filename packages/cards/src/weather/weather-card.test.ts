@@ -2,9 +2,15 @@
 import type { HomeAssistant } from '@fluvy/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { familiesDefined } from '../index.js';
+import { weatherHeight } from '../weather-family.js';
+import type { FluvyWeatherCard } from './weather-card.js';
 
 // the weather card lands with its own chunk, defined as the index starts
 await familiesDefined;
+
+const FluvyWeatherCardClass = customElements.get(
+  'fluvy-weather-card',
+) as unknown as typeof FluvyWeatherCard;
 
 const NOW = '2026-10-17T19:00:00.000Z';
 
@@ -98,6 +104,58 @@ async function drawn(state: 'live' | 'unavailable' | 'unknown' | 'missing') {
 }
 
 afterEach(() => document.body.replaceChildren());
+
+const text = (el: Element | null | undefined): string =>
+  (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
+
+/** A live card of this config, on the page, its forecast answered. */
+async function mounted(config: Record<string, unknown>): Promise<ShadowRoot> {
+  const card = document.createElement('fluvy-weather-card') as CardElement;
+  card.setConfig({ type: 'custom:fluvy-weather-card', entity: 'weather.home', _now: NOW, ...config });
+  card.hass = house('live');
+  document.body.append(card);
+  await card.updateComplete;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await card.updateComplete;
+  return card.shadowRoot!;
+}
+
+describe('show_name (#145)', () => {
+  const height = (config: Record<string, unknown>): number =>
+    weatherHeight({ type: 'custom:fluvy-weather-card', ...config });
+
+  it('leaves the full hero’s label to the condition, with no separator', async () => {
+    const root = await mounted({ show_name: false });
+    expect(root.querySelector('.am-weather__name')).toBeNull();
+    expect(text(root.querySelector('.am-weather__label'))).toBe('Sunny');
+  });
+
+  it('leaves the compact head without its title, the condition on its line', async () => {
+    const root = await mounted({ variant: 'compact', show_name: false });
+    expect(text(root.querySelector('.fv-card__title'))).toBe('');
+    expect(text(root.querySelector('.fv-card__sub'))).toContain('Sunny');
+  });
+
+  it('keeps the name by default', async () => {
+    const root = await mounted({ variant: 'compact' });
+    expect(text(root.querySelector('.fv-card__title'))).toBe('Home');
+  });
+
+  it('changes no declared height', () => {
+    for (const variant of ['full', 'compact'])
+      expect(height({ variant, show_name: false })).toBe(height({ variant }));
+  });
+
+  it('takes the name field away from the editor while the name is hidden', () => {
+    const fields = FluvyWeatherCardClass.getConfigForm().schema.flatMap(
+      (item) => item.schema ?? [item],
+    );
+    const name = fields.find((item) => item.name === 'name');
+    expect(fields.some((item) => item.name === 'show_name')).toBe(true);
+    expect(name?.when?.({ show_name: false })).toBe(false);
+    expect(name?.when?.({})).toBe(true);
+  });
+});
 
 describe('a weather out of reach keeps its hero, its hours and its days (1.9)', () => {
   it('draws the live card’s slots, nothing forecast in them', async () => {

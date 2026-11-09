@@ -954,6 +954,20 @@ export const sheet: SheetSpec = {
         },
       ],
     },
+    // the name asked away (#145): the hero's label says the condition, the compact head its one line
+    {
+      title: 'Weather · no name',
+      cards: [
+        { type: 'custom:fluvy-weather-card', entity: 'weather.am_home', show_name: false, _now },
+        {
+          type: 'custom:fluvy-weather-card',
+          entity: 'weather.am_home',
+          variant: 'compact',
+          show_name: false,
+          _now,
+        },
+      ],
+    },
     {
       title: 'Weather · edges',
       cards: [
