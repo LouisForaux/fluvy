@@ -17,17 +17,19 @@ import {
   GAUGE_PRESETS,
   HOUSE_ACTS,
   PALETTE_REFS,
-  PREVIEW_LEAST,
-  previewChart,
-  previewGauge,
-  previewSeries,
-  previewStyle,
   refHex,
   refInk,
   seriesCheck,
   setInks,
   type FittedSet,
 } from '../chart/engine/index.js';
+import {
+  PREVIEW_LEAST,
+  previewChart,
+  previewGauge,
+  previewSeries,
+  previewStyle,
+} from '../chart/engine/preview.js';
 import { FINE_ROWS, TIME_ROWS, type FineRow } from './chart-words.js';
 import type { PanelContext, StringKey } from './model.js';
 import { choice, gap, hexField, inkOn, swatches } from './sections.js';

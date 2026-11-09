@@ -38,11 +38,7 @@
  *   chartStyles · adopt(root)                 the engine's sheet (`styles.ts`)
  *   HOUSE_ACTS                                the house's chart settings each style draws with: what the
  *                                             settings panel offers for the style chosen
- *   previewStyle · previewGauge · previewChart · previewSeries
- *                                             the settings panel's Charts tab (`preview.ts`): a style's tile, a
- *                                             gauge's, the preview of a chart, its bars and a gauge in one mode, a
- *                                             set of series colours — each on the settings being chosen, at least
- *                                             `PREVIEW_LEAST` across
+ *   the settings panel's Charts tab draws with `preview.ts`, which travels with the panel and is imported from there
  *   the maths, pure and tested: `scale.ts` (tightScale, airScale, niceTicks, niceStep, yOf), `path.ts`
  *   (linePath, areaPath, bandPath, yAt, splitAt), `bars.ts` (barGeometry, barPath, columns, thinStep, labelled,
  *   labelsApart), `axis.ts` (tickText, gridLines, tickLabels, unitLabel, quarterTicks, slotTicks, roundTicks), `ring.ts` (polar,
@@ -197,12 +193,3 @@ export {
   type ChartSpec,
   type Reading,
 } from './draw.js';
-export {
-  PREVIEW_LEAST,
-  previewChart,
-  previewGauge,
-  previewSeries,
-  previewStyle,
-  type ChartPreviewOptions,
-  type GaugePreviewOptions,
-} from './preview.js';

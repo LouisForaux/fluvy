@@ -123,8 +123,9 @@ const BUDGETS = {
   // (1.15: they left core, 4.3 KB)
   fields: 8192,
   // the editors of the cards every page carries: their forms, lists and defaults, fetched with the visual editor
-  // (1.11: they left core, 6.3 KB)
-  forms: 12_288,
+  // (1.11: they left core, 6.3 KB). 14 KB since 1.18 (the TV remote's editor, #143, and the room's colour round, #137,
+  // with the sliders' style on every editor that draws one): measured at 12.7 KB; 12 before
+  forms: 14_336,
   'view-icons': 4096,
   // what a see-through card wears (1.15): its sheet and what writes its fills at its opacity
   glass: 4096,

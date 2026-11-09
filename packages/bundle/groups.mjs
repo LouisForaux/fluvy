@@ -32,9 +32,9 @@ const ACTIVITY =
 const HISTORY =
   /\/packages\/(cards\/src\/history\/(?!takeover\.ts)|core\/src\/history\/(?!series\.ts)|core\/src\/i18n\/locales\/en\/history\.json)/;
 
-/** Fluvy's settings panel (all of its folder but the switch that fetches it, and its English), the community palettes its gallery lists and the little house its preview answers taps with: fetched when `/fluvy` is opened. */
+/** Fluvy's settings panel (all of its folder but the switch that fetches it, and its English), what its Charts tab draws of the chart engine's (`engine/preview.ts`), the community palettes its gallery lists and the little house its preview answers taps with: fetched when `/fluvy` is opened. */
 const PANEL =
-  /\/packages\/(cards\/src\/panel\/(?!on-demand\.ts)|tokens\/src\/palettes\/community\/|demo-home\/src\/simulate\.ts|core\/src\/i18n\/locales\/en\/panel\.json)/;
+  /\/packages\/(cards\/src\/(panel\/(?!on-demand\.ts)|chart\/engine\/preview\.ts)|tokens\/src\/palettes\/community\/|demo-home\/src\/simulate\.ts|core\/src\/i18n\/locales\/en\/panel\.json)/;
 
 /** The automatic dashboard's strategy (all of its folder but the definer, and its English): fetched when a dashboard asks for it. */
 const STRATEGY =
