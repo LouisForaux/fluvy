@@ -499,6 +499,7 @@
     "show_actions": "Knoppen tonen",
     "show_forecast": "Verwachting tonen",
     "show_name": "Naam tonen",
+    "hourly_step": "Uren tussen kolommen",
     "show_subtitle": "Ondertitel tonen",
     "show_cost": "Kosten tonen",
     "show_peak": "Piek tonen",

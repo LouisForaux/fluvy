@@ -499,6 +499,7 @@
     "show_actions": "Mostrar os botões",
     "show_forecast": "Mostrar a previsão",
     "show_name": "Mostrar o nome",
+    "hourly_step": "Horas entre colunas",
     "show_subtitle": "Mostrar o subtítulo",
     "show_cost": "Mostrar o custo",
     "show_peak": "Mostrar o pico",

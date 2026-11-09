@@ -448,6 +448,7 @@
     "show_actions": "A gombok megjelenítése",
     "show_forecast": "Az előrejelzés megjelenítése",
     "show_name": "A név megjelenítése",
+    "hourly_step": "Oszlopok közötti órák",
     "show_subtitle": "Az alcím megjelenítése",
     "show_cost": "A költség megjelenítése",
     "show_peak": "A csúcs megjelenítése",

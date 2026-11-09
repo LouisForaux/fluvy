@@ -91,6 +91,11 @@ export interface WeatherCardConfig extends FluvyCardConfig {
   show_forecast?: boolean;
   /** The entity's name (default); `false` leaves the condition to say what the card is, in either variant. */
   show_name?: boolean;
+  /**
+   * Hours between the hour columns, one to six (default 1): "Now, 9, 11…" for a step of 2. Each column is the forecast's
+   * own entry at its hour, never a mean of the hours it stands for.
+   */
+  hourly_step?: number;
   /** Test hook: an ISO date that freezes "now" (day labels, the hours ahead). Undocumented. */
   _now?: string;
 }
@@ -127,9 +132,31 @@ const dayCountOf = forecastDaysOf;
 /** Whether a config shows the entity's name: all but `show_name: false`. */
 const namesItself = (config: { readonly show_name?: unknown } | undefined): boolean =>
   config?.show_name !== false;
+const showsHours = (mode: Drawn): boolean => mode === 'hourly' || mode === 'both';
 
 const isNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
+/** A step of hours past this says nothing of the day the card shows. */
+const MAX_HOUR_STEP = 6;
+/** How far before its hour an entry still counts as at it: forecasts round their times in their own way. */
+const STEP_SLACK = HOUR_MS / 4;
+
+/**
+ * The hours a step apart, each the forecast's own entry at its time (7, 9, 11 from an hourly forecast at a step of 2;
+ * 7, 10, 13 from one of every three hours), never a blend of the hours between.
+ */
+function everyStep<T extends { readonly at: number }>(
+  hours: readonly T[],
+  step: number,
+): readonly T[] {
+  if (step === 1) return hours;
+  let next = -Infinity;
+  return hours.filter(({ at }) => {
+    if (at < next) return false;
+    next = at + step * HOUR_MS - STEP_SLACK;
+    return true;
+  });
+}
 const dayOf = (date: Date): number =>
   date.getFullYear() * 10_000 + date.getMonth() * 100 + date.getDate();
 const capitalise = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
@@ -291,6 +318,7 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
     'days',
     'show_forecast',
     'show_name',
+    'hourly_step',
   ]);
   /** `forecast: none` was the way to keep the hero alone: it reads as `show_forecast: false`. */
   static override aliases: AliasSpec = {
@@ -320,6 +348,10 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
           selectField('forecast', ['daily', 'hourly', 'both']),
         ),
         fieldRow(numberField('days', 1, 10), boolField('show_forecast')),
+        onlyWhen(
+          (data) => showsHours(forecastModeOf(data)),
+          numberField('hourly_step', 1, MAX_HOUR_STEP),
+        ),
         accentField(),
         accentField('card_color', { none: true }),
         cardOpacityField(),
@@ -371,6 +403,11 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
 
   private dayCount(): number {
     return dayCountOf(this.config);
+  }
+
+  private hourStep(): number {
+    const step = this.config?.hourly_step;
+    return Math.min(MAX_HOUR_STEP, Math.max(1, Math.round(isNumber(step) ? step : 1)));
   }
 
   private now(): Date {
@@ -547,7 +584,7 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
       (view.status === 'unknown' && (items === undefined || items?.length))
     )
       return items;
-    const step = type === 'hourly' ? HOUR_MS : DAY_MS;
+    const step = type === 'hourly' ? this.hourStep() * HOUR_MS : DAY_MS;
     const now = this.now().getTime();
     const start = type === 'hourly' ? Math.floor(now / HOUR_MS) * HOUR_MS : now;
     return Array.from({ length: type === 'hourly' ? 6 : this.dayCount() + 1 }, (_unused, i) => ({
@@ -612,10 +649,12 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
   ): TemplateResult | typeof nothing {
     if (items === undefined) return html`<div class="am-hours is-loading"></div>`;
     const now = this.now().getTime();
-    const ahead = (items ?? [])
-      .map((item) => ({ item, at: Date.parse(item.datetime) }))
-      .filter(({ at }) => Number.isFinite(at) && at > now - HOUR_MS)
-      .slice(0, Math.max(3, Math.min(6, Math.floor(this.contentWidth / HOUR_COLUMN))));
+    const ahead = everyStep(
+      (items ?? [])
+        .map((item) => ({ item, at: Date.parse(item.datetime) }))
+        .filter(({ at }) => Number.isFinite(at) && at > now - HOUR_MS),
+      this.hourStep(),
+    ).slice(0, Math.max(3, Math.min(6, Math.floor(this.contentWidth / HOUR_COLUMN))));
     if (ahead.length === 0) return nothing;
     const family = getComputedStyle(this).fontFamily;
     const hours = ahead.map(({ item, at }) => {
@@ -809,7 +848,7 @@ export class FluvyWeatherCard extends Card<WeatherCardConfig> {
     const tone: Tone = !usable ? 'off' : !known ? 'neutral' : night ? 'accent' : 'solar';
     const value = usable ? this.degrees(view.attr('temperature'), 1) : null;
     const mode = this.mode();
-    const hours = mode === 'hourly' || mode === 'both';
+    const hours = showsHours(mode);
     const days = mode === 'daily' || mode === 'both';
     // out of reach the ban glyph, or quiet (`unavailable`) the sky's own at rest
     const icon =

@@ -157,6 +157,66 @@ describe('show_name (#145)', () => {
   });
 });
 
+describe('hourly_step (#146)', () => {
+  const hours = (root: ShadowRoot): string[] =>
+    [...root.querySelectorAll('[data-forecast="hourly"] .am-hour__v')].map(text);
+
+  it('shows the forecast’s own entry at every step, never a blend', async () => {
+    // the forecast cools a degree an hour from 18: the entries at 0, 2 and 4 hours
+    expect(hours(await mounted({ forecast: 'hourly', hourly_step: 2 }))).toEqual([
+      '18°',
+      '16°',
+      '14°',
+    ]);
+  });
+
+  it('leaves the hours as they were by default', async () => {
+    expect(hours(await mounted({ forecast: 'hourly' }))).toEqual([
+      '18°',
+      '17°',
+      '16°',
+      '15°',
+      '14°',
+    ]);
+  });
+
+  it('draws as many columns as a short forecast gives', async () => {
+    expect(hours(await mounted({ forecast: 'hourly', hourly_step: 5 }))).toEqual(['18°', '13°']);
+  });
+
+  it('keeps a weather out of reach’s columns, their hours a step apart', async () => {
+    const card = document.createElement('fluvy-weather-card') as CardElement;
+    card.setConfig({
+      type: 'custom:fluvy-weather-card',
+      entity: 'weather.home',
+      forecast: 'hourly',
+      hourly_step: 3,
+      _now: NOW,
+    });
+    card.hass = house('unavailable');
+    document.body.append(card);
+    await card.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await card.updateComplete;
+    const root = card.shadowRoot!;
+    expect(hours(root)).toEqual(['—', '—', '—', '—', '—']);
+    const [first, second] = [...root.querySelectorAll('[data-forecast="hourly"] .am-hour__t')]
+      .slice(1)
+      .map((label) => Number(text(label)));
+    expect(((second as number) - (first as number) + 24) % 24).toBe(3);
+  });
+
+  it('is offered only while the forecast shows hours', () => {
+    const field = FluvyWeatherCardClass.getConfigForm().schema.find(
+      (item) => item.name === 'hourly_step',
+    );
+    expect(field?.when?.({ forecast: 'hourly' })).toBe(true);
+    expect(field?.when?.({ forecast: 'both' })).toBe(true);
+    expect(field?.when?.({})).toBe(false);
+    expect(field?.when?.({ forecast: 'hourly', show_forecast: false })).toBe(false);
+  });
+});
+
 describe('a weather out of reach keeps its hero, its hours and its days (1.9)', () => {
   it('draws the live card’s slots, nothing forecast in them', async () => {
     const live = await drawn('live');

@@ -37,6 +37,8 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   and `points` win, and both travel with a backup and with Export and Import.
 - The Weather card can hide the name of its weather (`show_name: false`, or Show the name in its editor): the condition
   says what the card is, in either variant, with no name and no separator beside it (#145).
+- The Weather card's hourly forecast can step over hours (`hourly_step`, or Hours between columns in its editor, from
+  1 to 6): "Now, 9, 11" at a step of 2, each column the forecast's own entry at its hour (#146).
 
 ### Fixed
 

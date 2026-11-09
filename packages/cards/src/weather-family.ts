@@ -14,7 +14,7 @@ export const WEATHER_COMPACT_HEAD = 84;
 
 /** What a config draws under the hero: a mode, or nothing when the forecast is not shown. */
 export function forecastModeOf(
-  config: LovelaceCardConfig | undefined,
+  config: Readonly<Record<string, unknown>> | undefined,
 ): 'daily' | 'hourly' | 'both' | 'none' {
   if (config?.['show_forecast'] === false) return 'none';
   const mode = config?.['forecast'];

@@ -1103,6 +1103,7 @@
     "show_actions": "Pokaż przyciski",
     "show_forecast": "Pokaż prognozę",
     "show_name": "Pokaż nazwę",
+    "hourly_step": "Godziny między kolumnami",
     "show_subtitle": "Pokaż podtytuł",
     "show_cost": "Pokaż koszt",
     "show_peak": "Pokaż szczyt",

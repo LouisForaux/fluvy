@@ -1664,6 +1664,7 @@
     "show_actions": "显示按钮",
     "show_forecast": "显示预报",
     "show_name": "显示名称",
+    "hourly_step": "每列间隔小时数",
     "show_subtitle": "显示副标题",
     "show_cost": "显示费用",
     "show_peak": "显示峰值",

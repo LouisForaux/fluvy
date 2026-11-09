@@ -448,6 +448,7 @@
     "show_actions": "ボタンを表示",
     "show_forecast": "予報を表示",
     "show_name": "名前を表示",
+    "hourly_step": "列の間隔（時間）",
     "show_subtitle": "サブタイトルを表示",
     "show_cost": "コストを表示",
     "show_peak": "ピークを表示",

@@ -110,8 +110,12 @@ const PRESSURE = Array.from(
   (_, index) => 1013.2 + Math.round(Math.sin(index / 7) * 38) / 10,
 );
 
-const SHEET_HOURS = ['sunny', 'sunny', 'cloudy', 'cloudy', 'rainy', 'rainy'];
-const SHEET_TEMPERATURES = [18, 16.4, 15.2, 14, 13.1, 12.6]; // the card rounds a forecast to whole degrees
+// six are the sheet's columns, the rest what a step of hours reads
+const SHEET_HOURS = [
+  ...['sunny', 'sunny', 'cloudy', 'cloudy', 'rainy', 'rainy'],
+  ...['rainy', 'cloudy', 'cloudy', 'partlycloudy', 'partlycloudy', 'sunny'],
+];
+const SHEET_TEMPERATURES = [18, 16.4, 15.2, 14, 13.1, 12.6, 12.1, 11.8, 11.5, 11.2, 11, 10.9]; // the card rounds a forecast to whole degrees
 const CLEAR_HOURS = ['sunny', 'sunny', 'sunny', 'partlycloudy', 'sunny', 'partlycloudy'];
 const DAYS = [
   { condition: 'partlycloudy', temperature: 21.6, templow: 13.2, precipitation_probability: 0 },
@@ -964,6 +968,27 @@ export const sheet: SheetSpec = {
           entity: 'weather.am_home',
           variant: 'compact',
           show_name: false,
+          _now,
+        },
+      ],
+    },
+    // every second hour (#146): the forecast's own entries, "Now" first
+    {
+      title: 'Weather · hours two apart',
+      cards: [
+        {
+          type: 'custom:fluvy-weather-card',
+          entity: 'weather.am_home',
+          forecast: 'hourly',
+          hourly_step: 2,
+          _now,
+        },
+        {
+          type: 'custom:fluvy-weather-card',
+          entity: 'weather.am_home',
+          variant: 'compact',
+          forecast: 'hourly',
+          hourly_step: 2,
           _now,
         },
       ],

@@ -499,6 +499,7 @@
     "show_actions": "Düğmeleri göster",
     "show_forecast": "Tahmini göster",
     "show_name": "Adı göster",
+    "hourly_step": "Sütunlar arası saat",
     "show_subtitle": "Alt başlığı göster",
     "show_cost": "Maliyeti göster",
     "show_peak": "Zirveyi göster",
