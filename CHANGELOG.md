@@ -71,6 +71,9 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   which build the server serves is asked about again, where it waited for the next trigger.
 - Fluvy could fail to start on a read-only `custom_components`, or where a file went away while its compressed copies
   were checked: each one that cannot be kept true is logged and tried again at the next start.
+- The Energy card's line, and a Chart card's line of statistics, held the last reading across a gap in the recorder,
+  where Home Assistant's line breaks: they break there now, the figures read nothing inside the gap, and a page left
+  open for weeks no longer keeps the energy cards' five-minute answers it will not ask for again.
 
 ## [1.17.0] — 2026-11-07
 

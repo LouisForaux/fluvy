@@ -1,6 +1,6 @@
 import { summarise, type EntityView, type HomeAssistant, type Series } from '@fluvy/core';
 import type { Totals } from './allocate.js';
-import { fullDays, houseMidnight, type Range } from './period.js';
+import { forgetStale, fullDays, houseMidnight, type Range } from './period.js';
 import { measureIds, type PowerMeasure, type PrefSource } from './prefs.js';
 import { net, readMeasure, together } from './reading.js';
 
@@ -166,6 +166,7 @@ export function fetchPowerDay(
     })
     .then((result) => result ?? {})
     .catch(() => null);
+  forgetStale(cache);
   cache.set(key, { at: Date.now(), promise });
   return promise;
 }
@@ -189,8 +190,9 @@ const series = new Map<string, { at: number; promise: Promise<MeanSeries | null>
 /**
  * A sensor's means over a range, every bucket as Home Assistant's history draws it — at its start, so 12:00 reads the
  * bucket from 12:00 to 12:05: five-minute buckets over up to two days, hours beyond, up to the last one begun by `until`
- * (the range's end, or now while it runs). A bucket the recorder has no mean for (not compiled yet, the sensor away)
- * reads the last one before it. Kept five minutes; `null` when unreadable or empty.
+ * (the range's end, or now while it runs). `values` holds the last mean across a bucket the recorder has none for (not
+ * compiled yet, the sensor away), for the figures; `readings` are the buckets it has, where the line breaks across a gap
+ * as Home Assistant's does. Kept five minutes; `null` when unreadable or empty.
  */
 export function fetchMeanSeries(
   hass: HomeAssistant,
@@ -228,11 +230,16 @@ export function fetchMeanSeries(
         values.push(mean);
       }
       const summary = summarise(values);
-      return summary && { ...summary, step };
+      return (
+        summary && {
+          ...summary,
+          step,
+          readings: rows.map((row) => ({ t: row.start, v: Number(row.mean) })),
+        }
+      );
     })
     .catch(() => null);
-  // a running range asks again every five minutes: what is older than that goes
-  for (const [k, v] of series) if (Date.now() - v.at >= TTL) series.delete(k);
+  forgetStale(series);
   series.set(key, { at: Date.now(), promise });
   return promise;
 }

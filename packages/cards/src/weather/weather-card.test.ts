@@ -111,7 +111,12 @@ const text = (el: Element | null | undefined): string =>
 /** A live card of this config, on the page, its forecast answered. */
 async function mounted(config: Record<string, unknown>): Promise<ShadowRoot> {
   const card = document.createElement('fluvy-weather-card') as CardElement;
-  card.setConfig({ type: 'custom:fluvy-weather-card', entity: 'weather.home', _now: NOW, ...config });
+  card.setConfig({
+    type: 'custom:fluvy-weather-card',
+    entity: 'weather.home',
+    _now: NOW,
+    ...config,
+  });
   card.hass = house('live');
   document.body.append(card);
   await card.updateComplete;

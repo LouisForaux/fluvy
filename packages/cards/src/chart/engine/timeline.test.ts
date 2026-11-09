@@ -169,6 +169,40 @@ describe('a line through a window', () => {
   });
 });
 
+describe('a gap in the recorder', () => {
+  // five-minute means with nothing between 11:15 and 11:45, then 11:45 and 11:50
+  const buckets = [
+    ...Array.from({ length: 16 }, (_unused, i) => ({ t: at(10) + i * 5 * MINUTE, v: 2 })),
+    { t: at(11, 45), v: 4 },
+    { t: at(11, 50), v: 4 },
+  ];
+  const window = { start: at(10), end: at(12, 10) };
+
+  it('breaks the line, as Home Assistant’s does, drawn automatically or every step', () => {
+    for (const mean of [true, false]) {
+      const laid = layLine(buckets, window, 5 * MINUTE, MIDNIGHT, mean, 5 * MINUTE);
+      const value = (minutes: number): number | null | undefined =>
+        laid.values[laid.at.findIndex((a) => Math.abs(a - minutes / 130) < 1e-9)];
+      expect(value(70), String(mean)).toBe(2); // 11:10, the last before the gap
+      expect(value(95), String(mean)).toBeNull(); // 11:35: nothing recorded
+      expect(value(105), String(mean)).toBe(4); // 11:45, back
+    }
+  });
+
+  it('keeps the stretch after the last reading: those buckets are not compiled yet', () => {
+    const laid = layLine(buckets, window, 5 * MINUTE, MIDNIGHT, false, 5 * MINUTE);
+    expect(laid.values[laid.values.length - 1]).toBe(4); // 12:10
+  });
+
+  it('says nothing where it is pointed at inside the gap, and joins readings without a bucket', () => {
+    expect(readLine(buckets, window, 95 / 130, 5 * MINUTE, MIDNIGHT, 5 * MINUTE)).toBeNull();
+    expect(readLine(buckets, window, 105 / 130, 5 * MINUTE, MIDNIGHT, 5 * MINUTE)?.v).toBe(4);
+    // a sensor's own history has no buckets: its reading holds until the next
+    const held = layLine(buckets, window, 5 * MINUTE, MIDNIGHT, false);
+    expect(held.values.every((v) => v !== null)).toBe(true);
+  });
+});
+
 describe('a line read where it is pointed at', () => {
   it('reads Home Assistant’s reading at the round time nearest the pointer: the five-minute bucket, never a mean', () => {
     const day = { start: at(0), end: at(24) };

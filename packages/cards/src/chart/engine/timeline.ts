@@ -121,6 +121,16 @@ function indexAt(readings: readonly Timed[], t: number): number {
 export const valueAt = (readings: readonly Timed[], t: number): number | null =>
   readings[indexAt(readings, t)]?.v ?? null;
 
+/**
+ * Whether the recorder has nothing at `t`: a statistic's reading is its bucket (`finest`) and no longer, so past it, with
+ * a later one still to come, the line breaks as Home Assistant's does. The stretch after the last reading is no gap: its
+ * buckets are not compiled yet.
+ */
+function inGap(readings: readonly Timed[], t: number, finest: number): boolean {
+  const i = indexAt(readings, t);
+  return finest > 0 && i >= 0 && i < readings.length - 1 && t - (readings[i] as Timed).t >= finest;
+}
+
 /** The mean of the readings across a stretch, each held until the next: two lookups of their running area. */
 function meanOf(readings: readonly Timed[]): (from: number, to: number) => number | null {
   const area = [0];
@@ -149,7 +159,8 @@ export interface Laid {
 /**
  * The line of `readings` over a window: a point on each round time `step` apart from `origin` (the house's midnight)
  * and one on each of the window's ends — the mean of the readings within half a step of it (`mean`), else the reading
- * in force at its time. Before the first reading there is none: the line starts where its readings do.
+ * in force at its time. Before the first reading there is none: the line starts where its readings do; in a gap of the
+ * recorder's (`inGap`) it breaks.
  */
 export function layLine(
   readings: readonly Timed[],
@@ -157,6 +168,7 @@ export function layLine(
   step: number,
   origin: number,
   mean: boolean,
+  finest = 0,
 ): Laid {
   const { start, end } = window;
   const times = [start];
@@ -164,11 +176,22 @@ export function layLine(
     if (t > start) times.push(t);
   times.push(end);
   const around = mean ? meanOf(readings) : null;
+  // a stretch that reaches into a gap stops at its edge: what the gap would hold is no reading
+  const reading = (t: number, forward: boolean): number => {
+    if (!inGap(readings, t, finest)) return t;
+    const i = indexAt(readings, t);
+    return forward ? (readings[i + 1] as Timed).t : (readings[i] as Timed).t + finest;
+  };
   return {
     values: times.map((t) =>
-      around
-        ? around(Math.max(start, t - step / 2), Math.min(end, t + step / 2))
-        : valueAt(readings, t),
+      inGap(readings, t, finest)
+        ? null
+        : around
+          ? around(
+              reading(Math.max(start, t - step / 2), true),
+              reading(Math.min(end, t + step / 2), false),
+            )
+          : valueAt(readings, t),
     ),
     at: times.map((t) => (t - start) / Math.max(1, end - start)),
   };
@@ -184,13 +207,14 @@ export function readLine(
   fraction: number,
   grain: number,
   origin: number,
+  finest = 0,
 ): { readonly t: number; readonly v: number; readonly fraction: number } | null {
   const { start, end } = window;
   const pointed = start + Math.min(1, Math.max(0, fraction)) * (end - start);
   let t = origin + Math.round((pointed - origin) / grain) * grain;
   if (t > end) t -= grain;
   if (t < start) t = t + grain > end ? pointed : t + grain;
-  const v = valueAt(readings, t);
+  const v = inGap(readings, t, finest) ? null : valueAt(readings, t);
   return v === null ? null : { t, v, fraction: (t - start) / Math.max(1, end - start) };
 }
 
@@ -217,7 +241,7 @@ export interface TimeLineOptions<S extends LineStyle> {
   readonly style: S;
   /** The house, whose clock the round times are on. */
   readonly hass: HomeAssistant | undefined;
-  /** The finest the readings come (ms): a statistic's bucket; none for a sensor's own history. */
+  /** The finest the readings come (ms): a statistic's bucket, where a gap in the recorder breaks the line; none for a sensor's own history. */
   readonly finest?: number;
 }
 
@@ -233,12 +257,12 @@ export function timeLine<S extends LineStyle>(o: TimeLineOptions<S>): TimeLine<S
   const origin = midnightOf(o.hass, o.end);
   const grain = grainOf(length, o.width, o.finest);
   return {
-    ...layLine(o.readings, window, step, origin, o.style.every === 'auto'),
+    ...layLine(o.readings, window, step, origin, o.style.every === 'auto', o.finest),
     style: {
       ...o.style,
       line: strokeFor(o.style.line, (o.width * step) / Math.max(1, length), blurred),
     },
-    read: (fraction) => readLine(o.readings, window, fraction, grain, origin),
+    read: (fraction) => readLine(o.readings, window, fraction, grain, origin, o.finest),
   };
 }
 

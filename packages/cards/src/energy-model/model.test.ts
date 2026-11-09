@@ -5,11 +5,13 @@ import {
   allocatePeriod,
   clearPeriodCache,
   fetchRange,
+  forgetStale,
   fullDays,
   houseMidnight,
   rangeOf,
   stepFor,
 } from './period.js';
+import { fetchMeanSeries } from './power-day.js';
 import { readPrefs, type EnergyPrefs } from './prefs.js';
 import { readMeasure, net } from './reading.js';
 import { bothWays, legacySources, measureOfSource, prefSources } from './sources.js';
@@ -455,6 +457,43 @@ describe('houseMidnight', () => {
     const now = new Date('2026-09-30T10:30:00Z'); // 12:30 in Madrid
     expect(houseMidnight(hass, now).toISOString()).toBe('2026-09-29T22:00:00.000Z');
     expect(houseMidnight(hass, now, 6).toISOString()).toBe('2026-09-23T22:00:00.000Z');
+  });
+});
+
+describe('the five-minute caches', () => {
+  it('forget what is past its time, a day of keys never piling up on an open page', () => {
+    const now = Date.now();
+    const entries = new Map([
+      ['old', { at: now - 10 * 60_000, promise: 1 }],
+      ['fresh', { at: now - 60_000, promise: 2 }],
+    ]);
+    forgetStale(entries);
+    expect([...entries.keys()]).toEqual(['fresh']);
+  });
+
+  it('a range’s readings leave out what the recorder has no mean for, its figures hold the last', async () => {
+    const base = 1_700_000_000_000 - (1_700_000_000_000 % 3_600_000);
+    const hass = {
+      callWS: () =>
+        Promise.resolve({
+          'sensor.power': [
+            { start: base, mean: 1 },
+            { start: base + 300_000, mean: null },
+            { start: base + 900_000, mean: 3 },
+          ],
+        }),
+    } as unknown as HomeAssistant;
+    const series = await fetchMeanSeries(
+      hass,
+      'sensor.power',
+      { start: new Date(base), end: new Date(base + 1_500_000) },
+      new Date(base + 1_500_000),
+    );
+    expect(series?.readings).toEqual([
+      { t: base, v: 1 },
+      { t: base + 900_000, v: 3 },
+    ]);
+    expect(series?.values).toEqual([1, 1, 1, 3, 3, 3]);
   });
 });
 

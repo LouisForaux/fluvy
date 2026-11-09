@@ -1317,9 +1317,7 @@ export class FluvyEnergyCard extends Card<EnergyCardConfig> {
         ? houseMidnight(this.hass, now).getTime()
         : now.getTime() - window.hours * 3_600_000;
     const end = step ? start + ((series?.values.length ?? 0) - 1) * step : now.getTime();
-    const readings = step
-      ? series?.values.map((v, i) => ({ t: start + i * step, v }))
-      : series?.readings;
+    const readings = series?.readings;
     const extent = range && step ? clamp((end - start) / spanOf(range, now), 0, 1) : window.extent;
     if (!readings?.length || !(end > start)) return { line: null, extent };
     const line = timeLine({

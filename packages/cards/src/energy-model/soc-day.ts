@@ -1,7 +1,7 @@
 import { fetchHistory, type HomeAssistant } from '@fluvy/core';
 import { stateOfCharge } from '../batteries/pack.js';
 import type { ChargePoint } from '../energy/stack.js';
-import { houseMidnight } from './period.js';
+import { forgetStale, houseMidnight } from './period.js';
 import type { PrefSource } from './prefs.js';
 
 /**
@@ -63,6 +63,7 @@ export function fetchChargeDay(
       return rows;
     })
     .catch(() => null);
+  forgetStale(cache);
   cache.set(key, { at: Date.now(), promise });
   return promise;
 }

@@ -94,6 +94,15 @@ export interface PeriodEnergy {
 const cache = new Map<string, { at: number; promise: Promise<PeriodEnergy | null> }>();
 const TTL = 5 * 60_000;
 
+/** Forgets what a cache keyed on the time holds past `ttl`: a page stays open for weeks, a new key comes every five minutes. */
+export function forgetStale<V>(
+  entries: Map<string, { readonly at: number; readonly promise: V }>,
+  ttl = TTL,
+): void {
+  const now = Date.now();
+  for (const [key, entry] of entries) if (now - entry.at >= ttl) entries.delete(key);
+}
+
 /** The statistics of `ids` over a range, in `step` buckets: one request, kept five minutes. */
 function askRange(
   hass: HomeAssistant,
@@ -136,6 +145,7 @@ export function fetchRange(
   const promise = askRange(hass, ids, range, step)
     .then((rows) => allocatePeriod(rows, sources, extra))
     .catch(() => null);
+  forgetStale(cache);
   cache.set(key, { at: Date.now(), promise });
   return promise;
 }
