@@ -6,6 +6,8 @@ import {
   lightDefaults,
   relativeTime,
   resolveEntity,
+  sliderStill,
+  sliderStyleOf,
   stateText,
   TOGGLE_DOMAINS,
   toggleEntity,
@@ -237,7 +239,8 @@ export class FluvyTileCard extends Card<TileCardConfig> {
         height: 168px;
         text-align: left;
       }
-      .fv-tile > fluvy-ruler {
+      /* the ruler's 44 band drawn 4 up in the 40 foot slot; a bar or a liquid is 40 and fills it */
+      .fv-tile > fluvy-ruler[look='ruler'] {
         margin-top: -4px;
       }
       .fv-tile__foot {
@@ -729,11 +732,20 @@ export class FluvyTileCard extends Card<TileCardConfig> {
               >`
             : nothing;
 
-    let foot: TemplateResult | typeof nothing = nothing;
-    if (level) {
+    // the tile's button is laid over it, under its controls (the switch, a circle that is one, the ruler): a tap runs
+    // the tap action, a still press the hold action — never a switch inside a button
+    const tapAction = item.tap_action ?? MORE_INFO;
+    const tapNow = actionRuns(tapAction, view.id) ? () => this.tap(view.id, tapAction) : undefined;
+
+    // the slider's style (1.18, #144): the ruler at the foot (knob 28), a bar or a liquid in the foot's 40, or the
+    // fill — the tile itself, its ruler covering it and drawing the wash to the level under the words, the foot free
+    // for the readouts; a still press on it is the tile's tap or hold, which the ruler says (`fluvy-tap`, `fluvy-hold`)
+    const style = level ? sliderStyleOf(this.config, true) : 'ruler';
+    const fill = level !== null && style === 'fill';
+    const slider = (level: TileLevel, length: number): TemplateResult => {
       // a number's knob is always up, a player's while it is on; a muted player's volume stands in neutral
       const { scale, ticks, awake } = level;
-      foot = html`<fluvy-ruler
+      return html`<fluvy-ruler
         class=${awake ? '' : 'fv-ruler--off'}
         ?on-fill=${on}
         .value=${awake ? level.value : scale.min}
@@ -741,20 +753,31 @@ export class FluvyTileCard extends Card<TileCardConfig> {
         .max=${scale.max}
         .step=${scale.step}
         .origin=${scale.origin}
-        .length=${Math.max(24, inner)}
+        .length=${length}
+        .band=${fill ? 168 : style === 'ruler' ? 44 : 40}
         .knob=${28}
         .minor=${ticks.minor}
         .major=${ticks.major}
         .tone=${awake && !level.quiet ? tone : 'neutral'}
+        .look=${style}
+        ?still=${sliderStill()}
         ?inactive=${!awake}
         ?wake=${usable && level.wakes}
-        ?inert=${!usable}
+        ?disabled=${fill && !usable}
+        ?inert=${!fill && !usable}
         unit=${scale.unit}
         .label=${`${label} · ${level.label}`}
         .format=${(v: number) => scaleText(this.hass, scale, v)}
         @fluvy-input=${(e: CustomEvent<RulerChangeDetail>) => level.input?.(e.detail.value)}
         @fluvy-change=${(e: CustomEvent<RulerChangeDetail>) => level.commit(e.detail.value)}
+        @fluvy-tap=${tapNow}
+        @fluvy-hold=${holdNow}
       ></fluvy-ruler>`;
+    };
+
+    let foot: TemplateResult | typeof nothing = nothing;
+    if (level && !fill) {
+      foot = slider(level, Math.max(24, inner));
     } else if (item.readouts?.length) {
       const stats = item.readouts.map((id) => {
         const r = this.entity(id);
@@ -798,18 +821,15 @@ export class FluvyTileCard extends Card<TileCardConfig> {
       </div>`;
     }
 
-    // the tile's button is laid over it, under its controls (the switch, a circle that is one, the ruler): a tap runs
-    // the tap action, a still press the hold action — never a switch inside a button
-    const tapAction = item.tap_action ?? MORE_INFO;
-    const tapNow = actionRuns(tapAction, view.id) ? () => this.tap(view.id, tapAction) : undefined;
     const line = this.tileLine(item, view, lit, level, valueInHead);
     return html`<article
-      class=${`${classes}${foot === nothing ? ' fv-tile--footless' : this.nameFits(name) ? '' : ' fv-tile--tight'}`}
+      class=${`${classes}${fill ? ' fv-tile--fill' : ''}${foot === nothing ? ' fv-tile--footless' : this.nameFits(name) ? '' : ' fv-tile--tight'}`}
       data-card
       data-accent=${(usable && accent) || nothing}
       data-surface=${surface}
       data-unavailable=${quiet ? 'quiet' : nothing}
     >
+      ${fill ? slider(level, Math.floor(this.tileWidth())) : nothing}
       <div class="fv-tile__head">${lead}${trailing}</div>
       <h3 class="fv-tile__name">${name}</h3>
       <p class="fv-tile__state" data-name=${words ? '' : nothing}>

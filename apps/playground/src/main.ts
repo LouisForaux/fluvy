@@ -8,10 +8,12 @@ import {
   lookRule,
   parseChartSettings,
   parseSavedSeries,
+  parseSliderSettings,
   resolveLanguage,
   setCardDefaults,
   setChartDefaults,
   setLightDefaults,
+  setSliderDefaults,
   type HomeAssistant,
   type Look,
 } from '@fluvy/core';
@@ -67,6 +69,9 @@ import { loadFixture, SHEETS, type FrameSpec, type SheetSpec } from './scenes.js
  *                        colours (`[{"id":"warm","name":"Warm","colours":[six hexes]}]`, chosen by `series`)
  * ?opacity=80           the house's cards' surface (fluvy's settings → Appearance → Cards): how opaque every card is
  *                        that says none of its own, in 5 % steps; &blur=0 what shows through it unblurred
+ * ?sliders={"style":"bar"} the house's slider settings (fluvy's settings → Appearance → Sliders), as JSON: the
+ *                        style every slider is drawn in where a card says none (ruler | bar | liquid | fill) and the
+ *                        words under a bar or a liquid (`"words":"none"`), each read as the settings read it
  * ?warning=%23dc630b     the house's status colours (fluvy's settings → Appearance), over the page's look (Linen where
  *                        it asks none): &danger= &success= &notice= the same; a frame may name its own (`statuses`)
  * ?panel=appearance      fluvy's settings panel (appearance | charts | scope | dashboard | wall | preferences);
@@ -191,6 +196,20 @@ if (params.has('charts')) {
 // the house's cards' surface, as fluvy's settings would hand it to every card
 if (params.has('opacity') || params.has('blur') || params.has('unavailable'))
   setCardDefaults(cardsFor(params));
+
+// the house's slider settings, as fluvy's settings would hand them to every card
+if (params.has('sliders'))
+  setSliderDefaults(
+    parseSliderSettings(
+      (() => {
+        try {
+          return JSON.parse(params.get('sliders') ?? '') as unknown;
+        } catch {
+          return {};
+        }
+      })(),
+    ),
+  );
 
 const activity = params.get('activity') === '1';
 const history = params.get('history') === '1';

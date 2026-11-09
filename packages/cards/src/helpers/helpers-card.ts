@@ -1,4 +1,4 @@
-import { plural, strings } from '@fluvy/core';
+import { plural, sliderStyleOf, strings } from '@fluvy/core';
 import type { EntityView, FluvyCardConfig, LovelaceGridOptions } from '@fluvy/core';
 import { head, sheetStyles } from '@fluvy/ui';
 
@@ -225,6 +225,7 @@ export class FluvyHelpersCard extends Card<HelpersCardConfig> {
     const host: HelperHost = {
       hass: this.hass,
       contentWidth: this.contentWidth,
+      sliderStyle: sliderStyleOf(this.config),
       ruler: this.ruler,
       texts: this.texts,
       bare: false,

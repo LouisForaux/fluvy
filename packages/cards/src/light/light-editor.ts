@@ -4,7 +4,7 @@ import {
   type LovelaceConfigForm,
   type MessageKey,
 } from '@fluvy/core';
-import { HEAD_BASE } from '../shared/base.js';
+import { HEAD_BASE, SLIDER_BASE } from '../shared/base.js';
 import { configKeys } from '../shared/config.js';
 import {
   actionFields,
@@ -20,6 +20,7 @@ import {
   onlyWhen,
   selectField,
   showIconField,
+  sliderFields,
   textField,
   tintField,
 } from '../shared/form.js';
@@ -135,7 +136,7 @@ const brightnessField = (): HaFormSchemaItem =>
     ['false', 'option.never'],
   ]);
 
-export const base = HEAD_BASE;
+export const base = [...HEAD_BASE, ...SLIDER_BASE];
 
 export const keys = configKeys<LightCardConfig>()([
   'show_brightness',
@@ -219,6 +220,8 @@ export function getConfigForm(): LovelaceConfigForm {
         ),
       ),
       onlyWhen(shown(bulbDims), fieldRow(boolField('show_stepper'), boolField('live_update'))),
+      // its rulers' style, where it draws any: the brightness's, the temperature's, the hue's
+      ...sliderFields().map((row) => onlyWhen(shown(bulbDims), row)),
       fieldRow(
         onlyWhen(shown(bulbWarms), boolField('show_temperature')),
         onlyWhen(shown(bulbColours), boolField('show_color')),

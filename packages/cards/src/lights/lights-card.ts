@@ -9,6 +9,9 @@ import {
   isActive,
   isUsable,
   registryText,
+  sliderStill,
+  sliderStyleOf,
+  sliderWordsOf,
   strings,
   textName,
   type EntityName,
@@ -600,6 +603,7 @@ export class FluvyLightsCard extends FluvyTileCard {
     const level = this.levelOf(lamps);
     const any = level !== null;
     const dead = !lamps.some((lamp) => lamp.usable);
+    const look = sliderStyleOf(this.config);
     return html`<div class="lt-ruler">
       <fluvy-ruler
         .value=${level ?? 0}
@@ -611,16 +615,24 @@ export class FluvyLightsCard extends FluvyTileCard {
         ?disabled=${dead}
         ?inactive=${!any}
         ?wake=${!dead}
+        .look=${look}
+        ?still=${sliderStill()}
         unit="%"
         .label=${`${name} · ${this.t('light.brightness')}`}
         .format=${(v: number) => formatNumber(this.hass, v, { digits: 0 })}
         @fluvy-change=${(e: CustomEvent<RulerChangeDetail>) => this.setRoom(lamps, e.detail.value)}
       ></fluvy-ruler>
-      ${rulerLabels([
-        [0, '0'],
-        [0.5, '50'],
-        [1, '100'],
-      ])}
+      ${rulerLabels(
+        sliderWordsOf(
+          this.config,
+          [
+            [0, '0'],
+            [0.5, '50'],
+            [1, '100'],
+          ],
+          look,
+        ),
+      )}
     </div>`;
   }
 }

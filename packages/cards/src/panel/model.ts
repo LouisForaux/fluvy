@@ -12,6 +12,8 @@ import {
   type DevicePatch,
   type DeviceSettings,
   type EffectiveSettings,
+  type MessageKey,
+  type SliderStyle,
   type WallSettings,
   type HomeAssistant,
   type KeyOf,
@@ -62,12 +64,21 @@ export const TABS: readonly Tab[] = [
 
 export type StringKey = KeyOf<'panel'>;
 
-/** The house's settings the tabs edit (an administrator's to save); `wall`, `charts` and `cards` always whole. */
+/** A slider style's word among the options: the fill's is a tile's ("Fill"), where `fill` alone is a view's. */
+export const SLIDER_WORD: Readonly<Record<SliderStyle, MessageKey>> = {
+  ruler: 'option.ruler',
+  bar: 'option.bar',
+  liquid: 'option.liquid',
+  fill: 'option.tile_fill',
+};
+
+/** The house's settings the tabs edit (an administrator's to save); `wall`, `charts`, `cards` and `sliders` always whole. */
 export type HouseEdit = Partial<
   Pick<
     EffectiveSettings,
     | 'cards'
     | 'charts'
+    | 'sliders'
     | 'scope'
     | 'dashboards'
     | 'frame'
@@ -436,6 +447,17 @@ export function changeLines(ctx: PanelContext): string[] {
     if (unavailable !== ctx.settings.cards.unavailable)
       lines.push(
         `${t('cards.title')} · ${t('cards.unavailable')} · ${localize(ctx.hass, `option.${unavailable}`)}`,
+      );
+  }
+  if (house.sliders) {
+    const { style, words } = house.sliders;
+    if (style !== ctx.settings.sliders.style)
+      lines.push(
+        `${t('sliders.title')} · ${t('sliders.style')} · ${localize(ctx.hass, SLIDER_WORD[style])}`,
+      );
+    if (words !== ctx.settings.sliders.words)
+      lines.push(
+        `${t('sliders.title')} · ${t('sliders.words')} · ${localize(ctx.hass, `option.${words}`)}`,
       );
   }
   if (house.lightTint)

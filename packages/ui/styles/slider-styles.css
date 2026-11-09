@@ -1,0 +1,186 @@
+/* fluvy · slider styles (1.18, #144): what a ruler asked for another look draws in its own band — the bar, the
+   liquid and a tile's fill. Its own module (`controls/slider-styles.ts`), fetched by the first ruler asked for one
+   and adopted beside the ruler's own sheet; a house of rulers never pays for it. Every rule is inside the ruler's
+   shadow root: the card's tokens reach it as custom properties (the tone's, the inset ground, the mode's tints). */
+
+/* ---------- the bar: Home Assistant's idea in the ruler's slot ---------- */
+/* the track the inset ground (the card's colour on a lit tile), the control radius; it fills the band */
+.sb-bar {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--fluvy-radius-control, 12px);
+  background: var(--fluvy-inset, var(--fluvy-page));
+}
+
+/* the fill the tone's ink (the lit ticks' colour), from the origin to the level */
+.sb-bar__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--tone-ink);
+}
+
+.sb-bar--vertical .sb-bar__fill {
+  top: auto;
+  right: 0;
+}
+
+/* the handle: a 4 × 20 pill of the card's colour (solid on a see-through card too), 8 inside the fill's end */
+.sb-bar__handle {
+  position: absolute;
+  border-radius: 2px;
+  background: var(--fv-solid-card, var(--fluvy-card));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+
+/* a tinted bar is the gradient itself, as Home Assistant's colour temperature is: the handle alone, no fill; the
+   colours 72 % over the ground (the hue circle under a wash of it), along the scale */
+.sb-bar--warm-cool {
+  background: linear-gradient(
+    var(--sb-angle, 90deg),
+    color-mix(
+      in oklab,
+      var(--fluvy-tint-warm, var(--fv-tint-warm, #d1a24c)) 72%,
+      var(--fluvy-inset, var(--fluvy-page))
+    ),
+    color-mix(
+      in oklab,
+      var(--fluvy-tint-cool, var(--fv-tint-cool, #a9bdd0)) 72%,
+      var(--fluvy-inset, var(--fluvy-page))
+    )
+  );
+}
+
+.sb-bar--hue {
+  --sb-wash: color-mix(in srgb, var(--fluvy-inset, var(--fluvy-page)) 28%, transparent);
+  background:
+    linear-gradient(var(--sb-wash), var(--sb-wash)),
+    linear-gradient(
+      var(--sb-angle, 90deg),
+      hsl(0 100% 50%),
+      hsl(60 100% 50%),
+      hsl(120 100% 50%),
+      hsl(180 100% 50%),
+      hsl(240 100% 50%),
+      hsl(300 100% 50%),
+      hsl(360 100% 50%)
+    );
+}
+
+.sb-bar--vertical {
+  --sb-angle: 0deg;
+}
+
+/* ---------- the liquid: the bar's slot, the fill water ---------- */
+.sb-liq {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--fluvy-radius-control, 12px);
+  background: var(--fluvy-inset, var(--fluvy-page));
+  overflow: hidden;
+}
+
+.sb-liq svg {
+  display: block;
+}
+
+/* two waves at the water's edge, translucent over the ground, each travelling one wavelength and repeating
+   (the liquid gauge's 9 s and 14 s) */
+.sb-liq path {
+  fill: var(--tone-ink);
+}
+
+.sb-liq .lq-a {
+  opacity: 0.62;
+}
+
+.sb-liq .lq-b {
+  opacity: 0.34;
+}
+
+.lq-y20 {
+  animation: lq-y20 9s linear infinite;
+}
+
+.lq-y26 {
+  animation: lq-y26 14s linear infinite;
+}
+
+.lq-x20 {
+  animation: lq-x20 9s linear infinite;
+}
+
+.lq-x26 {
+  animation: lq-x26 14s linear infinite;
+}
+
+@keyframes lq-y20 {
+  to {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes lq-y26 {
+  to {
+    transform: translateY(-26px);
+  }
+}
+
+@keyframes lq-x20 {
+  to {
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes lq-x26 {
+  to {
+    transform: translateX(-26px);
+  }
+}
+
+/* at rest on its first frame: the house's motion off (`still`), the person's reduced motion, or the system's */
+:host([still]) .sb-liq path {
+  animation: none;
+}
+
+[data-motion='reduced'] .sb-liq path {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-liq path {
+    animation: none;
+  }
+}
+
+/* a bar or a liquid whose device cannot be reached: its ground faded, as a ruler's resting ticks are */
+.sb-bar.is-disabled,
+.sb-liq.is-disabled {
+  opacity: 0.55;
+}
+
+/* ---------- the fill: the tile itself is the slider ---------- */
+/* the lit wash to the level under the tile's words (the ruler covers the tile: tiles.css), stopping on a 2 px edge
+   of the fill's hairline; the edge takes the tone's ink under a finger */
+.sb-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--tone-fill);
+}
+
+.sb-fill__edge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--tone-border);
+}
+
+.is-dragging .sb-fill__edge {
+  background: var(--tone-ink);
+}

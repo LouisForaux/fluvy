@@ -1,5 +1,5 @@
 import type { LovelaceConfigForm } from '@fluvy/core';
-import { HEAD_BASE } from '../shared/base.js';
+import { HEAD_BASE, SLIDER_BASE } from '../shared/base.js';
 import {
   actionFields,
   boolField,
@@ -10,6 +10,7 @@ import {
   nameIconFields,
   selectField,
   showIconField,
+  sliderFields,
   textField,
   whenOffField,
 } from '../shared/form.js';
@@ -19,7 +20,7 @@ import type { FanCardConfig } from './fan-card.js';
 
 /** The fan card's editor: fetched by its `editor()` the first time the card is edited, never by a dashboard. */
 
-export const base = HEAD_BASE;
+export const base = [...HEAD_BASE, ...SLIDER_BASE];
 
 export const keys = configKeys<FanCardConfig>()([
   'subtitle',
@@ -54,6 +55,7 @@ export function getConfigForm(): LovelaceConfigForm {
       fieldRow(boolField('show_presets'), selectField('preset_style', ['full', 'chips'])),
       fieldRow(boolField('show_oscillation'), boolField('show_direction')),
       whenOffField(),
+      ...sliderFields(),
       ...colourFields(),
       actionFields(),
     ],

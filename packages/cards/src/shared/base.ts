@@ -40,6 +40,9 @@ export const ENTITY_BASE: readonly BaseKey[] = [
 /** The same for a card of one entity with a head: whether its circle shows too. */
 export const HEAD_BASE: readonly BaseKey[] = [...ENTITY_BASE, 'show_icon'];
 
+/** What a card with a slider honours of the base besides (1.18, #144): the style its sliders are drawn in, and the words under a bar or a liquid. */
+export const SLIDER_BASE: readonly BaseKey[] = ['slider_style', 'slider_words'];
+
 /** A head's actions (`head()`'s `onTap`, `onHold` and `label`): the card's tap and hold, each where it can run. */
 export interface HeadActions {
   readonly onTap?: () => void;

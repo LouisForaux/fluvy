@@ -1,6 +1,6 @@
 import { LitElement, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { PALETTE_TOKEN, THEME_SENTINEL } from '@fluvy/tokens/config';
-import { motionPreference, type Tone } from '@fluvy/ui';
+import { fetchSliderStyles, motionPreference, type Tone } from '@fluvy/ui';
 import { runAction, type ActionConfig } from './actions.js';
 import { resolveEntity, type EntityView } from './entity.js';
 import { ensureFonts } from './fonts.js';
@@ -29,6 +29,14 @@ import {
   type LightTint,
   type UnavailableLook,
 } from './settings/schema.js';
+import {
+  isSliderStyle,
+  isSliderWords,
+  SLIDER_DEFAULTS,
+  type SliderSettings,
+  type SliderStyle,
+  type SliderWords,
+} from './settings/sliders.js';
 
 /**
  * What every card's config may carry. `tone` is the role a card's parts are drawn in (a palette tone); `color` is
@@ -50,6 +58,10 @@ export interface FluvyCardConfig extends LovelaceCardConfig {
   card_opacity?: number;
   /** How it looks while what it shows is out of reach (1.16, #126); unset, the house's (`unavailableLook`). */
   unavailable?: UnavailableLook;
+  /** The style its sliders are drawn in (1.18, #144); unset or `house`, the house's (`sliderStyleOf`). */
+  slider_style?: 'house' | SliderStyle;
+  /** The words under a bar or a liquid of its (1.18); unset, the house's (`sliderWordsOf`). */
+  slider_words?: SliderWords;
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
 }
@@ -164,6 +176,58 @@ export function setCardDefaults(next: CardSurface): void {
   if (next.opacity < 100) void fetchGlass();
   if (next.unavailable === 'quiet') void fetchQuiet();
   wearSurfaces();
+}
+
+/**
+ * What the house says of sliders where a card says nothing (fluvy's settings → Appearance › Sliders, 1.18, #144):
+ * the style every slider is drawn in, and the words under a bar or a liquid. A card's own key wins.
+ */
+let houseSliders: SliderSettings = SLIDER_DEFAULTS;
+
+/** The house's slider settings, as the settings last said (a card's own `slider_style` and `slider_words` win). */
+export const sliderDefaults = (): SliderSettings => houseSliders;
+
+/** Whether a liquid rests on its first frame: the house's motion is off (fluvy's settings → Charts › Motion). */
+export const sliderStill = (): boolean => !houseCharts.settings.animate;
+
+/** The house's slider settings changed (saved, or previewed in the panel): every card draws again with them. */
+export function setSliderDefaults(next: SliderSettings): void {
+  if (next.style === houseSliders.style && next.words === houseSliders.words) return;
+  houseSliders = { style: next.style, words: next.words };
+  // a house of bars, liquids or fills fetches what they are drawn with before the rulers draw again
+  if (next.style !== 'ruler') void fetchSliderStyles();
+  for (const card of live) card.requestUpdate();
+}
+
+/**
+ * The style a card's sliders are drawn in (1.18, #144): its own `slider_style`, else the house's (`house` says so out
+ * loud). Fill is a tile's, the whole tile being the slider: a card asked for it draws the ruler (`tile`: the card
+ * draws a tile).
+ */
+export function sliderStyleOf(
+  config: Pick<FluvyCardConfig, 'slider_style'> | undefined,
+  tile = false,
+): SliderStyle {
+  const own = config?.slider_style;
+  const style = isSliderStyle(own) ? own : houseSliders.style;
+  return style === 'fill' && !tile ? 'ruler' : style;
+}
+
+/**
+ * The words under a card's slider in its style (`items`: the ruler's, by fraction): the ruler's own; under a bar or a
+ * liquid the ends and the middle, or none (the card's `slider_words`, else the house's), the row kept either way.
+ */
+export function sliderWordsOf<T>(
+  config: Pick<FluvyCardConfig, 'slider_words'> | undefined,
+  items: readonly T[],
+  style: SliderStyle,
+): readonly T[] {
+  if (style === 'ruler') return items;
+  const own = config?.slider_words;
+  if ((isSliderWords(own) ? own : houseSliders.words) === 'none') return [];
+  return items.length > 3
+    ? [items[0]!, items[(items.length - 1) >> 1]!, items[items.length - 1]!]
+    : items;
 }
 
 /** Every card on the page wears its surface again; a card not drawn yet wears it with its first frame. */

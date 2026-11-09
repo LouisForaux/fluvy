@@ -16,6 +16,10 @@ import {
   type Scope,
   chromeOf,
   HA_LOGO_URL,
+  SLIDER_STYLES,
+  SLIDER_WORDS,
+  type SliderSettings,
+  type SliderStyle,
   TAB_CONTENTS,
   TAB_STYLES,
   type TabContent,
@@ -88,6 +92,7 @@ import {
   LINES,
   lookTitle,
   paletteTitle,
+  SLIDER_WORD,
   STATUS_STARTS,
   STATUS_SWATCHES,
   swatchColors,
@@ -816,6 +821,56 @@ function cardsCard(ctx: PanelContext): TemplateResult {
   </section>`;
 }
 
+/** A slider style's glyph on its tile: the ruler's ticks, the bar's pill, the liquid's drop, the fill's square. */
+const SLIDER_GLYPH: Readonly<Record<SliderStyle, string>> = {
+  ruler: 'sliders',
+  bar: 'pillRound',
+  liquid: 'drop',
+  fill: 'shapeSoft',
+};
+
+/**
+ * How every slider is drawn where a card says nothing of its own (1.18, #144): the style, a tile each — the ruler, the
+ * house's from the first day, so nothing changes on upgrade; a bar; a liquid; the fill, a tile's, the note saying a
+ * card draws the ruler for it — and, under a bar or a liquid, the words (the ends and the middle, or none). The
+ * house's, an administrator's to set; shown on the preview and the page while it is chosen.
+ */
+function slidersCard(ctx: PanelContext): TemplateResult {
+  const { shown, admin } = ctx;
+  const sliders = shown.sliders;
+  const set = (patch: Partial<SliderSettings>): void =>
+    ctx.editHouse({ sliders: { ...sliders, ...patch } });
+  return html`<section class="fv-card pn-card">
+    ${head({ icon: SLIDER_GLYPH[sliders.style], title: ctx.t('sliders.title'), sub: ctx.t(admin ? 'cards.sub' : 'scope.admin_only') })}
+    ${options(
+      SLIDER_STYLES.map((style) => ({
+        key: style,
+        glyph: SLIDER_GLYPH[style],
+        label: ctx.t('sliders.style'),
+        value: localize(ctx.hass, SLIDER_WORD[style]),
+        active: sliders.style === style,
+      })),
+      admin ? (key) => set({ style: key as SliderStyle }) : null,
+      gap(ctx),
+    )}
+    <p class="pn-hint pn-hint--after">${ctx.t('sliders.fill_note')}</p>
+    ${
+      sliders.style === 'bar' || sliders.style === 'liquid'
+        ? html`<p class="fv-label pn-label">${ctx.t('sliders.words')}</p>
+            ${choice(
+              ctx,
+              SLIDER_WORDS.map((words) => ({
+                key: words,
+                label: localize(ctx.hass, `option.${words}`),
+                active: sliders.words === words,
+              })),
+              admin ? (key) => set({ words: key as SliderSettings['words'] }) : null,
+            )}`
+        : nothing
+    }
+  </section>`;
+}
+
 /**
  * What a card of lights shows where it says nothing of its own (1.9): its light's colour on a light card (never, while
  * on, always) and a lit light in its bulb's colour on tiles, rows and rooms — the house's, an administrator's to set.
@@ -1061,8 +1116,8 @@ export function appearance(ctx: PanelContext, share: ShareActions): TemplateResu
         gap(ctx),
       )}
     </section>
-    ${tabsCard(ctx)} ${cornerCard(ctx)} ${separatorsCard(ctx)} ${cardsCard(ctx)} ${lightsCard(ctx)}
-    ${statusesCard(ctx)}
+    ${tabsCard(ctx)} ${cornerCard(ctx)} ${separatorsCard(ctx)} ${cardsCard(ctx)} ${slidersCard(ctx)}
+    ${lightsCard(ctx)} ${statusesCard(ctx)}
     ${
       settings.personalLook
         ? html`<section class="fv-card pn-card pn-rows">

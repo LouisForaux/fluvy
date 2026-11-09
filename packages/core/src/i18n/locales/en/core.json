@@ -715,7 +715,10 @@
     "battery": "Battery",
     "pulse": "Pulse",
     "air": "Air",
-    "sun": "Sun"
+    "sun": "Sun",
+    "ends": "Ends and middle",
+    "tile_fill": "Fill",
+    "house_style": "House ({style})"
   },
   "tone": {
     "accent": "Accent",

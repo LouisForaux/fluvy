@@ -502,7 +502,10 @@
     "show_axis": "A skála megjelenítése",
     "show_now": "A jelen megjelölése",
     "animate": "Animáció",
-    "gauge": "Mérőóra"
+    "gauge": "Mérőóra",
+    "slider_style": "Csúszka stílusa",
+    "slider_style_helper": "Érintetlenül: az összes csúszkáé, a Fluvy beállításaiból",
+    "slider_words": "Feliratok alatta"
   },
   "strategy": {
     "home": "Otthon",
@@ -931,7 +934,10 @@
     "battery": "Akkumulátor",
     "pulse": "Pulzus",
     "air": "Levegő",
-    "sun": "Nap"
+    "sun": "Nap",
+    "ends": "Végek és közép",
+    "tile_fill": "Kitöltés",
+    "house_style": "Ház ({style})"
   },
   "tone": {
     "accent": "Kiemelés",
@@ -2573,6 +2579,10 @@
     "cards.blur": "Az átlátszó háttér elmosása",
     "cards.blur_sub": "Minden áttetsző kártyán, a házé és a sajátja is",
     "cards.unavailable": "Ha nem elérhető",
+    "sliders.title": "Csúszkák",
+    "sliders.style": "Stílus",
+    "sliders.words": "Feliratok a sáv és a folyadék alatt",
+    "sliders.fill_note": "A kitöltés a csempéken érvényes; a kártya a vonalzót rajzolja.",
     "statuses.title": "Állapotszínek",
     "statuses.sub": "A paletta sajátjai vagy a tieid, minden kártyán olvashatóra igazítva",
     "statuses.warning": "Figyelmeztetés",

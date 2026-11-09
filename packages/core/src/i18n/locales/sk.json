@@ -1217,7 +1217,10 @@
     "show_axis": "Zobraziť stupnicu",
     "show_now": "Označiť aktuálny čas",
     "animate": "Animovať",
-    "gauge": "Meradlo"
+    "gauge": "Meradlo",
+    "slider_style": "Štýl posuvníka",
+    "slider_style_helper": "Bez zmeny: ako pri všetkých posuvníkoch v nastaveniach Fluvy",
+    "slider_words": "Hodnoty pod ním"
   },
   "page": {
     "menu": "Otvoriť ponuku",
@@ -1604,7 +1607,10 @@
     "battery": "Batéria",
     "pulse": "Pulz",
     "air": "Vzduch",
-    "sun": "Slnko"
+    "sun": "Slnko",
+    "ends": "Konce a stred",
+    "tile_fill": "Výplň",
+    "house_style": "Domácnosť ({style})"
   },
   "tone": {
     "accent": "Zvýraznenie",
@@ -2574,6 +2580,10 @@
     "cards.blur": "Rozmazať to, čo presvitá",
     "cards.blur_sub": "Na každej priesvitnej karte, domácej aj vlastnej",
     "cards.unavailable": "Keď je nedostupné",
+    "sliders.title": "Posuvníky",
+    "sliders.style": "Štýl",
+    "sliders.words": "Hodnoty pod pruhom a kvapalinou",
+    "sliders.fill_note": "Výplň platí pre dlaždice; karta kreslí stupnicu.",
     "statuses.title": "Farby stavov",
     "statuses.sub": "Farby palety alebo vaše vlastné, upravené pre dobrú čitateľnosť na každej karte",
     "statuses.warning": "Upozornenie",

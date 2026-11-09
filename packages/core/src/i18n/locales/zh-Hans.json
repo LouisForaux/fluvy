@@ -1400,7 +1400,10 @@
     "battery": "电池",
     "pulse": "脉冲",
     "air": "空气",
-    "sun": "太阳"
+    "sun": "太阳",
+    "ends": "两端和中间",
+    "tile_fill": "填充",
+    "house_style": "全屋（{style}）"
   },
   "tone": {
     "accent": "强调色",
@@ -1718,7 +1721,10 @@
     "show_axis": "显示刻度",
     "show_now": "标记当前",
     "animate": "动画",
-    "gauge": "仪表"
+    "gauge": "仪表",
+    "slider_style": "滑块样式",
+    "slider_style_helper": "未设置：沿用 Fluvy 设置中所有滑块的样式",
+    "slider_words": "下方刻度值"
   },
   "energy-period-card": {
     "name": "能源周期",
@@ -2519,6 +2525,10 @@
     "cards.blur": "模糊透出的背景",
     "cards.blur_sub": "应用于所有透明卡片，无论是全屋设置还是卡片自身",
     "cards.unavailable": "不可用时",
+    "sliders.title": "滑块",
+    "sliders.style": "样式",
+    "sliders.words": "条形和液体下方的刻度值",
+    "sliders.fill_note": "填充仅用于磁贴；卡片显示刻度尺。",
     "statuses.title": "状态颜色",
     "statuses.sub": "配色自带的或自定义的，均已适配每种卡片",
     "statuses.warning": "警告",

@@ -3,6 +3,9 @@ import {
   isUsable,
   lightDefaults,
   PALETTE_ACCENT,
+  sliderStill,
+  sliderStyleOf,
+  sliderWordsOf,
   stateText,
   type FluvyCardConfig,
   type LightTint,
@@ -321,6 +324,7 @@ export class FluvyLightCard extends Card<LightCardConfig> {
   ): TemplateResult {
     // its label on one line: the short form where the column does not hold "Température de couleur" (half a section)
     const words = this.t('light.temperature');
+    const look = sliderStyleOf(this.config);
     return html`${label(this.head.ruler.width('fv-label', words) <= width ? words : this.t('light.temperature_short'))}
       <fluvy-ruler
         .value=${kelvin}
@@ -334,16 +338,24 @@ export class FluvyLightCard extends Card<LightCardConfig> {
         ?inactive=${!on}
         ?disabled=${unusable}
         ?on-fill=${onFill}
+        .look=${look}
+        ?still=${sliderStill()}
         .tint=${this.config?.temperature_tint === false ? '' : 'warm-cool'}
         unit="K"
         .label=${`${name} · ${this.t('light.temperature')}`}
         .format=${(v: number) => formatNumber(this.hass, v, { digits: 0 })}
         @fluvy-change=${(e: CustomEvent<RulerChangeDetail>) => this.call('light', 'turn_on', { color_temp_kelvin: e.detail.value })}
       ></fluvy-ruler>
-      ${rulerLabels([
-        [0, this.t('light.warm')],
-        [1, this.t('light.cool')],
-      ])}`;
+      ${rulerLabels(
+        sliderWordsOf(
+          this.config,
+          [
+            [0, this.t('light.warm')],
+            [1, this.t('light.cool')],
+          ],
+          look,
+        ),
+      )}`;
   }
 
   /**
@@ -396,6 +408,7 @@ export class FluvyLightCard extends Card<LightCardConfig> {
     const level = this.level.read(reported);
     const shownLevel = this.level.preview ?? level;
     const w = this.contentWidth;
+    const look = sliderStyleOf(this.config);
     const variant = this.config?.variant ?? 'auto';
     // the compact layout is the dimmer's: a bulb that only switches has one anatomy, its head
     const compact =
@@ -528,6 +541,8 @@ export class FluvyLightCard extends Card<LightCardConfig> {
               ?inactive=${!on}
               ?wake=${!unusable}
               ?on-fill=${full}
+              .look=${look}
+              ?still=${sliderStill()}
               unit="%"
               .label=${`${name} · ${this.t('light.brightness')}`}
               .format=${(v: number) => formatNumber(this.hass, v, { digits: 0 })}
@@ -536,7 +551,7 @@ export class FluvyLightCard extends Card<LightCardConfig> {
               @fluvy-change=${(e: CustomEvent<RulerChangeDetail>) => this.level.set(e.detail.value)}
               @fluvy-window=${(e: CustomEvent<RulerWindowDetail>) => this.level.zoom(e.detail)}
             ></fluvy-ruler>
-            ${rulerLabels(ticks)}`
+            ${rulerLabels(sliderWordsOf(this.config, ticks, look))}`
         : nothing
     }
     ${
@@ -559,6 +574,9 @@ export class FluvyLightCard extends Card<LightCardConfig> {
               temperature,
               disabled: unusable,
               onFill: full,
+              look,
+              still: sliderStill(),
+              words: (items) => sliderWordsOf(this.config, items, look),
               row: compact,
               host: this,
               pick: (picked, data) => this.pickColour(picked, data),

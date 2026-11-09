@@ -1157,7 +1157,10 @@
     "show_axis": "Pokaż skalę",
     "show_now": "Zaznacz teraz",
     "animate": "Animuj",
-    "gauge": "Wskaźnik"
+    "gauge": "Wskaźnik",
+    "slider_style": "Styl suwaka",
+    "slider_style_helper": "Nieustawione: wspólny dla wszystkich suwaków, z ustawień Fluvy",
+    "slider_words": "Wartości pod spodem"
   },
   "energy": {
     "solar": "PV",
@@ -1979,7 +1982,10 @@
     "battery": "Bateria",
     "pulse": "Puls",
     "air": "Powietrze",
-    "sun": "Słońce"
+    "sun": "Słońce",
+    "ends": "Końce i środek",
+    "tile_fill": "Wypełnienie",
+    "house_style": "Dom ({style})"
   },
   "page": {
     "menu": "Otwórz menu",
@@ -2332,6 +2338,10 @@
     "cards.blur": "Rozmyj to, co prześwituje",
     "cards.blur_sub": "Na każdej przezroczystej karcie, domowej lub własnej",
     "cards.unavailable": "Gdy niedostępne",
+    "sliders.title": "Suwaki",
+    "sliders.style": "Styl",
+    "sliders.words": "Wartości pod paskiem i cieczą",
+    "sliders.fill_note": "Wypełnienie działa na kafelkach; karta rysuje linijkę.",
     "statuses.title": "Kolory stanów",
     "statuses.sub": "Z palety lub Twoje, dopasowane do czytelności na każdej karcie",
     "statuses.warning": "Ostrzeżenie",

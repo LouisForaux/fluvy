@@ -4,6 +4,7 @@ import {
   setCardDefaults,
   setChartDefaults,
   setLanguageOverride,
+  setSliderDefaults,
   SettingsStore,
   type EffectiveSettings,
   type LookHandle,
@@ -56,7 +57,7 @@ export function createMemoryLook(doc: Document, dark: boolean): MemoryLook {
   let previewed: Parameters<LookHandle['preview']>[0] = null;
   let mode = dark;
   let wallDark: boolean | undefined;
-  // as at home: the look on the page, and the language, motion, charts and surface the cards use
+  // as at home: the look on the page, and the language, motion, charts, surface and sliders the cards use
   const apply = (): void => {
     const now = previewed ? { ...store.effective, ...previewed } : store.effective;
     engine.apply(now, wallDark ?? mode);
@@ -64,6 +65,7 @@ export function createMemoryLook(doc: Document, dark: boolean): MemoryLook {
     setMotionPreference(now.motion);
     setChartDefaults({ settings: now.charts, sets: now.chartSets });
     setCardDefaults(now.cards);
+    setSliderDefaults(now.sliders);
     refreshCards();
   };
   const handle: LookHandle = {

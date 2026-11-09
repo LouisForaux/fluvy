@@ -7,6 +7,7 @@ import {
   setCardDefaults,
   setChartDefaults,
   setLightDefaults,
+  setSliderDefaults,
 } from '../card.js';
 import { ensureFonts } from '../fonts.js';
 import type { HomeAssistant } from '../ha/types.js';
@@ -192,10 +193,11 @@ export function startLook(): LookHandle | undefined {
     env.document.documentElement.toggleAttribute(ORIGINAL_ACTIVITY, !now.activity);
     env.document.documentElement.toggleAttribute(ORIGINAL_HISTORY, !now.history);
     env.document.documentElement.toggleAttribute(ACTIVITY_CARD, now.activityCard);
-    // the lights', the charts' and the cards' defaults: every card that leaves them to the house draws again
+    // the lights', the charts', the cards' and the sliders' defaults: every card that leaves them to the house draws again
     setLightDefaults({ tint: now.lightTint, colors: now.lightColors });
     setChartDefaults({ settings: now.charts, sets: now.chartSets });
     setCardDefaults(now.cards);
+    setSliderDefaults(now.sliders);
     // the corner of every page: the sidebar's head (the shell's sheets fill on these), the dashboards' headers marked
     const chrome = chromeOf(now.look);
     env.document.documentElement.toggleAttribute(SIDEBAR_LOGO_ATTRIBUTE, chrome.logo);

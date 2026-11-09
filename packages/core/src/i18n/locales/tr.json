@@ -553,7 +553,10 @@
     "show_axis": "Ölçeği göster",
     "show_now": "Şimdiyi işaretle",
     "animate": "Canlandır",
-    "gauge": "Gösterge"
+    "gauge": "Gösterge",
+    "slider_style": "Kaydırıcı stili",
+    "slider_style_helper": "Dokunulmazsa, Fluvy ayarlarındaki tüm kaydırıcılarınki",
+    "slider_words": "Altındaki değerler"
   },
   "strategy": {
     "home": "Ana sayfa",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Arkada görüneni bulanıklaştır",
     "cards.blur_sub": "Her yarı saydam kartta, evinki ya da kendisininki",
     "cards.unavailable": "Kullanılamadığında",
+    "sliders.title": "Kaydırıcılar",
+    "sliders.style": "Stil",
+    "sliders.words": "Çubuk ve sıvının altındaki değerler",
+    "sliders.fill_note": "Dolgu kutularda geçerlidir; bir kart cetveli çizer.",
     "statuses.title": "Durum renkleri",
     "statuses.sub": "Paletin kendi renkleri ya da sizinkiler, her kartta okunacak biçimde ayarlanır",
     "statuses.warning": "Uyarı",
@@ -1851,7 +1858,10 @@
     "battery": "Batarya",
     "pulse": "Nabız",
     "air": "Hava",
-    "sun": "Güneş"
+    "sun": "Güneş",
+    "ends": "Uçlar ve orta",
+    "tile_fill": "Dolgu",
+    "house_style": "Ev ({style})"
   },
   "tone": {
     "accent": "Vurgu",

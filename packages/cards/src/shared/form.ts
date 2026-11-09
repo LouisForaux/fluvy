@@ -9,6 +9,10 @@ import {
   type LovelaceCardConfig,
   type LovelaceConfigForm,
   type MessageKey,
+  SLIDER_STYLES,
+  SLIDER_WORDS,
+  sliderDefaults,
+  type SliderStyle,
   UNAVAILABLE_LOOKS,
 } from '@fluvy/core';
 import { TONES } from '@fluvy/ui';
@@ -426,6 +430,67 @@ export const unavailableField = ({ item = false } = {}): HaFormSchemaItem => ({
   ...selectField('unavailable', UNAVAILABLE_LOOKS),
   helper: item ? 'editor.item_unavailable_helper' : 'editor.unavailable_helper',
 });
+
+/** A style's word among the options: the fill's is a tile's ("Fill"), where `fill` alone is a view's. */
+const STYLE_WORDS: Readonly<Record<SliderStyle, OptionWord>> = {
+  ruler: 'ruler',
+  bar: 'bar',
+  liquid: 'liquid',
+  fill: 'tile_fill',
+};
+
+/** The style a card's config asks of its sliders: its own, else the house's it keeps to (`house`, or nothing). */
+export const askedSliderStyle = (data: Readonly<Record<string, unknown>>): unknown => {
+  const own = data['slider_style'];
+  return own === undefined || own === 'house' ? sliderDefaults().style : own;
+};
+
+/** Whether the style asked says words under it: a bar's or a liquid's. */
+const saysWords = (data: Readonly<Record<string, unknown>>): boolean => {
+  const style = askedSliderStyle(data);
+  return style === 'bar' || style === 'liquid';
+};
+
+/**
+ * The style a card's sliders are drawn in (`slider_style`, 1.18, #144) and the words under them (`slider_words`),
+ * on one row: the house's, named with the style it draws ("House (Ruler)"), the ruler, a bar, a liquid and, where the
+ * card draws a tile (`tile`: always, or asked of the config), the tile's fill — the whole tile being the slider;
+ * elsewhere a card asked for the fill draws the ruler, so the editor never offers it; the words — the ends and the
+ * middle, or none — while the style asked is a bar or a liquid. The house's, shown and never written, until one is
+ * chosen (`editorDefaults`), the word under the style saying so.
+ */
+export const sliderFields = (
+  tile: boolean | NonNullable<HaFormSchemaItem['when']> = false,
+): HaFormSchemaItem[] => {
+  const row = (fill: boolean): HaFormSchemaItem =>
+    fieldRow(
+      {
+        name: 'slider_style',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: [
+              {
+                value: 'house',
+                label: localize(editorLanguage(), 'option.house_style', {
+                  style: editorWord(`option.${STYLE_WORDS[sliderDefaults().style]}`),
+                }),
+              },
+              ...optionChoices(
+                SLIDER_STYLES.filter((style) => fill || style !== 'fill'),
+                STYLE_WORDS,
+              ),
+            ],
+          },
+        },
+        helper: 'editor.slider_style_helper',
+      },
+      onlyWhen(saysWords, selectField('slider_words', SLIDER_WORDS)),
+    );
+  return typeof tile === 'function'
+    ? [onlyWhen(tile, row(true)), onlyWhen((data, hass) => !tile(data, hass), row(false))]
+    : [row(tile)];
+};
 
 /**
  * A tone and a colour on one row, then the card's own surface: its colour (`card_color`, none by default), its opacity

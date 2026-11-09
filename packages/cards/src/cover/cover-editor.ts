@@ -1,5 +1,5 @@
 import { strings, type LovelaceConfigForm } from '@fluvy/core';
-import { HEAD_BASE } from '../shared/base.js';
+import { HEAD_BASE, SLIDER_BASE } from '../shared/base.js';
 import {
   actionFields,
   boolField,
@@ -9,8 +9,10 @@ import {
   fieldRow,
   nameIconFields,
   numberField,
+  onlyWhen,
   selectField,
   showIconField,
+  sliderFields,
   textField,
 } from '../shared/form.js';
 import { configKeys } from '../shared/config.js';
@@ -21,7 +23,7 @@ import type { CoverCardConfig } from './cover-card.js';
 
 const coverStrings = strings('cover');
 
-export const base = HEAD_BASE;
+export const base = [...HEAD_BASE, ...SLIDER_BASE];
 
 export const keys = configKeys<CoverCardConfig>()([
   'subtitle',
@@ -67,6 +69,10 @@ export function getConfigForm(): LovelaceConfigForm {
       ),
       fieldRow(boolField('show_tilt'), boolField('show_favorites')),
       { name: 'favorites', selector: { object: {} } },
+      // its position ruler's style, where the full card draws one
+      ...sliderFields().map((row) =>
+        onlyWhen(({ variant }) => variant === undefined || variant === 'full', row),
+      ),
       ...colourFields(),
       actionFields(),
     ],

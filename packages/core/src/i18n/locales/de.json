@@ -553,7 +553,10 @@
     "show_axis": "Skala zeigen",
     "show_now": "Jetzt markieren",
     "animate": "Animieren",
-    "gauge": "Anzeige"
+    "gauge": "Anzeige",
+    "slider_style": "Schieberegler-Stil",
+    "slider_style_helper": "Unverändert: der aller Schieberegler aus den Fluvy-Einstellungen",
+    "slider_words": "Werte darunter"
   },
   "strategy": {
     "home": "Zuhause",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Durchscheinendes weichzeichnen",
     "cards.blur_sub": "Auf jeder durchscheinenden Karte, der des Hauses wie einer eigenen",
     "cards.unavailable": "Wenn offline",
+    "sliders.title": "Schieberegler",
+    "sliders.style": "Stil",
+    "sliders.words": "Werte unter Leiste und Flüssigkeit",
+    "sliders.fill_note": "Füllung gilt für Kacheln; eine Karte zeichnet das Lineal.",
     "statuses.title": "Statusfarben",
     "statuses.sub": "Die der Palette oder eigene, auf jeder Karte gut lesbar gemacht",
     "statuses.warning": "Warnung",
@@ -1851,7 +1858,10 @@
     "battery": "Batterie",
     "pulse": "Puls",
     "air": "Luft",
-    "sun": "Sonne"
+    "sun": "Sonne",
+    "ends": "Enden und Mitte",
+    "tile_fill": "Füllung",
+    "house_style": "Haus ({style})"
   },
   "tone": {
     "accent": "Akzent",

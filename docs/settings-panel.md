@@ -5,7 +5,7 @@ everyone else reads it, and changes their own (a palette of their own, their pre
 
 | Tab | What it holds | Whose |
 | --- | --- | --- |
-| **Appearance** | palette (fifteen presets, the house's saved palettes, the community's, or a custom accent — shared as a file), shape (soft, round, crisp), button style, the dashboards' tabs (Fluvy, pills, original or hidden; names, icons or both; the dashboard's name), the sidebar and header (Home Assistant's logo, dividers, the header on the page), lines in the sidebar after the items chosen; the cards (how opaque, and the blur behind a see-through one), the lights, where a card says nothing, and the status colours (see below); a live preview on real cards (its little house answers a tap itself: nothing at home changes) | the house; a person may keep their own palette and shape |
+| **Appearance** | palette (fifteen presets, the house's saved palettes, the community's, or a custom accent — shared as a file), shape (soft, round, crisp), button style, the dashboards' tabs (Fluvy, pills, original or hidden; names, icons or both; the dashboard's name), the sidebar and header (Home Assistant's logo, dividers, the header on the page), lines in the sidebar after the items chosen; the cards (how opaque, and the blur behind a see-through one), the sliders (the style every slider is drawn in), the lights, where a card says nothing, and the status colours (see below); a live preview on real cards (its little house answers a tap itself: nothing at home changes) | the house; a person may keep their own palette and shape |
 | **Charts** | the style every chart is drawn in and the gauge every gauge reads in, each a tile the chart engine draws; what the style lets the house tune; motion; how much of the past every chart shows and how far apart a line's points stand; the series colours (the palette's six, or a set of the house's own, made and checked here); a preview of a chart, its bars and a gauge in both modes side by side — see [Charts](#charts) | the house |
 | **Scope** | dashboards only or everywhere; which dashboards when "only"; the frame, the icons, the Activity page, the History page | the house |
 | **Dashboards** | the five automatic dashboards: create any with one tap, open it, its options, its sidebar entry, recreate it | the house |
@@ -48,6 +48,26 @@ alignment and opacity), else the theme's `lovelace-background`, else the page's 
 wall the view's own background shows, and the wall's (the mesh, or the plain page) where the view has none.
 
 Blur costs a tablet's graphics: on an older wall panel that scrolls slowly, turn it off (the cards stay see-through).
+
+## Sliders
+
+The style every slider is drawn in where a card says nothing of its own (1.18, `sliders` in the house's data): the
+light card's brightness and colour temperature, the Slider card, a large tile's ruler and a group's, the room's
+brightness on the Lights card, the media card's volume, the fan's speed, the cover's position and a helper's number.
+From the factory it is the **Ruler**, the slider every card drew before 1.18: nothing changes on upgrade. Each style
+lives in the ruler's slot, so no card or tile changes height with it.
+
+| Setting | Values (the factory's first) | What it draws |
+| --- | --- | --- |
+| **Style** | Ruler · Bar · Liquid · Fill | `slider_style` where a card names none (`house`): the **Ruler**, ticks by value lit from the origin to the knob, and the fine scale on a hold (1 % ticks); the **Bar**, Home Assistant's idea in the same slot, the track the inset ground, the fill the tone's ink and a 4 × 20 handle of the card's colour 8 inside its end (a colour temperature's is the gradient itself, the handle alone); the **Liquid**, the bar's slot with its fill as water, two slow waves at its edge that rest when motion is off (Charts › Motion, or the system's reduced motion); the **Fill**, a tile's: the whole tile is the slider, its lit wash reaching the level and stopping on a 2 px edge, the figure in its line and the foot free for its readouts. Fill acts on tiles (the tile card, the tiles card, the Slider card's tile); a card asked for it draws the ruler, and a card's editor offers it only where the card draws a tile |
+| **Words under a bar or a liquid** | Ends and middle · None | `slider_words`: the figures under a bar or a liquid say the ends and the middle (a ruler says its own); none leaves the row empty, so no height moves |
+
+Every style keeps the ruler's gestures: the drag is relative (grabbing never jumps the value), a finger drifting away
+from the axis slows it to a tenth, the bubble reads the value while dragging, the keys step, page and go to the ends,
+and a tap goes there. Only the Ruler holds still for the fine scale: a bar cannot zoom without lying about the level,
+and a still press on a tile's fill is the tile's own (its tap, or its hold of 500 ms for the details). A change shows on
+every card of the page at once, before it is saved; a card that sets `slider_style` keeps its own (its editor shows the
+house's until a value is chosen, and never writes it).
 
 **When unavailable** covers every card that shows a device: a tile, the tiles of a group (each may say its own: a
 tile's `unavailable` in `tiles`), the light card, rows, rounds, chips, a room's tiles, an appliance's and a printer's
@@ -200,7 +220,7 @@ the browser (`localStorage`, `fluvy:look`) only so that the page paints in the r
 answers.
 
 **Backups.** Because both live in Home Assistant's frontend data, a Home Assistant backup keeps every setting of
-Fluvy's and a restore brings them back: the look and the saved palettes, the cards' opacity and blur, the statuses' colours, the lights' defaults,
+Fluvy's and a restore brings them back: the look and the saved palettes, the cards' opacity and blur, the sliders' style, the statuses' colours, the lights' defaults,
 the wall, the Charts tab (the style, the gauge, every detail, motion, the time shown and the points) and the house's
 own series colours. The panel's
 *Preferences › Fluvy › Export* writes the same to a file — the house, the person and the options of every automatic

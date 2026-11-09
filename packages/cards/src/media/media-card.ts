@@ -7,6 +7,8 @@ import {
   numberAttr,
   relativeTime,
   resolveEntity,
+  sliderStill,
+  sliderStyleOf,
   stateText,
   strings,
   textAttr,
@@ -44,7 +46,7 @@ import {
 
 import { keyed } from 'lit/directives/keyed.js';
 
-import { Card } from '../shared/base.js';
+import { Card, ENTITY_BASE, SLIDER_BASE } from '../shared/base.js';
 import { HeadFit } from '../energy/head.js';
 
 import {
@@ -59,6 +61,7 @@ import {
   nameIconFields,
   onlyWhen,
   selectField,
+  sliderFields,
   textField,
 } from '../shared/form.js';
 import {
@@ -333,6 +336,7 @@ export class FluvyMediaCard extends Card<MediaCardConfig> {
     this.scrub_ = null;
   }
 
+  static override base = [...ENTITY_BASE, ...SLIDER_BASE];
   static override keys = configKeys<MediaCardConfig>()([
     'variant',
     'source_style',
@@ -365,6 +369,10 @@ export class FluvyMediaCard extends Card<MediaCardConfig> {
         fieldRow(boolField('show_source'), boolField('show_volume')),
         boolField('show_power'),
         controlsField(),
+        // the volume's style, where the row shows (the mini has none)
+        ...sliderFields().map((row) =>
+          onlyWhen(({ show_volume, variant }) => show_volume !== false && variant !== 'mini', row),
+        ),
         ...colourFields(),
         actionFields(),
       ],
@@ -860,6 +868,8 @@ export class FluvyMediaCard extends Card<MediaCardConfig> {
                 .tone=${muted || still ? 'neutral' : 'accent'}
                 ?inactive=${still}
                 ?inert=${still}
+                .look=${sliderStyleOf(this.config)}
+                ?still=${sliderStill()}
                 unit="%"
                 .label=${`${name} · ${this.t('media.volume')}`}
                 .format=${(v: number) => formatNumber(this.hass, v, { digits: 0 })}

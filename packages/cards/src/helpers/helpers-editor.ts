@@ -17,6 +17,7 @@ import {
   showIconField,
   sinceChoices,
   sinceField,
+  sliderFields,
   textField,
   titleFields,
 } from '../shared/form.js';
@@ -39,6 +40,8 @@ export const base: readonly BaseKey[] = [
   'tap_action',
   'hold_action',
   'show_icon',
+  'slider_style',
+  'slider_words',
 ];
 
 export const keys = configKeys<HelpersCardConfig>()([
@@ -96,6 +99,8 @@ export function getConfigForm(): LovelaceConfigForm {
       titleFields(),
       fieldRow(iconField(), selectField('options_style', ['full', 'chips'])),
       showIconField(),
+      // its numbers' rulers in a style
+      ...sliderFields(),
       ...colourFields(),
       entitiesField('entities', undefined, true),
       emptyFields(),

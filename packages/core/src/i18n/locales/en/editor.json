@@ -159,6 +159,9 @@
     "show_axis": "Show the scale",
     "show_now": "Mark now",
     "animate": "Animate",
-    "gauge": "Gauge"
+    "gauge": "Gauge",
+    "slider_style": "Slider style",
+    "slider_style_helper": "Untouched: every slider’s, from Fluvy’s settings",
+    "slider_words": "Words under it"
   }
 }

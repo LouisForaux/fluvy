@@ -2,6 +2,9 @@ import {
   isUsable,
   PALETTE_ACCENT,
   relativeTime,
+  sliderStill,
+  sliderStyleOf,
+  sliderWordsOf,
   stateText,
   strings,
   textAttr,
@@ -543,11 +546,13 @@ export class FluvySliderCard extends FluvyTileCard {
         : undefined;
 
     // the words under the ruler: the fine scale's while it is up; a fan's speeds that stand apart; a scale's figures,
-    // its ends and its middle in a compact card or a narrow column
+    // its ends and its middle in a compact card or a narrow column — and under a bar or a liquid, as the config says
+    const look = sliderStyleOf(this.config);
+    const styled = sliderWordsOf(this.config, words, look);
     const thinned =
-      !named && (compact || w < ALL_LABELS_FROM) && words.length > 3
-        ? [words[0]!, words[(words.length - 1) / 2]!, words[words.length - 1]!]
-        : words;
+      !named && (compact || w < ALL_LABELS_FROM) && styled.length > 3
+        ? [styled[0]!, styled[(styled.length - 1) / 2]!, styled[styled.length - 1]!]
+        : styled;
     const ticksWords =
       this.setting.fineLabels((v) => scaleText(this.hass, scale, v, true)) ??
       heldLabels(this.head.ruler, w, thinned);
@@ -606,6 +611,8 @@ export class FluvySliderCard extends FluvyTileCard {
         ?inactive=${!awake}
         ?wake=${usable && kind === 'speed'}
         ?on-fill=${lit}
+        .look=${look}
+        ?still=${sliderStill()}
         unit=${scale.unit}
         .label=${`${name} · ${label}`}
         .format=${(v: number) => scaleText(this.hass, scale, v)}

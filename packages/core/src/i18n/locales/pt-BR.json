@@ -553,7 +553,10 @@
     "show_axis": "Mostrar a escala",
     "show_now": "Marcar o agora",
     "animate": "Animar",
-    "gauge": "Medidor"
+    "gauge": "Medidor",
+    "slider_style": "Estilo do controle deslizante",
+    "slider_style_helper": "Sem mexer, o de todos os controles deslizantes nas configurações do Fluvy",
+    "slider_words": "Valores embaixo"
   },
   "strategy": {
     "home": "Início",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Desfocar o que aparece por trás",
     "cards.blur_sub": "Em todo cartão translúcido, o da casa ou o próprio",
     "cards.unavailable": "Quando indisponível",
+    "sliders.title": "Controles deslizantes",
+    "sliders.style": "Estilo",
+    "sliders.words": "Valores sob barra e líquido",
+    "sliders.fill_note": "O preenchimento vale para os blocos; um cartão desenha a régua.",
     "statuses.title": "Cores de status",
     "statuses.sub": "As da paleta ou as suas, ajustadas para ler bem em cada cartão",
     "statuses.warning": "Aviso",
@@ -1851,7 +1858,10 @@
     "battery": "Bateria",
     "pulse": "Pulso",
     "air": "Ar",
-    "sun": "Sol"
+    "sun": "Sol",
+    "ends": "Extremos e meio",
+    "tile_fill": "Preenchimento",
+    "house_style": "Casa ({style})"
   },
   "tone": {
     "accent": "Destaque",

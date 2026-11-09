@@ -121,6 +121,8 @@ const BUDGETS = {
   glass: 4096,
   // what a card quiet out of reach wears (1.16): its sheet
   quiet: 4096,
+  // the slider styles (1.18, #144): the bar, the liquid and a tile's fill the ruler draws when asked, and their sheet
+  'slider-styles': 4096,
   // the icon set's other part: the appliances, the garage, the gate, the window and the door open (13 outlines)
   icons: 4096,
   // what the pages share: the date picker, the time field, the dropdown; the Activity and History pages' period,

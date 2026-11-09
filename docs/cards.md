@@ -13,7 +13,10 @@ the card's own surface, its edge and dividers in it — see [the theme guide](th
 house's — see [the settings panel](settings-panel.md#cards)) and `unavailable` (how it looks while its device is out
 of reach: `dashed`, the default, on the page's fill in a dashed hairline; `quiet`, as it is while off, still saying
 "Unavailable"; left out, the house's — a tile of the tiles card may say its own);
-a list card takes `title`. A card with a head also takes `show_icon`: `auto` (the default: the circle gives way where
+a list card takes `title`. A card with a slider (the light, slider, tile, tiles, lights, media, fan, cover and helpers
+cards) also takes `slider_style` (the style its sliders are drawn in: `ruler`, `bar`, `liquid` or, on a tile, `fill`;
+left out or `house`, the house's — see [the settings panel](settings-panel.md#sliders)) and `slider_words` (the
+figures under a bar or a liquid: `ends`, the ends and the middle, or `none`). A card with a head also takes `show_icon`: `auto` (the default: the circle gives way where
 a long name in a narrow column needs its room, and only then), `always` (the circle stays while the name keeps a
 few letters beside it: a smaller circle first, then none) or `never`. An `icon` left out — a card's, a row's or a
 tile's — is the one you set for the entity in Home Assistant (in its settings, or a helper's, a scene's or a script's

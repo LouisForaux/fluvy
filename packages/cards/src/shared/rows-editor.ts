@@ -2,6 +2,7 @@ import {
   cardDefaults,
   fireEvent,
   localize,
+  sliderDefaults,
   type HaFormSchemaItem,
   type HomeAssistant,
   type LovelaceCardConfig,
@@ -970,7 +971,8 @@ function withoutLists(
  * What an editor shows where a card's config says nothing: the card's own defaults, and what every card that offers
  * them does — on a card with a head (`show_icon`), the circle that shows by itself (`auto`); on a card of a list
  * (`hide_empty`), a list that stays in sight while it is empty; on a card with a surface (`card_opacity`), the house's
- * opacity for every card; on a card of entities (`unavailable`), how the house draws every card out of reach.
+ * opacity for every card; on a card of entities (`unavailable`), how the house draws every card out of reach; on a card
+ * with a slider (`slider_style`), the house's style and the words under it.
  */
 export function editorDefaults(
   form: LovelaceConfigForm,
@@ -982,14 +984,17 @@ export function editorDefaults(
     ...(shows('show_icon') ? { show_icon: 'auto' } : {}),
     ...(shows('hide_empty') ? { hide_empty: false } : {}),
   };
-  // the house's opacity and its look out of reach as they are when the editor asks (the panel may change them meanwhile)
+  // the house's opacity, its look out of reach and its sliders' words as they are when the editor asks (the panel may
+  // change them meanwhile)
   const surface = shows('card_opacity');
   const away = shows('unavailable');
-  return Object.keys(shared).length || surface || away
+  const sliders = shows('slider_style');
+  return Object.keys(shared).length || surface || away || sliders
     ? (config, hass) => ({
         ...shared,
         ...(surface ? { card_opacity: cardDefaults().opacity } : {}),
         ...(away ? { unavailable: cardDefaults().unavailable } : {}),
+        ...(sliders ? { slider_style: 'house', slider_words: sliderDefaults().words } : {}),
         ...defaults?.(config, hass),
       })
     : defaults;

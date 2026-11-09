@@ -175,6 +175,44 @@
   color: var(--tone-ink);
 }
 
+/* a tile that is its own slider (`slider_style: fill`, 1.18, #144): its ruler covers the tile, first of its parts, and
+   draws the lit wash to the level under the words (slider-styles.css), so the tile keeps the plain card's ground and
+   inks over it with the lit hairline (after the lit tile's rules, which it answers at their own weight); its words
+   stand over the wash and take no press — the ruler's is the tile's tap and hold — its controls keep theirs, and
+   its button is the keyboard's alone */
+.fv-tile > fluvy-ruler[look='fill'] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.fv-tile--fill.is-on {
+  background: var(--fluvy-card);
+  color: var(--fluvy-text);
+}
+
+.fv-tile--fill.is-on :is(.fv-tile__state, .fv-readout__label, .fv-unit) {
+  color: var(--fluvy-text-secondary);
+  opacity: 1;
+}
+
+.fv-tile--fill > :is(.fv-tile__head, .fv-tile__name, .fv-tile__state, .fv-tile__foot) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.fv-tile--fill > .fv-tile__head :is(button, .fv-hit) {
+  pointer-events: auto;
+}
+
+.fv-tile--fill > .fv-tile__tap {
+  pointer-events: none;
+}
+
 .fv-mini {
   display: inline-flex;
   align-items: center;

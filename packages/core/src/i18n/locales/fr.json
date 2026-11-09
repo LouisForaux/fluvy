@@ -553,7 +553,10 @@
     "show_axis": "Afficher l’échelle",
     "show_now": "Marquer maintenant",
     "animate": "Animer",
-    "gauge": "Jauge"
+    "gauge": "Jauge",
+    "slider_style": "Style du curseur",
+    "slider_style_helper": "Inchangé, celui de tous les curseurs dans les réglages de Fluvy",
+    "slider_words": "Repères dessous"
   },
   "strategy": {
     "home": "Accueil",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Flouter ce qui transparaît",
     "cards.blur_sub": "Sur chaque carte translucide, celle de la maison ou la sienne",
     "cards.unavailable": "Si indisponible",
+    "sliders.title": "Curseurs",
+    "sliders.style": "Style",
+    "sliders.words": "Repères sous barre et liquide",
+    "sliders.fill_note": "Le remplissage agit sur les tuiles ; une carte dessine la règle.",
     "statuses.title": "Couleurs d’état",
     "statuses.sub": "Celles de la palette, ou les vôtres, ajustées pour se lire sur chaque carte",
     "statuses.warning": "Avertissement",
@@ -1851,7 +1858,10 @@
     "battery": "Batterie",
     "pulse": "Pulsation",
     "air": "Air",
-    "sun": "Soleil"
+    "sun": "Soleil",
+    "ends": "Extrémités et milieu",
+    "tile_fill": "Remplissage",
+    "house_style": "Maison ({style})"
   },
   "tone": {
     "accent": "Accent",

@@ -943,6 +943,50 @@ describe('the settings panel', () => {
     guest.panel.remove();
   });
 
+  it('lets the house choose the style every slider is drawn in, the ruler until chosen (1.18, #144)', async () => {
+    const { panel, root, button, handle, previews, settle } = await mount();
+    const card = () =>
+      [...root.querySelectorAll<HTMLElement>('.pn-card')].find(
+        (c) => c.querySelector('.fv-card__title')?.textContent?.trim() === 'Sliders',
+      )!;
+    const tile = (value: string) =>
+      [...card().querySelectorAll<HTMLElement>('.fv-option')].find(
+        (t) => t.querySelector('.fv-option__value')?.textContent?.trim() === value,
+      );
+    const chip = (words: string) =>
+      [...card().querySelectorAll<HTMLElement>('.fv-chip')].find(
+        (c) => c.textContent?.trim() === words,
+      );
+    // the ruler, by default: nothing changes on upgrade; the words are a bar's or a liquid's to offer
+    expect(tile('Ruler')?.classList.contains('is-active')).toBe(true);
+    expect(tile('Fill')).toBeDefined();
+    expect(card().textContent).toContain('Fill acts on tiles; a card draws the ruler.');
+    expect(chip('Ends and middle')).toBeUndefined();
+    tile('Bar')!.click();
+    await settle();
+    expect(tile('Bar')?.classList.contains('is-active')).toBe(true);
+    expect(root.querySelector('.pn-bar__text')?.textContent?.trim()).toBe('Sliders · Style · Bar');
+    // shown on every card at once, saved only from the bar
+    expect(previews.at(-1)).toEqual({ sliders: { style: 'bar', words: 'ends' } });
+    expect(chip('Ends and middle')?.classList.contains('is-active')).toBe(true);
+    chip('None')!.click();
+    await settle();
+    expect(previews.at(-1)).toEqual({ sliders: { style: 'bar', words: 'none' } });
+    // two lines of the bar: the style's and the words'
+    expect(root.querySelector('.pn-bar__text')?.textContent?.trim()).toBe('2 changes');
+    button('Save')!.click();
+    await settle();
+    expect(handle.settings().sliders).toEqual({ style: 'bar', words: 'none' });
+    panel.remove();
+    // someone who is not an administrator reads it, and changes nothing
+    const guest = await mount(false);
+    const theirs = [...guest.root.querySelectorAll<HTMLElement>('.pn-card')].find(
+      (c) => c.querySelector('.fv-card__title')?.textContent?.trim() === 'Sliders',
+    )!;
+    expect(theirs.querySelector('button.fv-option')).toBeNull();
+    guest.panel.remove();
+  });
+
   it('lets the house draw a card out of reach as when off, dashed until chosen (#126)', async () => {
     const { panel, root, button, handle, previews, settle } = await mount();
     const card = [...root.querySelectorAll<HTMLElement>('.pn-card')].find(
@@ -1671,8 +1715,9 @@ describe('the settings panel', () => {
       frame: false,
       charts,
       chartSets: [sea, garden],
-      // the cards' surface travels too (1.15), and how one out of reach looks (1.16)
+      // the cards' surface travels too (1.15), how one out of reach looks (1.16), and the sliders' style (1.18)
       cards: { opacity: 75, blur: false, unavailable: 'quiet' },
+      sliders: { style: 'bar', words: 'none' },
     });
     await handle.store.savePersonal({ language: 'es', haptics: false });
     await settle();
@@ -1696,6 +1741,7 @@ describe('the settings panel', () => {
       charts,
       chartSets: [sea, garden],
       cards: { opacity: 75, blur: false, unavailable: 'quiet' },
+      sliders: { style: 'bar', words: 'none' },
     });
     expect(exported['personal']).toMatchObject({ language: 'es', haptics: false });
     expect(exported['dashboards']).toEqual({
@@ -1710,6 +1756,7 @@ describe('the settings panel', () => {
       charts: CHART_DEFAULTS,
       chartSets: [],
       cards: { opacity: 100, blur: true, unavailable: 'dashed' },
+      sliders: { style: 'ruler', words: 'ends' },
     });
     await handle.store.savePersonal({ language: 'auto', haptics: true });
     importSettings(
@@ -1729,6 +1776,7 @@ describe('the settings panel', () => {
     expect(handle.settings().charts).toEqual(charts);
     expect(handle.store.house.chartSets).toEqual([sea, garden]);
     expect(handle.settings().cards).toEqual({ opacity: 75, blur: false, unavailable: 'quiet' });
+    expect(handle.settings().sliders).toEqual({ style: 'bar', words: 'none' });
     expect(saved.at(-1)?.config).toEqual({
       strategy: { type: 'custom:fluvy-home', thermostat_variant: 'ruler', hide: ['media'], caps },
     });

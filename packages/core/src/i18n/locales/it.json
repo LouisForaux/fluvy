@@ -553,7 +553,10 @@
     "show_axis": "Mostra la scala",
     "show_now": "Segna adesso",
     "animate": "Anima",
-    "gauge": "Indicatore"
+    "gauge": "Indicatore",
+    "slider_style": "Stile del cursore",
+    "slider_style_helper": "Invariato, quello di tutti i cursori nelle impostazioni di Fluvy",
+    "slider_words": "Valori sotto"
   },
   "strategy": {
     "home": "Casa",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Sfoca ciò che si vede attraverso",
     "cards.blur_sub": "Su ogni scheda trasparente, quella della casa o la sua",
     "cards.unavailable": "Se offline",
+    "sliders.title": "Cursori",
+    "sliders.style": "Stile",
+    "sliders.words": "Valori sotto barra e liquido",
+    "sliders.fill_note": "Il riempimento agisce sui riquadri; una scheda disegna il righello.",
     "statuses.title": "Colori di stato",
     "statuses.sub": "Quelli della palette o i tuoi, adattati per leggersi su ogni scheda",
     "statuses.warning": "Avviso",
@@ -1851,7 +1858,10 @@
     "battery": "Batteria",
     "pulse": "Impulso",
     "air": "Aria",
-    "sun": "Sole"
+    "sun": "Sole",
+    "ends": "Estremi e centro",
+    "tile_fill": "Riempimento",
+    "house_style": "Casa ({style})"
   },
   "tone": {
     "accent": "Accento",

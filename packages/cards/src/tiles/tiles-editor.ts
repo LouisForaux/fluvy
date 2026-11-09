@@ -16,6 +16,7 @@ import {
   selectField,
   sinceChoices,
   sinceField,
+  sliderFields,
   tintField,
   toneField,
   unavailableField,
@@ -38,6 +39,8 @@ export const base: readonly BaseKey[] = [
   'card_color',
   'card_opacity',
   'unavailable',
+  'slider_style',
+  'slider_words',
 ];
 
 export const keys = configKeys<TilesCardConfig>()([
@@ -103,8 +106,9 @@ export function getConfigForm(): LovelaceConfigForm {
       onlyWhen(({ size }) => size !== 'large', nameLinesField()),
       ...colourFields(),
       tintField(),
-      // a light's colours where the group holds a light
+      // a light's colours where the group holds a light; its large tiles' sliders in a style (the fill is theirs)
       onlyWhen(holdsLight('tiles', 'entities'), lightColourFields()),
+      ...sliderFields(true).map((row) => onlyWhen(({ size }) => size === 'large', row)),
       entitiesField('readouts', ['sensor']),
       emptyFields(),
     ],

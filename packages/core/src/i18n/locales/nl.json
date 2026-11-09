@@ -553,7 +553,10 @@
     "show_axis": "Schaal tonen",
     "show_now": "Nu markeren",
     "animate": "Animeren",
-    "gauge": "Meter"
+    "gauge": "Meter",
+    "slider_style": "Stijl van de schuifregelaar",
+    "slider_style_helper": "Onaangeroerd: die van alle schuifregelaars, uit de instellingen van Fluvy",
+    "slider_words": "Waarden eronder"
   },
   "strategy": {
     "home": "Thuis",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Wat doorschijnt vervagen",
     "cards.blur_sub": "Op elke doorschijnende kaart, die van het huis of haar eigen",
     "cards.unavailable": "Als offline",
+    "sliders.title": "Schuifregelaars",
+    "sliders.style": "Stijl",
+    "sliders.words": "Waarden onder balk en vloeistof",
+    "sliders.fill_note": "Vulling geldt voor tegels; een kaart tekent de liniaal.",
     "statuses.title": "Statuskleuren",
     "statuses.sub": "Die van het palet of je eigen, leesbaar gemaakt op elke kaart",
     "statuses.warning": "Waarschuwing",
@@ -1851,7 +1858,10 @@
     "battery": "Batterij",
     "pulse": "Puls",
     "air": "Lucht",
-    "sun": "Zon"
+    "sun": "Zon",
+    "ends": "Uiteinden en midden",
+    "tile_fill": "Vulling",
+    "house_style": "Huis ({style})"
   },
   "tone": {
     "accent": "Accent",

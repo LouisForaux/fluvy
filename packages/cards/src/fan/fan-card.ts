@@ -3,6 +3,9 @@ import {
   isUsable,
   localize,
   numberAttr,
+  sliderStill,
+  sliderStyleOf,
+  sliderWordsOf,
   stateText,
   strings,
   type EntityView,
@@ -476,18 +479,23 @@ export class FluvyFanCard extends Card<FanCardConfig> {
 
     const fine = this.fine;
     const scale = speedScale(this.hass, count);
+    const look = sliderStyleOf(this.config);
     const labels = heldLabels(
       this.head.ruler,
       this.contentWidth,
-      fine
-        ? [0, 0.2, 0.4, 0.6, 0.8, 1].map(
-            (f) =>
-              [
-                f,
-                formatNumber(this.hass, fine.min + f * (fine.max - fine.min), { digits: 0 }),
-              ] as const,
-          )
-        : scale.labels,
+      sliderWordsOf(
+        this.config,
+        fine
+          ? [0, 0.2, 0.4, 0.6, 0.8, 1].map(
+              (f) =>
+                [
+                  f,
+                  formatNumber(this.hass, fine.min + f * (fine.max - fine.min), { digits: 0 }),
+                ] as const,
+            )
+          : scale.labels,
+        look,
+      ),
     );
     const speedLabel = this.t('fan.speed');
 
@@ -548,6 +556,8 @@ export class FluvyFanCard extends Card<FanCardConfig> {
                   ?inactive=${speed === null || !on}
                   ?wake=${!unusable && speed !== null}
                   ?disabled=${unusable}
+                  .look=${look}
+                  ?still=${sliderStill()}
                   unit="%"
                   .label=${`${name} · ${speedLabel}`}
                   .format=${(value: number) => formatNumber(this.hass, value, { digits: 0 })}

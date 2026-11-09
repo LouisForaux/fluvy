@@ -502,7 +502,10 @@
     "show_axis": "目盛りを表示",
     "show_now": "現在を表示",
     "animate": "アニメーション",
-    "gauge": "ゲージ"
+    "gauge": "ゲージ",
+    "slider_style": "スライダーのスタイル",
+    "slider_style_helper": "変更しないときは Fluvy の設定のすべてのスライダーの値",
+    "slider_words": "下の目盛り"
   },
   "strategy": {
     "home": "ホーム",
@@ -931,7 +934,10 @@
     "battery": "バッテリー",
     "pulse": "パルス",
     "air": "風",
-    "sun": "太陽"
+    "sun": "太陽",
+    "ends": "両端と中央",
+    "tile_fill": "塗りつぶし",
+    "house_style": "家（{style}）"
   },
   "tone": {
     "accent": "アクセント",
@@ -2461,6 +2467,10 @@
     "cards.blur": "透けて見える背景をぼかす",
     "cards.blur_sub": "透けるすべてのカードで（家の設定でも、カード個別でも）",
     "cards.unavailable": "利用不可のとき",
+    "sliders.title": "スライダー",
+    "sliders.style": "スタイル",
+    "sliders.words": "バーと液体の下の目盛り",
+    "sliders.fill_note": "塗りつぶしはタイルにのみ適用され、カードはルーラーを表示します。",
     "statuses.title": "状態の色",
     "statuses.sub": "パレットの色か自分の色を、どのカードでも読みやすく調整",
     "statuses.warning": "警告",

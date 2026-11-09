@@ -32,6 +32,7 @@ import {
   type ChartSettings,
   type SavedSeries,
 } from './charts.js';
+import { parseSliderSettings, SLIDER_DEFAULTS, type SliderSettings } from './sliders.js';
 
 /**
  * fluvy's settings, kept where Home Assistant keeps its own frontend settings: the house's in its system
@@ -52,9 +53,9 @@ export const SETTINGS_KEY = 'fluvy';
  * 1.3: the house keeps its shared palettes and its wall settings. A 1.2 bundle reads a 2 as its own (it parses field
  * by field and ignores the rest) but a save from it drops what it does not know; from 2 on a save keeps every field
  * it does not know (`SettingsStore.saveHouse`). A field added since with a default that draws as before (1.15's
- * `cards`) moves no version: a bundle without it draws its default and keeps it on save. Nor does one added inside
- * such a field (1.16's `cards.unavailable`): a 1.15 bundle draws it as its default, and a save of the cards from it
- * writes the default back.
+ * `cards`, 1.18's `sliders`) moves no version: a bundle without it draws its default and keeps it on save. Nor does
+ * one added inside such a field (1.16's `cards.unavailable`): a 1.15 bundle draws it as its default, and a save of
+ * the cards from it writes the default back.
  */
 export const SETTINGS_VERSION = 3;
 
@@ -155,6 +156,8 @@ export interface HouseSettings {
   readonly chartSets: readonly SavedSeries[];
   /** Every card's surface where a card says none of its own (1.15). */
   readonly cards: CardSurface;
+  /** How every slider is drawn where a card says nothing of its own (1.18, #144). */
+  readonly sliders: SliderSettings;
 }
 
 /** What each person may choose for themselves. */
@@ -197,6 +200,7 @@ export interface EffectiveSettings {
   readonly charts: ChartSettings;
   readonly chartSets: readonly SavedSeries[];
   readonly cards: CardSurface;
+  readonly sliders: SliderSettings;
 }
 
 export const HOUSE_DEFAULTS: HouseSettings = {
@@ -237,6 +241,8 @@ export const HOUSE_DEFAULTS: HouseSettings = {
   chartSets: [],
   // every card solid, as before 1.15; a see-through one blurs what shows through; one out of reach dashed, as before 1.16
   cards: { opacity: 100, blur: true, unavailable: 'dashed' },
+  // every slider the ruler, as before 1.18, until the house chooses a style
+  sliders: SLIDER_DEFAULTS,
 };
 export const WALL_DEFAULTS: WallSettings = HOUSE_DEFAULTS.wall;
 
@@ -344,6 +350,7 @@ export function parseHouse(raw: unknown): HouseSettings {
     charts: parseChartSettings(value['charts']),
     chartSets: parseSavedSeries(value['chartSets']),
     cards: parseCards(value['cards']),
+    sliders: parseSliderSettings(value['sliders']),
   };
 }
 
@@ -400,6 +407,7 @@ export function resolveSettings(
     charts: house.charts,
     chartSets: house.chartSets,
     cards: house.cards,
+    sliders: house.sliders,
   };
 }
 

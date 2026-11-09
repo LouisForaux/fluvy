@@ -1,4 +1,4 @@
-import type { EntityView, MessageKey } from '@fluvy/core';
+import type { EntityView, MessageKey, SliderStyle } from '@fluvy/core';
 import { icon, label, rulerLabels, textWidth, type RulerChangeDetail } from '@fluvy/ui';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { COLOURED, hexOf } from '../shared/light.js';
@@ -275,6 +275,10 @@ export interface ColourOptions {
   readonly disabled?: boolean;
   /** The card is lit as a lit tile (`tint_strength: full`): the hue ruler on its fill. */
   readonly onFill?: boolean;
+  /** The style the card's sliders are drawn in (1.18), whether a liquid rests, and the words under one in that style. */
+  readonly look: SliderStyle;
+  readonly still: boolean;
+  readonly words: <T>(items: readonly T[]) => readonly T[];
   /** The quick colours alone, one row of as many as the column holds (a colour bulb's compact layout by width). */
   readonly row?: boolean;
   /** The card: its face lays the ruler's words out. */
@@ -368,6 +372,8 @@ export function colourControls(o: ColourOptions): TemplateResult {
             ?inactive=${!o.on}
             ?disabled=${o.disabled}
             ?on-fill=${o.onFill}
+            .look=${o.look}
+            ?still=${o.still}
             tint="hue"
             .label=${`${o.name} · ${o.t('light.color')}`}
             .format=${(v: number) => `${o.format(v)}°`}
@@ -376,7 +382,7 @@ export function colourControls(o: ColourOptions): TemplateResult {
               o.pick({ rgb: hsToRgb(h, saturation), hue: h }, { hs_color: [h, saturation] });
             }}
           ></fluvy-ruler>
-          ${rulerLabels(hueWords(o))}`
+          ${rulerLabels(o.words(hueWords(o)))}`
       : o.temperature();
   // a list of none (`colors: []`) draws no row at all, not an empty one with its 16 above
   if (!swatches.length) return o.row ? html`` : html`${slot}`;

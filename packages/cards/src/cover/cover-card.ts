@@ -3,6 +3,8 @@ import {
   formatNumber,
   isUsable,
   numberAttr,
+  sliderStill,
+  sliderStyleOf,
   strings,
   type EntityView,
   type FluvyCardConfig,
@@ -562,6 +564,8 @@ export class FluvyCoverCard extends Card<CoverCardConfig> {
                   .tone=${open || moving ? active : 'neutral'}
                   ?inactive=${unusable || position === null}
                   ?disabled=${unusable}
+                  .look=${sliderStyleOf(this.config)}
+                  ?still=${sliderStill()}
                   unit="%"
                   .label=${`${name} · ${this.t('cover.position')}`}
                   .format=${(value: number) => formatNumber(this.hass, value, { digits: 0 })}

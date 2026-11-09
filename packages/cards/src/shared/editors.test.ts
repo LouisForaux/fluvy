@@ -284,6 +284,55 @@ describe('the editors’ contract', () => {
     },
   );
 
+  it.each(cards)(
+    '$tag: offers the words under its sliders wherever it offers their style, and honours both (1.18, #144)',
+    ({ editor }) => {
+      const shown = names(editor.getConfigForm().schema);
+      expect(shown.includes('slider_words')).toBe(shown.includes('slider_style'));
+      expect(editor.base.includes('slider_words')).toBe(editor.base.includes('slider_style'));
+    },
+  );
+
+  it('offers the fill only where the card draws a tile (#144)', () => {
+    const values = (field: HaFormSchemaItem): string[] =>
+      (
+        field.selector?.['select'] as { options?: readonly { value: string }[] } | undefined
+      )?.options?.map((o) => o.value) ?? [];
+    const offers = (tag: string): boolean[] =>
+      fields(cards.find((c) => c.tag === tag)!.editor.getConfigForm().schema)
+        .filter((field) => field.name === 'slider_style')
+        .map((field) => values(field).includes('fill'))
+        .sort();
+    expect(offers('fluvy-tile-card')).toEqual([true]);
+    expect(offers('fluvy-tiles-card')).toEqual([true]);
+    // a card that draws a tile in one of its layouts offers it in that one alone
+    expect(offers('fluvy-slider-card')).toEqual([false, true]);
+    // the lights card's tiles are compact rows, no slider of theirs: its style is the room's brightness's
+    for (const tag of [
+      'fluvy-light-card',
+      'fluvy-lights-card',
+      'fluvy-fan-card',
+      'fluvy-cover-card',
+      'fluvy-media-card',
+      'fluvy-helpers-card',
+    ])
+      expect(offers(tag), tag).toEqual([false]);
+    const slider = cards.find((c) => c.tag === 'fluvy-slider-card')!.editor.getConfigForm();
+    const shown = (data: Record<string, unknown>) =>
+      fields(visibleFields(slider.schema, data))
+        .filter((field) => field.name === 'slider_style')
+        .map((field) => values(field));
+    expect(shown({ variant: 'tile' })).toEqual([['house', 'ruler', 'bar', 'liquid', 'fill']]);
+    expect(shown({ variant: 'full' })).toEqual([['house', 'ruler', 'bar', 'liquid']]);
+    // the words are offered while the style drawn says any: a bar's or a liquid's
+    const words = (data: Record<string, unknown>) =>
+      names(visibleFields(slider.schema, data)).includes('slider_words');
+    expect(words({})).toBe(false);
+    expect(words({ slider_style: 'bar' })).toBe(true);
+    expect(words({ slider_style: 'liquid' })).toBe(true);
+    expect(words({ slider_style: 'ruler' })).toBe(false);
+  });
+
   it('offers a clock’s look out of reach where it shows a weather, the one thing on it that can be', () => {
     const clock = cards.find((c) => c.tag === 'fluvy-clock-card')!.editor.getConfigForm();
     expect(names(visibleFields(clock.schema, {}))).not.toContain('unavailable');

@@ -18,6 +18,7 @@ import {
   onlyWhen,
   selectField,
   showIconField,
+  sliderFields,
   textField,
   tintField,
 } from '../shared/form.js';
@@ -38,6 +39,8 @@ export const base: readonly BaseKey[] = [
   'tap_action',
   'hold_action',
   'show_icon',
+  'slider_style',
+  'slider_words',
 ];
 
 export const keys = configKeys<LightsCardConfig>()([
@@ -84,6 +87,10 @@ export function getConfigForm(): LovelaceConfigForm {
       fieldRow(selectField('variant', LIGHTS_VARIANTS), boolField('show_brightness')),
       fieldRow(boolField('show_count'), boolField('show_level')),
       lightColourFields(),
+      // the room's brightness in a style, where the card draws it (its tiles are compact: no slider of theirs)
+      ...sliderFields().map((row) =>
+        onlyWhen(({ show_brightness }) => show_brightness === true, row),
+      ),
       ...colourFields(),
       // the tiles' colour at rest and their names' lines: the row and the chips have no surface to wash, no tile
       onlyWhen(({ variant }) => variant === 'tiles', fieldRow(tintField(), nameLinesField())),

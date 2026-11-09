@@ -10,10 +10,12 @@ import {
   parsePalette,
   parsePersonal,
   parseSavedPalettes,
+  parseSliderSettings,
   parseWall,
   PERSONAL_DEFAULTS,
   resolveSettings,
   SettingsStore,
+  SLIDER_DEFAULTS,
   pageScope,
   WALL_DEFAULTS,
   wearsLook,
@@ -102,7 +104,29 @@ describe('parsing stored settings', () => {
       charts: CHART_DEFAULTS,
       chartSets: [],
       cards: { opacity: 60, blur: false, unavailable: 'quiet' },
+      sliders: SLIDER_DEFAULTS,
     });
+  });
+
+  it('reads the house’s slider settings: the ruler until the house chooses a style (1.18, #144: nothing changes on upgrade)', () => {
+    // a 1.17 house stored none: every slider the ruler, as before, and the same version (a field with its default)
+    const upgraded = parseHouse({ version: 3, palette: 'volt' });
+    expect(upgraded.sliders).toEqual({ style: 'ruler', words: 'ends' });
+    expect(HOUSE_DEFAULTS.sliders).toEqual(SLIDER_DEFAULTS);
+    expect(upgraded.version).toBe(3);
+    expect(parseSliderSettings({ style: 'bar', words: 'none' })).toEqual({
+      style: 'bar',
+      words: 'none',
+    });
+    expect(parseSliderSettings({ style: 'liquid' })).toEqual({ style: 'liquid', words: 'ends' });
+    expect(parseSliderSettings({ style: 'fill' }).style).toBe('fill');
+    // a word it does not know, another case, a card's own `house`, or not a word: the default
+    for (const broken of ['knob', 'Bar', 'house', true, null, 1])
+      expect(parseSliderSettings({ style: broken, words: broken })).toEqual(SLIDER_DEFAULTS);
+    expect(parseSliderSettings('bar')).toEqual(SLIDER_DEFAULTS);
+    expect(
+      resolveSettings(parseHouse({ sliders: { style: 'liquid' } }), PERSONAL_DEFAULTS).sliders,
+    ).toEqual({ style: 'liquid', words: 'ends' });
   });
 
   it('reads the house’s status colours, each broken one as the palette’s (1.9: nothing changes on upgrade)', () => {

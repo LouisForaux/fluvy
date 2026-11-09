@@ -26,7 +26,13 @@ export {
 } from './controls/pointer.js';
 export { sideScroll } from './controls/side-scroll.js';
 export { localPoint, zoomOf } from './controls/zoom.js';
-export { FluvyRuler, type RulerChangeDetail, type RulerWindowDetail } from './controls/ruler.js';
+export {
+  fetchSliderStyles,
+  FluvyRuler,
+  type RulerChangeDetail,
+  type RulerWindowDetail,
+  type SliderLook,
+} from './controls/ruler.js';
 export { dialLabelTop, FluvyDial, type DialArc, type DialChangeDetail } from './controls/dial.js';
 
 /** Defined synchronously on import: a card template may use the controls in its first render. */

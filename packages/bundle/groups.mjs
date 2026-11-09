@@ -218,6 +218,13 @@ const GLASS = /\/packages\/(core\/src\/look\/glass|ui\/src\/styles\/(generated\/
  */
 const QUIET = /\/packages\/(core\/src\/look\/quiet|ui\/src\/styles\/(generated\/)?quiet)\.ts/;
 
+/**
+ * The slider styles (1.18, #144): the bar, the liquid and a tile's fill the ruler draws when asked, and their sheet —
+ * fetched by the first ruler asked for one, or as the house asks for them; a house of rulers never pays for them.
+ */
+const SLIDER_STYLES =
+  /\/packages\/ui\/src\/(controls\/slider-styles|styles\/(generated\/)?slider-styles)\.ts/;
+
 /** The icon set's other part (`fluvy:washer`, `fluvy:gate-open` …): fetched the first time Home Assistant asks for one. */
 const ICONS = /\/packages\/core\/src\/icons\/generated-on-demand\.ts/;
 
@@ -254,8 +261,8 @@ const FORMS =
  * (the history bars' readings on their own), devices (the cameras' sheet on its own), appliances (their pictures on
  * their own), automations and alerts families (each sheet on its own), the template card, the web page card, the Slider
  * card, the Vehicle card, the items card (its sheet on its own), the light card's colours, a room's quick actions, the cards' editor, the
- * fields every editor is built of, the view icons, what a see-through card wears, what a quiet one wears, the icon
- * set's other part, and everything else (Fluvy's packages and Lit) in `core`. The bundle's own entry stays in `fluvy.js`. Rolldown processes the groups in this order; the priorities only say so out loud.
+ * fields every editor is built of, the view icons, what a see-through card wears, what a quiet one wears, the slider
+ * styles, the icon set's other part, and everything else (Fluvy's packages and Lit) in `core`. The bundle's own entry stays in `fluvy.js`. Rolldown processes the groups in this order; the priorities only say so out loud.
  * @type {readonly Group[]}
  */
 export const GROUPS = [
@@ -297,6 +304,7 @@ export const GROUPS = [
   { name: 'view-icons', test: VIEW_ICONS },
   { name: 'glass', test: GLASS },
   { name: 'quiet', test: QUIET },
+  { name: 'slider-styles', test: SLIDER_STYLES },
   { name: 'icons', test: ICONS },
   { name: 'core', test: (id) => !id.includes('/packages/bundle/src/') },
 ];

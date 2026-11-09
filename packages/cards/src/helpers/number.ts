@@ -1,4 +1,11 @@
-import { formatNumber, localize, numberAttr, strings, type EntityView } from '@fluvy/core';
+import {
+  formatNumber,
+  localize,
+  numberAttr,
+  sliderStill,
+  strings,
+  type EntityView,
+} from '@fluvy/core';
 import { ico, stepper, type RulerChangeDetail } from '@fluvy/ui';
 import { html, nothing, type TemplateResult } from 'lit';
 import { iconOf } from '../shared/domain.js';
@@ -134,6 +141,8 @@ export function numberBlocks(
       tone="accent"
       ?inactive=${m.value === null}
       ?disabled=${m.unusable}
+      .look=${host.sliderStyle}
+      ?still=${sliderStill()}
       .unit=${view.unit}
       .label=${`${name} · ${s(host.hass, 'value')}`}
       .format=${(value: number) => text(host, m, value)}

@@ -31,6 +31,7 @@
     "./styles/energy": "./src/styles/energy.ts",
     "./styles/glass": "./src/styles/glass.ts",
     "./styles/quiet": "./src/styles/quiet.ts",
+    "./styles/slider-styles": "./src/styles/slider-styles.ts",
     "./styles/media": "./src/styles/media.ts",
     "./styles/page": "./src/styles/page.ts"
   },

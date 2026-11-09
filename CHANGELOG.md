@@ -39,6 +39,18 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   says what the card is, in either variant, with no name and no separator beside it (#145).
 - The Weather card's hourly forecast can step over hours (`hourly_step`, or Hours between columns in its editor, from
   1 to 6): "Now, 9, 11" at a step of 2, each column the forecast's own entry at its hour (#146).
+- The sliders can be drawn in a style of the house's choice, Fluvy's settings › Appearance › Sliders, as the charts are:
+  the Ruler (as before, and still the default: nothing changes on upgrade), a Bar in the same slot (Home Assistant's
+  idea: the track, a fill in the tone's ink, a handle of the card's colour; a colour temperature's is the gradient
+  itself), a Liquid (the fill as water, two slow waves at its edge that rest when motion is off) and, on a tile, the
+  Fill (the whole tile is the slider: its lit wash reaches the level and stops on a 2 px edge, the figure in its line,
+  the foot free for its readouts). Every surface with a slider follows it: the Light card's brightness and colour
+  temperature, the Slider card, a large tile's and a group's, the Lights card's brightness, the media card's volume,
+  the fan's speed, the cover's position and a helper's number; each card may name its own (`slider_style`, with
+  the fill offered only where the card draws a tile) and the words under a bar or a liquid (`slider_words`: the ends
+  and the middle, or none; the row stays, so no height moves). Every style keeps the relative drag, the slowing away
+  from the axis, the bubble and the keys; the fine scale on a hold stays the Ruler's. The setting travels with a
+  backup and with Export and Import (#144).
 
 ### Fixed
 

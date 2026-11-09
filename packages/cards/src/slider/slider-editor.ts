@@ -1,5 +1,5 @@
 import { strings, type HaFormSchemaItem, type LovelaceConfigForm } from '@fluvy/core';
-import { HEAD_BASE } from '../shared/base.js';
+import { HEAD_BASE, SLIDER_BASE } from '../shared/base.js';
 import { configKeys } from '../shared/config.js';
 import {
   actionFields,
@@ -13,6 +13,7 @@ import {
   onlyWhen,
   selectField,
   showIconField,
+  sliderFields,
   textField,
   tintField,
 } from '../shared/form.js';
@@ -39,7 +40,7 @@ const end = (name: string): HaFormSchemaItem => ({
   selector: { number: { mode: 'box', step: 'any' } },
 });
 
-export const base = HEAD_BASE;
+export const base = [...HEAD_BASE, ...SLIDER_BASE];
 
 export const keys = configKeys<SliderCardConfig>()([
   'variant',
@@ -87,6 +88,8 @@ export function getConfigForm(): LovelaceConfigForm {
       ),
       onlyWhen(ranged, fieldRow(end('min'), end('max'))),
       fieldRow(textField('label'), boolField('live_update')),
+      // the slider's style: the fill is the tile's
+      ...sliderFields(tile),
       ...colourFields(),
       tintField(['off', 'on', 'always']),
       actionFields(),

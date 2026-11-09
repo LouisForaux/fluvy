@@ -4,6 +4,7 @@ import {
   type EntityName,
   type EntityView,
   type HomeAssistant,
+  type SliderStyle,
 } from '@fluvy/core';
 import { html, nothing, type TemplateResult } from 'lit';
 import type { ControlHost } from '../shared/base.js';
@@ -33,6 +34,8 @@ export interface HelperHost extends ControlHost {
   readonly hass: HomeAssistant | undefined;
   /** Width of the card's content column: rulers are drawn to it. */
   readonly contentWidth: number;
+  /** The style its rulers are drawn in (`sliderStyleOf`, 1.18). */
+  readonly sliderStyle: SliderStyle;
   /** Widths laid out by the browser in the card's own classes: a filled chip row measures its columns with it. */
   readonly ruler: TextRuler;
   /** A row's own second line when it is a template: rendered by Home Assistant, live. */

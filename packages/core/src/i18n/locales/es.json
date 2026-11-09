@@ -553,7 +553,10 @@
     "show_axis": "Mostrar la escala",
     "show_now": "Marcar el ahora",
     "animate": "Animar",
-    "gauge": "Indicador"
+    "gauge": "Indicador",
+    "slider_style": "Estilo del deslizador",
+    "slider_style_helper": "Sin tocar, el de todos los deslizadores en los ajustes de Fluvy",
+    "slider_words": "Valores debajo"
   },
   "strategy": {
     "home": "Inicio",
@@ -1343,6 +1346,10 @@
     "cards.blur": "Desenfocar lo que se ve a través",
     "cards.blur_sub": "En cada tarjeta translúcida, la de la casa o la suya propia",
     "cards.unavailable": "Si no está disponible",
+    "sliders.title": "Deslizadores",
+    "sliders.style": "Estilo",
+    "sliders.words": "Valores bajo barra y líquido",
+    "sliders.fill_note": "El relleno actúa en los mosaicos; una tarjeta dibuja la regla.",
     "statuses.title": "Colores de estado",
     "statuses.sub": "Los de la paleta o los tuyos, ajustados para leerse en cada tarjeta",
     "statuses.warning": "Aviso",
@@ -1851,7 +1858,10 @@
     "battery": "Batería",
     "pulse": "Pulso",
     "air": "Aire",
-    "sun": "Sol"
+    "sun": "Sol",
+    "ends": "Extremos y centro",
+    "tile_fill": "Relleno",
+    "house_style": "Casa ({style})"
   },
   "tone": {
     "accent": "Acento",
