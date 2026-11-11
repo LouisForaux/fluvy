@@ -66,6 +66,7 @@ import {
   culpritText,
   culprits,
   lasted,
+  mostNames,
   rowState,
   type LookContext,
 } from './look.js';
@@ -650,7 +651,7 @@ export class FluvyAlertsCard extends Card<AlertsCardConfig> {
       const left = (k: number): number => who.slice(k).reduce((sum, { n }) => sum + n, 0);
       const rest = (k: number): string =>
         `${counted || k === names.length ? '' : ` +${left(k)}`}${tail}`;
-      for (let k = names.length; k >= 1; k--) {
+      for (let k = mostNames(names, room, width); k >= 1; k--) {
         const said = names.slice(0, k).join(', ');
         if (width(`${said}${rest(k)}`) <= room) return { who: said, what: rest(k) };
       }

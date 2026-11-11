@@ -5,6 +5,14 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The Alerts card draws its line at once in a house with many culprits: to name as many as its line holds ("Battery
+  148, Battery 444 +66"), it laid out every run of names from all of them down, a hundred ever longer lines for a
+  hundred low batteries, where it now starts from the most the line can hold, its names measured one by one (the
+  first frame of a Low batteries alert over 148 batteries: 100 ms down to 20, and the card picker's scroll no longer
+  stalls on its preview).
+
 ## [1.18.0] — 2026-11-09
 
 ### Visible on upgrade

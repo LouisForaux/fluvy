@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { HomeAssistant } from '@fluvy/core';
 import { AlertEngine, type AlertResult } from './engine.js';
 import { house, MINUTE, NOW, type HouseOptions, type Seed } from './fixture.js';
-import { culpritText, culprits, type LookContext } from './look.js';
+import { culpritText, culprits, mostNames, type LookContext } from './look.js';
 import { definitionOf, type AlertConfig } from './model.js';
 
 /** An alert as it stands in this house now. */
@@ -121,5 +121,45 @@ describe('who is at fault', () => {
       },
     );
     expect(said({ preset: 'low_battery' }, hass)).toEqual(['Hall ×2', 'Kitchen']);
+  });
+});
+
+describe('the most names a line can hold', () => {
+  /** A ruler as the card's: its width plus the pixel of rounding, kerned a pixel narrower in a join than its parts. */
+  const ruler = (measured: string[]) => (text: string) => {
+    measured.push(text);
+    return text.length * 7 - Math.max(0, text.split(', ').length - 1) + 1;
+  };
+
+  /** The longest run of names that fits `room` with its "+n", looked for from `from` down, as the card does. */
+  const run = (names: string[], room: number, from: number, width: (text: string) => number) => {
+    for (let k = from; k >= 1; k--) {
+      const said = `${names.slice(0, k).join(', ')}${k === names.length ? '' : ` +${names.length - k}`}`;
+      if (width(said) <= room) return said;
+    }
+    return '';
+  };
+
+  it('finds the run a search from every name finds, measuring a handful of lines, not a hundred', () => {
+    let seed = 7;
+    const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let trial = 0; trial < 200; trial++) {
+      const names = Array.from({ length: 1 + Math.floor(random() * 150) }, (_, i) =>
+        'Battery '.slice(0, 1 + Math.floor(random() * 8)).concat(String(i)),
+      );
+      const room = 40 + Math.floor(random() * 400);
+      const all: string[] = [];
+      const bounded: string[] = [];
+      const expected = run(names, room, names.length, ruler(all));
+      const width = ruler(bounded);
+      expect(run(names, room, mostNames(names, room, width), width)).toBe(expected);
+      // a bound of the room's, whatever the names: a few a line holds, measured one by one, then the runs below
+      expect(bounded.length).toBeLessThanOrEqual(2 * (room / 7 + 2) + 4);
+      if (all.length > 60) expect(bounded.length).toBeLessThan(all.length / 2);
+    }
+  });
+
+  it('names them all where they all fit', () => {
+    expect(mostNames(['Hall', 'Kitchen'], 400, (text) => text.length * 7 + 1)).toBe(2);
   });
 });

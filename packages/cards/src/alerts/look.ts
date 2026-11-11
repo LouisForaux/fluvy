@@ -131,6 +131,26 @@ export const culpritText = ({ hass }: LookContext, { name, n }: Culprit): string
   n > 1 ? localize(hass, 'alerts.shared', { name, n: formatNumber(hass, n, { digits: 0 }) }) : name;
 
 /**
+ * The most culprits a line of `room` pixels can name, joined with ", ": where the names, measured one by one, already
+ * overflow it. A line looks for the longest run of names that fits from there down, each join laid out to be measured;
+ * from all of them down, a house's hundred low batteries laid out a hundred ever longer lines (100 ms) to name two.
+ * Each name is allowed 2 px of rounding and kerning against its join, so no run that fits is passed over.
+ */
+export function mostNames(
+  names: readonly string[],
+  room: number,
+  width: (text: string) => number,
+): number {
+  const slack = 2;
+  let used = 0;
+  for (let k = 0; k < names.length; k++) {
+    used += width(names[k] as string) - slack + (k ? width(', ') - slack : 0);
+    if (used > room) return k + 1;
+  }
+  return names.length;
+}
+
+/**
  * How long a row has matched, or an alert since its oldest match ("6 min"); nothing in its first minute — a leak a
  * moment old is not "1 min", and the name says it alone until it is.
  */
