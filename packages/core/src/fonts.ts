@@ -25,6 +25,13 @@ export function setFontFolder(url: string): void {
   folder = url;
 }
 
+/**
+ * Said on a document's `fonts` when one of our faces is added to it: a face loaded first and added after fires no
+ * `loadingdone`, and what measures text (`FontsSettled`) listens for this beside it. Reading the set itself to find out
+ * (its `size`) recomputes the page's styles.
+ */
+export const FACES_ADDED = 'fluvy-faces-added';
+
 /** Registers the Inter faces in `target` (the page, or a frame's document); the files come from the browser's cache after the first. */
 export function addFonts(target: Document): void {
   const Face = (target.defaultView as (Window & typeof globalThis) | null)?.FontFace;
@@ -41,7 +48,10 @@ export function addFonts(target: Document): void {
     });
     face
       .load()
-      .then((loaded) => target.fonts.add(loaded))
+      .then((loaded) => {
+        target.fonts.add(loaded);
+        target.fonts.dispatchEvent(new Event(FACES_ADDED));
+      })
       .catch(() => {
         /* Roboto remains: the stack has a real fallback */
       });

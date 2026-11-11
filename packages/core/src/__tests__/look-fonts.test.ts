@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterAll, describe, expect, it } from 'vitest';
 import { THEME_SENTINEL } from '@fluvy/tokens/config';
+import { FACES_ADDED } from '../fonts.js';
 import { startLook } from '../look/start.js';
 
 /*
@@ -12,6 +13,8 @@ import { startLook } from '../look/start.js';
 /** The faces the page asked for, as `FontFace` stood in: their family and source, their load answered at once. */
 const asked: string[] = [];
 const added: FakeFace[] = [];
+/** What the page's faces were told as ours were added (`FACES_ADDED`, for what measures text). */
+const said: string[] = [];
 class FakeFace {
   constructor(family: string, source: string) {
     asked.push(`${family}: ${source}`);
@@ -27,7 +30,10 @@ const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve,
 describe('the look registers Inter', () => {
   Object.assign(window, { FontFace: FakeFace });
   Object.defineProperty(document, 'fonts', {
-    value: { add: (face: FakeFace) => added.push(face) },
+    value: {
+      add: (face: FakeFace) => added.push(face),
+      dispatchEvent: (event: Event) => said.push(event.type),
+    },
     configurable: true,
   });
   const look = startLook();
@@ -47,6 +53,7 @@ describe('the look registers Inter', () => {
       expect.stringMatching(/^Inter: url\(.*inter-italic-variable\.woff2\) format\("woff2"\)$/),
     ]);
     expect(added).toHaveLength(2);
+    expect(said).toEqual([FACES_ADDED, FACES_ADDED]);
     // the theme applied again (dark mode): nothing more is asked for
     document.documentElement.style.setProperty('--primary-color', '#856529');
     await settle();

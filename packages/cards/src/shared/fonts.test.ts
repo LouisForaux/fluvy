@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
+import { FACES_ADDED } from '@fluvy/core';
 import type { ReactiveController, ReactiveControllerHost } from 'lit';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FontsSettled } from './fonts.js';
 
-/** The page's faces: all loaded, `loadingdone` fired by the test when one more arrives, `size` grown when one is added. */
+/** The page's faces: all loaded, `loadingdone` fired by the test when one more arrives. */
 class Faces extends EventTarget {
   status: FontFaceSetLoadStatus = 'loaded';
-  size = 2;
+  /** How many times `ready` was read: each read lays the page out in a browser. */
+  readyReads = 0;
   get ready(): Promise<this> {
+    this.readyReads++;
     return Promise.resolve(this);
   }
 }
@@ -93,13 +96,13 @@ describe('FontsSettled', () => {
     expect(one.draws()).toBeGreaterThan(before);
   });
 
-  it('measures a moved card again when a face loaded first was added while it was away (Inter, `addFonts`)', async () => {
+  it('measures a moved card again when one of our faces, loaded first, was added while it was away (`addFonts`)', async () => {
     const one = card();
     one.connect();
     await settle();
     one.disconnect();
-    // `FontFaceSet.add` of a face already loaded fires no `loadingdone`
-    faces.size++;
+    // `FontFaceSet.add` of a face already loaded fires no `loadingdone`: `addFonts` says it
+    faces.dispatchEvent(new Event(FACES_ADDED));
     const before = one.draws();
     one.connect();
     await settle();
@@ -117,6 +120,19 @@ describe('FontsSettled', () => {
     one.connect();
     await settle();
     expect(one.draws()).toBe(before + 2);
+  });
+
+  it('reads `document.fonts.ready` once for cards attached one by one (the card picker), again once faces load', async () => {
+    faces.dispatchEvent(new Event('loading'));
+    const before = faces.readyReads;
+    for (let n = 0; n < 5; n++) {
+      card().connect();
+      await Promise.resolve();
+    }
+    expect(faces.readyReads).toBe(before + 1);
+    faces.dispatchEvent(new Event('loading'));
+    card().connect();
+    expect(faces.readyReads).toBe(before + 2);
   });
 
   it('follows a face that loads while the card is in the page', async () => {

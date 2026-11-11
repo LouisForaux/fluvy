@@ -13,6 +13,9 @@ and the versions follow [Semantic Versioning](https://semver.org/).
   waiting on the fonts it had already settled on. A card only moved now draws again only when a face loaded or was
   added meanwhile (five letters in a house of 2,300 entities: 1,070 ms of blocked page down to 220 ms, the longest
   freeze 670 ms down to 165).
+- The card picker opens without laying the page out once for each Fluvy preview: every card that fits its text asked
+  the browser whether the fonts were ready as it was attached, and the picker attaches its previews one by one, so the
+  answer was worked out again for each (60 ms of the opening); the cards now ask once until a face starts loading.
 
 ## [1.18.0] — 2026-11-09
 
