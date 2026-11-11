@@ -5,6 +5,15 @@ and the versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The dashboard editor's card picker ("Add card", "By card") no longer crawls as its search is typed once the Fluvy
+  previews were drawn: Home Assistant moves every preview at each keystroke, and each Fluvy card with text to fit
+  (Tile, Sensor, Clock, Hello, Readouts and the others that measure their words) drew itself twice more at every move,
+  waiting on the fonts it had already settled on. A card only moved now draws again only when a face loaded or was
+  added meanwhile (five letters in a house of 2,300 entities: 1,070 ms of blocked page down to 220 ms, the longest
+  freeze 670 ms down to 165).
+
 ## [1.18.0] — 2026-11-09
 
 ### Visible on upgrade
